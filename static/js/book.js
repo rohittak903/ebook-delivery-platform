@@ -387,7 +387,7 @@ async function startRazorpayCartFlow() {
         }
 
         const options = {
-            key: orderInfo.key_id || 'rzp_test_TVvbybsCXuOmRn',
+            key: orderInfo.key_id || 'rzp_test_TVwFwjHKJeCLXY',
             amount: orderInfo.amount,
             currency: 'INR',
             name: 'QELVORIA (Raja Rohit Tak)',
@@ -478,7 +478,7 @@ async function startRazorpayDirectPayment() {
         }
 
         const options = {
-            key: orderInfo.key_id || 'rzp_test_TVvbybsCXuOmRn',
+            key: orderInfo.key_id || 'rzp_test_TVwFwjHKJeCLXY',
             amount: orderInfo.amount,
             currency: 'INR',
             name: 'QELVORIA (Raja Rohit Tak)',

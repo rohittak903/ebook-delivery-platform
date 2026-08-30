@@ -12,8 +12,8 @@ def test_razorpay_integration():
         # 1. Test Client Keys
         key_id, key_secret = get_razorpay_keys()
         print(f"[PASS] Razorpay Configured Key ID: {key_id}")
-        assert key_id == "rzp_test_TVvbybsCXuOmRn"
-        assert key_secret == "8ba5JKzJGubN5N5RihhTYFaz"
+        assert key_id == "rzp_test_TVwFwjHKJeCLXY"
+        assert key_secret == "xpcgXfb9VGJ0SEZBHyrp6HrG"
         
         # 2. Test Create Order API
         order_payload = {
@@ -28,7 +28,7 @@ def test_razorpay_integration():
         print(f"[PASS] Order created via POST /api/create-order: {order_data['order_id']} for Rs.{order_data['amount_inr']}")
         assert order_data["amount"] >= 100
         assert order_data["currency"] == "INR"
-        assert order_data["key_id"] == "rzp_test_TVvbybsCXuOmRn"
+        assert order_data["key_id"] == "rzp_test_TVwFwjHKJeCLXY"
         
         order_id = order_data["order_id"]
         payment_id = "pay_test_9035630901_rzp"

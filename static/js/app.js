@@ -608,7 +608,7 @@ async function startRazorpayFlow(context) {
         }
 
         const options = {
-            key: orderInfo.key_id || 'rzp_test_TVvbybsCXuOmRn',
+            key: orderInfo.key_id || 'rzp_test_TVwFwjHKJeCLXY',
             amount: orderInfo.amount,
             currency: 'INR',
             name: 'QELVORIA (Raja Rohit Tak)',

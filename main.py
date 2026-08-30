@@ -35,17 +35,18 @@ def load_env_file():
                     line = line.strip()
                     if line and not line.startswith("#") and "=" in line:
                         k, v = line.split("=", 1)
-                        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+                        os.environ[k.strip()] = v.strip().strip("'\"")
         except Exception:
             pass
 
 load_env_file()
 
 # Razorpay Standard Checkout Credentials
-RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_TVvbybsCXuOmRn")
-RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "8ba5JKzJGubN5N5RihhTYFaz")
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_TVwFwjHKJeCLXY")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "xpcgXfb9VGJ0SEZBHyrp6HrG")
 
 def get_razorpay_keys():
+    load_env_file()
     key_id = os.environ.get("RAZORPAY_KEY_ID") or RAZORPAY_KEY_ID
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or RAZORPAY_KEY_SECRET
     return key_id, key_secret
