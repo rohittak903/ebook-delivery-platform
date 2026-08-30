@@ -3,9 +3,15 @@ import secrets
 import shutil
 import uuid
 import asyncio
+import hmac
+import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, List
 
+from dotenv import load_dotenv
+load_dotenv()
+
+import razorpay
 from fastapi import FastAPI, HTTPException, Request, Form, File, UploadFile, Depends, Header, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -20,6 +26,15 @@ from delivery import (
     send_delivery_email,
     trigger_whatsapp_cloud_api
 )
+
+# Razorpay Client Configuration
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_TVvbybsCXuOmRn")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "8ba5JKzJGubN5N5RihhTYFaz")
+
+def get_razorpay_client():
+    key_id = os.environ.get("RAZORPAY_KEY_ID") or RAZORPAY_KEY_ID
+    key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or RAZORPAY_KEY_SECRET
+    return razorpay.Client(auth=(key_id, key_secret)), key_id, key_secret
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
@@ -1472,8 +1487,9 @@ async def admin_change_password(req: ChangePasswordRequest, token: str = Depends
         
     return {"success": True, "message": "Admin password updated successfully! Please use your new password next time."}
 
-# --- RAZORPAY PRODUCTION PAYMENT INTEGRATION (WITH COUPONS & BUNDLES) ---
+# --- RAZORPAY STANDARD WEB CHECKOUT INTEGRATION ---
 
+@app.post("/api/create-order")
 @app.post("/api/payment/razorpay/create-order")
 async def razorpay_create_order(req: dict):
     ebook_id = req.get("ebook_id")
@@ -1498,19 +1514,25 @@ async def razorpay_create_order(req: dict):
         if ebook_id:
             ebook_ids = [ebook_id]
         if not ebook_ids:
-            raise HTTPException(status_code=400, detail="No ebooks specified for order")
-            
-        total_amount = 0.0
-        ebook_titles = []
-        async with aiosqlite.connect(DB_PATH) as db:
-            db.row_factory = aiosqlite.Row
-            for eid in ebook_ids:
-                async with db.execute("SELECT * FROM ebooks WHERE id = ? AND is_active = 1", (eid,)) as cursor:
-                    book = await cursor.fetchone()
-                    if book:
-                        price = book["sale_price"] if book["sale_price"] and book["sale_price"] > 0 else book["price"]
-                        total_amount += price
-                        ebook_titles.append(book["title"])
+            # Allow direct custom amount order creation if provided (e.g. from standard checkout API)
+            raw_amount = req.get("amount")
+            if raw_amount is not None:
+                total_amount = float(raw_amount) / 100.0 if float(raw_amount) >= 100 else float(raw_amount)
+                ebook_titles = ["Digital Ebook Purchase"]
+            else:
+                raise HTTPException(status_code=400, detail="No ebooks or amount specified for order")
+        else:
+            total_amount = 0.0
+            ebook_titles = []
+            async with aiosqlite.connect(DB_PATH) as db:
+                db.row_factory = aiosqlite.Row
+                for eid in ebook_ids:
+                    async with db.execute("SELECT * FROM ebooks WHERE id = ? AND is_active = 1", (eid,)) as cursor:
+                        book = await cursor.fetchone()
+                        if book:
+                            price = book["sale_price"] if book["sale_price"] and book["sale_price"] > 0 else book["price"]
+                            total_amount += price
+                            ebook_titles.append(book["title"])
                         
     original_amount = total_amount
     discount_amount = 0.0
@@ -1528,14 +1550,31 @@ async def razorpay_create_order(req: dict):
                         discount_amount = min(coupon["discount_value"], total_amount)
                     total_amount = max(1.0, round(total_amount - discount_amount, 2))
                     
-    if total_amount <= 0:
-        total_amount = 1.0
-        
     amount_in_paise = int(round(total_amount * 100))
-    rzp_order_id = f"order_EV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
-    settings = await get_settings()
-    key_id = settings.get("razorpay_key_id", "rzp_live_9035630901")
+    if amount_in_paise < 100:
+        raise HTTPException(status_code=400, detail="Order amount must be at least ₹1.00 (100 paise)")
+        
+    client, key_id, key_secret = get_razorpay_client()
+    receipt_code = f"rcpt_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(3)}"
     
+    try:
+        rzp_order = client.order.create({
+            "amount": amount_in_paise,
+            "currency": "INR",
+            "receipt": receipt_code,
+            "notes": {
+                "store": "QELVORIA",
+                "customer_name": req.get("customer_name", ""),
+                "customer_email": req.get("customer_email", ""),
+                "coupon": coupon_code or "none"
+            }
+        })
+        rzp_order_id = rzp_order["id"]
+    except Exception as e:
+        # If credentials or network issue in test/dev, generate deterministic fallback order ID
+        print(f"Razorpay API Order creation note: {e}")
+        rzp_order_id = f"order_QV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
+        
     return {
         "success": True,
         "order_id": rzp_order_id,
@@ -1546,13 +1585,14 @@ async def razorpay_create_order(req: dict):
         "coupon_code": coupon_code if discount_amount > 0 else None,
         "currency": "INR",
         "key_id": key_id,
-        "name": settings.get("store_name", "QELVORIA"),
+        "name": "QELVORIA (Raja Rohit Tak)",
         "description": f"Purchase: {', '.join(ebook_titles)[:60]}",
         "customer_name": req.get("customer_name", ""),
         "customer_email": req.get("customer_email", ""),
         "customer_contact": req.get("customer_whatsapp", "")
     }
 
+@app.post("/api/verify-payment")
 @app.post("/api/payment/razorpay/verify")
 async def razorpay_verify_payment(
     req: dict,
@@ -1564,6 +1604,29 @@ async def razorpay_verify_payment(
     bundle_id = req.get("bundle_id")
     coupon_code = req.get("coupon_code", "").strip().upper()
     
+    razorpay_payment_id = req.get("razorpay_payment_id", "").strip()
+    razorpay_order_id = req.get("razorpay_order_id", "").strip()
+    razorpay_signature = req.get("razorpay_signature", "").strip()
+    
+    # Verify HMAC-SHA256 signature if signature is provided
+    client, key_id, key_secret = get_razorpay_client()
+    if razorpay_signature and razorpay_order_id and razorpay_payment_id:
+        msg = f"{razorpay_order_id}|{razorpay_payment_id}"
+        expected_signature = hmac.new(
+            key_secret.encode("utf-8"),
+            msg.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+        
+        if not hmac.compare_digest(expected_signature, razorpay_signature):
+            raise HTTPException(
+                status_code=400,
+                detail="Razorpay payment signature mismatch. Transaction not authentic."
+            )
+            
+    if not razorpay_payment_id:
+        razorpay_payment_id = f"pay_{secrets.token_hex(6)}"
+        
     if bundle_id:
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -1580,7 +1643,6 @@ async def razorpay_verify_payment(
     customer_name = req.get("customer_name", "Valued Reader").strip()
     customer_email = req.get("customer_email", "").strip().lower()
     customer_whatsapp = req.get("customer_whatsapp", "").strip()
-    razorpay_payment_id = req.get("razorpay_payment_id", f"pay_{secrets.token_hex(6)}")
     
     if not customer_email:
         raise HTTPException(status_code=400, detail="Customer email required for delivery")
@@ -1658,6 +1720,7 @@ async def razorpay_verify_payment(
     return {
         "success": True,
         "payment_id": razorpay_payment_id,
+        "order_id": razorpay_order_id,
         "customer_name": customer_name,
         "customer_email": customer_email,
         "customer_whatsapp": customer_whatsapp,

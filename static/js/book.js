@@ -215,7 +215,7 @@ async function startRazorpayDirectPayment() {
         }
 
         const options = {
-            key: orderInfo.key_id || 'rzp_live_9035630901',
+            key: orderInfo.key_id || 'rzp_test_TVvbybsCXuOmRn',
             amount: orderInfo.amount,
             currency: 'INR',
             name: 'QELVORIA (Raja Rohit Tak)',
@@ -226,7 +226,12 @@ async function startRazorpayDirectPayment() {
                 email: currentCustomer.email,
                 contact: currentCustomer.phone
             },
-            theme: { color: '#4f46e5' },
+            theme: { color: '#6366f1' },
+            modal: {
+                ondismiss: function() {
+                    console.log('Payment modal dismissed by reader.');
+                }
+            },
             handler: async function (response) {
                 await verifyDirectPayment(response, orderInfo);
             }
@@ -234,6 +239,10 @@ async function startRazorpayDirectPayment() {
 
         if (typeof Razorpay !== 'undefined') {
             const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                console.error('Razorpay payment failed:', response.error);
+                alert(`❌ Payment Failed: ${response.error.description || 'Transaction declined by bank.'}`);
+            });
             rzp.open();
         } else {
             await verifyDirectPayment({}, orderInfo);
@@ -257,10 +266,12 @@ async function verifyDirectPayment(response, orderInfo) {
             customer_email: currentCustomer.email,
             customer_whatsapp: currentCustomer.phone,
             coupon_code: appliedCoupon ? appliedCoupon.code : null,
-            razorpay_payment_id: response.razorpay_payment_id || 'pay_' + Date.now()
+            razorpay_payment_id: response.razorpay_payment_id || ('pay_' + Date.now()),
+            razorpay_order_id: response.razorpay_order_id || orderInfo.order_id,
+            razorpay_signature: response.razorpay_signature || null
         };
 
-        const res = await fetch('/api/payment/razorpay/verify', {
+        const res = await fetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -268,7 +279,7 @@ async function verifyDirectPayment(response, orderInfo) {
 
         const result = await res.json();
         if (!res.ok) {
-            alert(result.detail || 'Payment verification failed.');
+            alert(`❌ ${result.detail || 'Payment verification failed.'}`);
             return;
         }
 

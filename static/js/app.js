@@ -585,7 +585,7 @@ async function startRazorpayFlow(context) {
         }
 
         const options = {
-            key: orderInfo.key_id || 'rzp_live_9035630901',
+            key: orderInfo.key_id || 'rzp_test_TVvbybsCXuOmRn',
             amount: orderInfo.amount,
             currency: 'INR',
             name: 'QELVORIA (Raja Rohit Tak)',
@@ -596,18 +596,28 @@ async function startRazorpayFlow(context) {
                 email: currentCustomer.email,
                 contact: currentCustomer.phone
             },
-            theme: { color: '#4f46e5' },
+            theme: { color: '#6366f1' },
+            modal: {
+                ondismiss: function() {
+                    console.log('Checkout window closed by customer.');
+                }
+            },
             handler: async function (response) {
                 await verifyRazorpayFlow({
                     ...context,
                     razorpay_payment_id: response.razorpay_payment_id,
-                    razorpay_order_id: response.razorpay_order_id
+                    razorpay_order_id: response.razorpay_order_id,
+                    razorpay_signature: response.razorpay_signature
                 });
             }
         };
 
         if (typeof Razorpay !== 'undefined') {
             const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                console.error('Razorpay payment failed:', response.error);
+                alert(`❌ Payment Failed: ${response.error.description || 'Transaction declined by bank.'}`);
+            });
             rzp.open();
         } else {
             await verifyRazorpayFlow(context);
@@ -628,10 +638,12 @@ async function verifyRazorpayFlow(context) {
             customer_email: currentCustomer.email,
             customer_whatsapp: currentCustomer.phone,
             coupon_code: context.couponCode || null,
-            razorpay_payment_id: context.razorpay_payment_id || 'pay_' + Date.now()
+            razorpay_payment_id: context.razorpay_payment_id || ('pay_' + Date.now()),
+            razorpay_order_id: context.razorpay_order_id || null,
+            razorpay_signature: context.razorpay_signature || null
         };
 
-        const res = await fetch('/api/payment/razorpay/verify', {
+        const res = await fetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -639,7 +651,7 @@ async function verifyRazorpayFlow(context) {
 
         const result = await res.json();
         if (!res.ok) {
-            alert(result.detail || 'Payment verification failed.');
+            alert(`❌ ${result.detail || 'Payment verification failed.'}`);
             return;
         }
 
@@ -652,6 +664,7 @@ async function verifyRazorpayFlow(context) {
         showSuccessModal(result);
     } catch (e) {
         console.error('Verification error', e);
+        alert('Error communicating with verification server.');
     }
 }
 
