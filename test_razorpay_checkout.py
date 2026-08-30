@@ -70,6 +70,14 @@ def test_razorpay_integration():
         print(f"[PASS] Valid signature verified! Order code: {verify_data['orders'][0]['order_code']}")
         print(f"[PASS] Instant download link generated: {verify_data['orders'][0]['download_url']}")
         
+        # Cleanup test order & test customer from DB so live dashboard is never polluted
+        import sqlite3
+        con = sqlite3.connect("store.db")
+        con.execute("DELETE FROM orders WHERE customer_email = 'test_reader@qelvoria.com'")
+        con.execute("DELETE FROM customers WHERE email = 'test_reader@qelvoria.com'")
+        con.commit()
+        con.close()
+
         print("\n=== ALL RAZORPAY STANDARD CHECKOUT TESTS PASSED 100% ===")
 
 if __name__ == "__main__":

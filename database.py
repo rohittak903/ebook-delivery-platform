@@ -150,8 +150,8 @@ CREATE TABLE IF NOT EXISTS customers (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     phone TEXT,
-    password_hash TEXT,
-    auth_provider TEXT DEFAULT 'local', -- 'local', 'otp', 'google'
+    password_hash TEXT DEFAULT '',
+    auth_provider TEXT DEFAULT 'purchase',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -294,6 +294,8 @@ async def init_db():
             )
             
         await db.execute("UPDATE settings SET value = '₹' WHERE key = 'store_currency' AND (value = '₹100' OR value LIKE '%100%' OR length(value) > 3)")
+        await db.execute("DELETE FROM orders WHERE customer_email IN ('test_reader@qelvoria.com', 'test@qelvoria.com', 'john.doe@example.com', 'priya.sharma@example.com', 'customer@example.com', 'mobile.user@example.com')")
+        await db.execute("DELETE FROM customers WHERE email IN ('test_reader@qelvoria.com', 'test@qelvoria.com', 'john.doe@example.com', 'priya.sharma@example.com', 'customer@example.com', 'mobile.user@example.com') OR email LIKE '%@phone.ebookvault.com'")
             
         # Seed & Upsert Admin User (Username: RajaRohitTak / Password: Rajatak.com)
         admin_pass_hash = hash_password("Rajatak.com")

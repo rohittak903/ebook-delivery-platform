@@ -642,6 +642,19 @@ async def checkout(
             
         # Increment downloads counter placeholder
         await db.execute("UPDATE ebooks SET downloads_count = downloads_count + 1 WHERE id = ?", (ebook["id"],))
+        
+        # Real-Time Customer CRM Synchronization with exact form details
+        try:
+            await db.execute("""
+                INSERT INTO customers (name, email, phone, password_hash, auth_provider)
+                VALUES (?, ?, ?, '', 'checkout')
+                ON CONFLICT(email) DO UPDATE SET
+                    name = excluded.name,
+                    phone = CASE WHEN excluded.phone != '' AND excluded.phone IS NOT NULL THEN excluded.phone ELSE customers.phone END
+            """, (req.customer_name, req.customer_email, req.customer_whatsapp))
+        except Exception as sync_err:
+            print(f"Customer CRM real-time sync warning: {sync_err}")
+
         await db.commit()
         
     base_url = str(request.base_url).rstrip("/")
@@ -2072,6 +2085,18 @@ async def razorpay_verify_payment(
             
             background_tasks.add_task(process_delivery_background, order_id, base_url)
             
+        # Real-Time Customer CRM Synchronization with exact form details
+        try:
+            await db.execute("""
+                INSERT INTO customers (name, email, phone, password_hash, auth_provider)
+                VALUES (?, ?, ?, '', 'razorpay_checkout')
+                ON CONFLICT(email) DO UPDATE SET
+                    name = excluded.name,
+                    phone = CASE WHEN excluded.phone != '' AND excluded.phone IS NOT NULL THEN excluded.phone ELSE customers.phone END
+            """, (customer_name, customer_email, customer_whatsapp))
+        except Exception as sync_err:
+            print(f"Customer CRM real-time sync warning: {sync_err}")
+
         await db.commit()
         
     return {

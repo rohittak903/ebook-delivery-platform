@@ -113,6 +113,14 @@ def test_full_platform():
         assert "download_url" in v_data["orders"][0]
         print(f"[PASS] Order completed and verified! Order Code: {v_data['orders'][0]['order_code']}")
 
+        # Cleanup test order & test customer from DB so live dashboard is never polluted
+        import sqlite3
+        con = sqlite3.connect("store.db")
+        con.execute("DELETE FROM orders WHERE customer_name = 'Rohit Customer'")
+        con.execute("DELETE FROM customers WHERE name = 'Rohit Customer'")
+        con.commit()
+        con.close()
+
         print("\n=== ALL PLATFORM TESTS PASSED WITH 100% SUCCESS ===")
 
 if __name__ == "__main__":
