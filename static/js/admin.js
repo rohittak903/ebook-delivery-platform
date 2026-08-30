@@ -1,10 +1,14 @@
 // Admin Dashboard Logic - Raja Rohit Tak
 
-let adminToken = localStorage.getItem('ebookvault_admin_token') || localStorage.getItem('qelvoria_admin_token') || '';
+let adminToken = sessionStorage.getItem('qelvoria_admin_token') || sessionStorage.getItem('ebookvault_admin_token') || '';
 let currentTab = 'overview';
 let cachedEbooks = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Clear persistent localStorage tokens so opening admin panel in new tabs/browsers always enforces login
+    localStorage.removeItem('ebookvault_admin_token');
+    localStorage.removeItem('qelvoria_admin_token');
+
     if (adminToken) {
         const isValid = await verifyAdminSession();
         if (isValid) {
@@ -12,8 +16,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         } else {
             adminToken = '';
-            localStorage.removeItem('ebookvault_admin_token');
-            localStorage.removeItem('qelvoria_admin_token');
+            sessionStorage.removeItem('ebookvault_admin_token');
+            sessionStorage.removeItem('qelvoria_admin_token');
         }
     }
     showLogin();
@@ -84,8 +88,8 @@ async function handleAdminLogin(e) {
 
         if (res.ok && data.token) {
             adminToken = data.token;
-            localStorage.setItem('ebookvault_admin_token', adminToken);
-            localStorage.setItem('qelvoria_admin_token', adminToken);
+            sessionStorage.setItem('ebookvault_admin_token', adminToken);
+            sessionStorage.setItem('qelvoria_admin_token', adminToken);
             showDashboard();
         } else {
             alert(data.detail || 'Login failed. Please use credentials RajaRohitTak / Rajatak.com');
@@ -104,6 +108,8 @@ async function handleAdminLogin(e) {
 
 function adminLogout() {
     adminToken = '';
+    sessionStorage.removeItem('ebookvault_admin_token');
+    sessionStorage.removeItem('qelvoria_admin_token');
     localStorage.removeItem('ebookvault_admin_token');
     localStorage.removeItem('qelvoria_admin_token');
     showLogin();
@@ -352,7 +358,13 @@ async function handleAddEbookSubmit(e) {
             body: formData
         });
 
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch {
+            data = { detail: `Server responded with status ${res.status}` };
+        }
+
         if (res.ok) {
             alert(`🎉 Success: ${data.message || 'Ebook published successfully!'}`);
             document.getElementById('addEbookForm').reset();
@@ -362,13 +374,15 @@ async function handleAddEbookSubmit(e) {
             if (res.status === 401) {
                 alert('⚠️ Session expired. Please log in to admin panel again.');
                 showLogin();
+            } else if (res.status === 413) {
+                alert('⚠️ File too large! On serverless cloud hosting, please upload files smaller than 4.5MB or use standard PDF formats.');
             } else {
-                alert(`⚠️ Error: ${data.detail || 'Upload failed. Please check your inputs.'}`);
+                alert(`⚠️ Upload Error (${res.status}): ${data.detail || 'Upload failed. Please check your inputs.'}`);
             }
         }
     } catch (err) {
         console.error('Upload error', err);
-        alert('Network error while uploading ebook. Please try again.');
+        alert('Network/Server connection notice: Please try uploading again in a few seconds.');
     } finally {
         btn.disabled = false;
         btn.innerText = 'Upload & Publish Ebook';

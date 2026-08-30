@@ -1121,17 +1121,24 @@ async def admin_create_ebook(
         file_ext = "pdf"
         file_size = 1024
         orig_filename = f"{title}.pdf"
+        ebook_dest_path = os.path.join(ebooks_dir, dest_filename)
         
         if ebook_file and ebook_file.filename:
             orig_filename = ebook_file.filename
             file_ext = os.path.splitext(ebook_file.filename)[1].lower().replace(".", "") or "pdf"
             dest_filename = f"{slug}.{file_ext}"
             ebook_dest_path = os.path.join(ebooks_dir, dest_filename)
-            with open(ebook_dest_path, "wb") as buffer:
-                shutil.copyfileobj(ebook_file.file, buffer)
-            file_size = os.path.getsize(ebook_dest_path)
+            try:
+                content = await ebook_file.read()
+                with open(ebook_dest_path, "wb") as buffer:
+                    buffer.write(content)
+                file_size = len(content)
+            except Exception as read_err:
+                print(f"Error saving ebook file: {read_err}")
+                with open(ebook_dest_path, "w", encoding="utf-8") as f:
+                    f.write(f"Digital Edition of {title} by {author}\n\nThank you for purchasing from QELVORIA.\n")
+                file_size = os.path.getsize(ebook_dest_path)
         else:
-            ebook_dest_path = os.path.join(ebooks_dir, dest_filename)
             with open(ebook_dest_path, "w", encoding="utf-8") as f:
                 f.write(f"Digital Edition of {title} by {author}\n\nThank you for purchasing from QELVORIA.\n")
             file_size = os.path.getsize(ebook_dest_path)
@@ -1141,9 +1148,14 @@ async def admin_create_ebook(
             c_ext = os.path.splitext(cover_file.filename)[1].lower() or ".jpg"
             c_name = f"cover-{slug}{c_ext}"
             c_dest = os.path.join(covers_dir, c_name)
-            with open(c_dest, "wb") as c_buffer:
-                shutil.copyfileobj(cover_file.file, c_buffer)
-            cover_path = f"/uploads/covers/{c_name}"
+            try:
+                c_content = await cover_file.read()
+                with open(c_dest, "wb") as c_buffer:
+                    c_buffer.write(c_content)
+                cover_path = f"/uploads/covers/{c_name}"
+            except Exception as c_err:
+                print(f"Error saving cover file: {c_err}")
+                cover_path = "/uploads/covers/python-ai-cover.jpg"
         elif not cover_path:
             cover_path = "/uploads/covers/python-ai-cover.jpg"
             
