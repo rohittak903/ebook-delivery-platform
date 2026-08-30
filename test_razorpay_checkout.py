@@ -3,14 +3,14 @@ import hmac
 import hashlib
 import json
 from fastapi.testclient import TestClient
-from main import app, get_razorpay_client
+from main import app, get_razorpay_keys
 
 def test_razorpay_integration():
     print("=== TESTING RAZORPAY STANDARD WEB CHECKOUT INTEGRATION ===")
     
     with TestClient(app) as client:
         # 1. Test Client Keys
-        rzp_client, key_id, key_secret = get_razorpay_client()
+        key_id, key_secret = get_razorpay_keys()
         print(f"[PASS] Razorpay Configured Key ID: {key_id}")
         assert key_id == "rzp_test_TVvbybsCXuOmRn"
         assert key_secret == "8ba5JKzJGubN5N5RihhTYFaz"

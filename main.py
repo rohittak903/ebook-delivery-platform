@@ -8,17 +8,7 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv()
-except Exception:
-    pass
-
-try:
-    import razorpay
-except Exception:
-    razorpay = None
-
+import httpx
 from fastapi import FastAPI, HTTPException, Request, Form, File, UploadFile, Depends, Header, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,20 +24,30 @@ from delivery import (
     trigger_whatsapp_cloud_api
 )
 
-# Razorpay Client Configuration
+# Load .env file safely with pure Python
+def load_env_file():
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        k, v = line.split("=", 1)
+                        os.environ.setdefault(k.strip(), v.strip().strip("'\""))
+        except Exception:
+            pass
+
+load_env_file()
+
+# Razorpay Standard Checkout Credentials
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_test_TVvbybsCXuOmRn")
 RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "8ba5JKzJGubN5N5RihhTYFaz")
 
-def get_razorpay_client():
+def get_razorpay_keys():
     key_id = os.environ.get("RAZORPAY_KEY_ID") or RAZORPAY_KEY_ID
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or RAZORPAY_KEY_SECRET
-    client = None
-    if razorpay is not None:
-        try:
-            client = razorpay.Client(auth=(key_id, key_secret))
-        except Exception:
-            client = None
-    return client, key_id, key_secret
+    return key_id, key_secret
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
@@ -1567,26 +1567,32 @@ async def razorpay_create_order(req: dict):
     if amount_in_paise < 100:
         raise HTTPException(status_code=400, detail="Order amount must be at least ₹1.00 (100 paise)")
         
-    client, key_id, key_secret = get_razorpay_client()
+    key_id, key_secret = get_razorpay_keys()
     receipt_code = f"rcpt_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(3)}"
     rzp_order_id = f"order_QV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
-    if client is not None:
-        try:
-            rzp_order = client.order.create({
-                "amount": amount_in_paise,
-                "currency": "INR",
-                "receipt": receipt_code,
-                "notes": {
-                    "store": "QELVORIA",
-                    "customer_name": req.get("customer_name", ""),
-                    "customer_email": req.get("customer_email", ""),
-                    "coupon": coupon_code or "none"
+    
+    try:
+        with httpx.Client(timeout=8.0) as http_client:
+            r = http_client.post(
+                "https://api.razorpay.com/v1/orders",
+                auth=(key_id, key_secret),
+                json={
+                    "amount": amount_in_paise,
+                    "currency": "INR",
+                    "receipt": receipt_code,
+                    "notes": {
+                        "store": "QELVORIA",
+                        "customer_name": req.get("customer_name", ""),
+                        "customer_email": req.get("customer_email", ""),
+                        "coupon": coupon_code or "none"
+                    }
                 }
-            })
-            rzp_order_id = rzp_order["id"]
-        except Exception as e:
-            print(f"Razorpay API Order creation note: {e}")
-            rzp_order_id = f"order_QV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
+            )
+            if r.status_code in (200, 201):
+                rzp_order_data = r.json()
+                rzp_order_id = rzp_order_data.get("id", rzp_order_id)
+    except Exception as e:
+        print(f"Razorpay API order creation notice: {e}")
         
     return {
         "success": True,
@@ -1622,7 +1628,7 @@ async def razorpay_verify_payment(
     razorpay_signature = req.get("razorpay_signature", "").strip()
     
     # Verify HMAC-SHA256 signature if signature is provided
-    client, key_id, key_secret = get_razorpay_client()
+    key_id, key_secret = get_razorpay_keys()
     if razorpay_signature and razorpay_order_id and razorpay_payment_id:
         msg = f"{razorpay_order_id}|{razorpay_payment_id}"
         expected_signature = hmac.new(
