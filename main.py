@@ -24,8 +24,11 @@ from delivery import (
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
 STATIC_DIR = os.path.join(BASE_DIR, "static")
+COVERS_DIR = os.path.join(UPLOADS_DIR, "covers")
+EBOOKS_DIR = os.path.join(UPLOADS_DIR, "ebooks")
+SAMPLES_DIR = os.path.join(UPLOADS_DIR, "samples")
 
-app = FastAPI(title="Ebook Store & Instant Delivery Platform")
+app = FastAPI(title="QELVORIA Digital Bookstore")
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,14 +38,26 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount uploads and static files
-os.makedirs(os.path.join(UPLOADS_DIR, "ebooks"), exist_ok=True)
-os.makedirs(os.path.join(UPLOADS_DIR, "covers"), exist_ok=True)
-os.makedirs(os.path.join(UPLOADS_DIR, "samples"), exist_ok=True)
-os.makedirs(STATIC_DIR, exist_ok=True)
+# Mount uploads and static files safely (works on local and Vercel read-only filesystem)
+try:
+    os.makedirs(EBOOKS_DIR, exist_ok=True)
+    os.makedirs(COVERS_DIR, exist_ok=True)
+    os.makedirs(SAMPLES_DIR, exist_ok=True)
+    os.makedirs(STATIC_DIR, exist_ok=True)
+except Exception:
+    pass
 
-app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+if os.path.exists(UPLOADS_DIR):
+    try:
+        app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+    except Exception:
+        pass
+
+if os.path.exists(STATIC_DIR):
+    try:
+        app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    except Exception:
+        pass
 
 # In-memory admin sessions for simple token auth
 ACTIVE_ADMIN_SESSIONS = set()
@@ -1738,29 +1753,41 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
 
 # --- Web Page Routes ---
 
+def find_static_file(filename: str) -> Optional[str]:
+    candidates = [
+        os.path.join(STATIC_DIR, filename),
+        os.path.join(BASE_DIR, "static", filename),
+        os.path.join(os.getcwd(), "static", filename),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", filename)
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            return p
+    return None
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_storefront():
-    index_file = os.path.join(STATIC_DIR, "index.html")
-    if os.path.exists(index_file):
-        with open(index_file, "r", encoding="utf-8") as f:
+    p = find_static_file("index.html")
+    if p and os.path.exists(p):
+        with open(p, "r", encoding="utf-8") as f:
             return f.read()
-    return "<h1>Storefront is loading...</h1>"
+    return "<h1>QELVORIA Storefront is loading...</h1>"
 
 @app.get("/book", response_class=HTMLResponse)
 @app.get("/book.html", response_class=HTMLResponse)
 async def serve_product_page():
-    book_file = os.path.join(STATIC_DIR, "book.html")
-    if os.path.exists(book_file):
-        with open(book_file, "r", encoding="utf-8") as f:
+    p = find_static_file("book.html")
+    if p and os.path.exists(p):
+        with open(p, "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Product page is loading...</h1>"
 
 @app.get("/admin", response_class=HTMLResponse)
 @app.get("/admin.html", response_class=HTMLResponse)
 async def serve_admin():
-    admin_file = os.path.join(STATIC_DIR, "admin.html")
-    if os.path.exists(admin_file):
-        with open(admin_file, "r", encoding="utf-8") as f:
+    p = find_static_file("admin.html")
+    if p and os.path.exists(p):
+        with open(p, "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Admin panel is loading...</h1>"
 

@@ -7,14 +7,33 @@ import json
 from datetime import datetime
 
 # Serverless DB Path Handling (Vercel has read-only root, /tmp is writable)
-DEFAULT_DB = os.path.join(os.path.dirname(__file__), "store.db")
-if os.environ.get("VERCEL") or os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
-    TMP_DB = "/tmp/store.db"
-    if not os.path.exists(TMP_DB) and os.path.exists(DEFAULT_DB):
-        shutil.copy2(DEFAULT_DB, TMP_DB)
-    DB_PATH = TMP_DB
-else:
-    DB_PATH = DEFAULT_DB
+def get_db_path():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    default_db = os.path.join(base_dir, "store.db")
+    
+    # Check if directory is writable (Vercel / Lambda root is read-only)
+    is_writable = False
+    try:
+        test_file = os.path.join(base_dir, ".write_test")
+        with open(test_file, "w") as f:
+            f.write("ok")
+        os.remove(test_file)
+        is_writable = True
+    except Exception:
+        is_writable = False
+        
+    if is_writable and not os.environ.get("VERCEL") and not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        return default_db
+    else:
+        tmp_db = "/tmp/store.db"
+        if not os.path.exists(tmp_db) and os.path.exists(default_db):
+            try:
+                shutil.copy2(default_db, tmp_db)
+            except Exception:
+                pass
+        return tmp_db
+
+DB_PATH = get_db_path()
 
 CREATE_TABLES_SQL = """
 CREATE TABLE IF NOT EXISTS ebooks (
@@ -258,20 +277,29 @@ async def init_db():
         async with db.execute("SELECT COUNT(*) FROM ebooks") as cursor:
             ebook_count = (await cursor.fetchone())[0]
             if ebook_count < 2:
-                # Ensure uploads directory structure
-                os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "ebooks"), exist_ok=True)
-                os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "covers"), exist_ok=True)
-                
-                # Create dummy sample ebook file if not present
+                # Ensure uploads directory structure safely
                 sample_pdf_path = os.path.join(os.path.dirname(__file__), "uploads", "ebooks", "mastering-python-ai.pdf")
-                if not os.path.exists(sample_pdf_path):
-                    with open(sample_pdf_path, "wb") as f:
-                        f.write(b"%PDF-1.4 sample ebook content for EBookVault by Raja Rohit Tak")
-                        
                 sample_docx_path = os.path.join(os.path.dirname(__file__), "uploads", "ebooks", "solopreneur-blueprint.docx")
-                if not os.path.exists(sample_docx_path):
-                    with open(sample_docx_path, "wb") as f:
-                        f.write(b"PK sample docx content for EBookVault by Raja Rohit Tak")
+                try:
+                    os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "ebooks"), exist_ok=True)
+                    os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "covers"), exist_ok=True)
+                    if not os.path.exists(sample_pdf_path):
+                        with open(sample_pdf_path, "wb") as f:
+                            f.write(b"%PDF-1.4 sample ebook content for QELVORIA by Raja Rohit Tak")
+                    if not os.path.exists(sample_docx_path):
+                        with open(sample_docx_path, "wb") as f:
+                            f.write(b"PK sample docx content for QELVORIA by Raja Rohit Tak")
+                except Exception:
+                    # In read-only serverless environment (Vercel)
+                    sample_pdf_path = "/tmp/mastering-python-ai.pdf"
+                    sample_docx_path = "/tmp/solopreneur-blueprint.docx"
+                    try:
+                        with open(sample_pdf_path, "wb") as f:
+                            f.write(b"%PDF-1.4 sample ebook content for QELVORIA by Raja Rohit Tak")
+                        with open(sample_docx_path, "wb") as f:
+                            f.write(b"PK sample docx content for QELVORIA by Raja Rohit Tak")
+                    except Exception:
+                        pass
                         
                 await db.execute("""
                     INSERT OR IGNORE INTO ebooks (
