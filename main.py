@@ -1622,6 +1622,20 @@ async def razorpay_create_order(req: dict):
                 if r.status_code in (200, 201):
                     rzp_order_data = r.json()
                     rzp_order_id = rzp_order_data.get("id", rzp_order_id)
+                elif r.status_code == 401:
+                    return JSONResponse(
+                        status_code=401,
+                        content={
+                            "success": False,
+                            "detail": "Razorpay Authentication Error: Your Live Key Secret is missing or invalid. Please copy the Live Key Secret from Razorpay Dashboard (Settings -> API Keys) and provide it."
+                        }
+                    )
+                else:
+                    err_msg = r.json().get("error", {}).get("description", r.text)
+                    return JSONResponse(
+                        status_code=400,
+                        content={"success": False, "detail": f"Razorpay API Error: {err_msg}"}
+                    )
         except Exception as e:
             print(f"Razorpay API order creation notice: {e}")
             
