@@ -216,7 +216,7 @@ DEFAULT_SETTINGS = {
     "bank_holder_name": "ROHIT TAK",
     "razorpay_enabled": "true",
     "razorpay_key_id": os.environ.get("RAZORPAY_KEY_ID", "rzp_live_TVwW1GpXBFloh7"),
-    "razorpay_key_secret": os.environ.get("RAZORPAY_KEY_SECRET", ""),
+    "razorpay_key_secret": os.environ.get("RAZORPAY_KEY_SECRET", "VN4EU5sjf9zgttRSswGwLmFh"),
     "upi_id": "9035630901@superyes",
     "upi_name": "ROHIT TAK",
     "upi_qr_image": "/uploads/qr/rohit_upi_qr.jpg",

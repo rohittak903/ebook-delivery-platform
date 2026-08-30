@@ -43,7 +43,7 @@ load_env_file()
 
 # Razorpay Standard Checkout Credentials
 RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "rzp_live_TVwW1GpXBFloh7")
-RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "VN4EU5sjf9zgttRSswGwLmFh")
 
 def get_razorpay_keys():
     load_env_file()
