@@ -275,6 +275,16 @@ async def init_db():
             await db.execute("ALTER TABLE customers ADD COLUMN auth_provider TEXT DEFAULT 'local'")
         except Exception:
             pass
+        try:
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS admin_sessions (
+                    token TEXT PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+        except Exception:
+            pass
 
         # Seed default settings if missing
         for key, val in DEFAULT_SETTINGS.items():

@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (isValid) {
             showDashboard();
             return;
+        } else {
+            adminToken = '';
+            localStorage.removeItem('ebookvault_admin_token');
+            localStorage.removeItem('qelvoria_admin_token');
         }
     }
     showLogin();

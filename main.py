@@ -172,12 +172,15 @@ async def require_admin_auth(authorization: Optional[str] = Header(None)):
         return token
         
     # Check persistent DB for serverless lambdas
-    async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
-        async with db.execute("SELECT username FROM admin_sessions WHERE token = ?", (token,)) as cursor:
-            row = await cursor.fetchone()
-            if row:
-                ACTIVE_ADMIN_SESSIONS.add(token)
-                return token
+    try:
+        async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
+            async with db.execute("SELECT username FROM admin_sessions WHERE token = ?", (token,)) as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    ACTIVE_ADMIN_SESSIONS.add(token)
+                    return token
+    except Exception as e:
+        print(f"Error checking admin session: {e}")
                 
     raise HTTPException(status_code=401, detail="Invalid or expired admin session. Please log in again.")
 
