@@ -1,6 +1,6 @@
 // Admin Dashboard Logic - Raja Rohit Tak
 
-let adminToken = localStorage.getItem('ebookvault_admin_token') || '';
+let adminToken = localStorage.getItem('ebookvault_admin_token') || localStorage.getItem('qelvoria_admin_token') || '';
 let currentTab = 'overview';
 let cachedEbooks = [];
 
@@ -50,23 +50,24 @@ async function handleAdminLogin(e) {
     const password = document.getElementById('adminPassword').value.trim();
 
     try {
-        const res = await fetch('/api/auth/unified-login', {
+        const res = await fetch('/api/admin/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username_or_email: username, password: password })
+            body: JSON.stringify({ username, password })
         });
 
         const data = await res.json();
-        if (res.ok && data.role === 'admin') {
+        if (res.ok) {
             adminToken = data.token;
             localStorage.setItem('ebookvault_admin_token', adminToken);
+            localStorage.setItem('qelvoria_admin_token', adminToken);
             showDashboard();
         } else {
-            alert(data.detail || 'Invalid admin credentials');
+            alert(data.detail || 'Login failed. Please check your username and password.');
         }
     } catch (err) {
         console.error('Login error', err);
-        alert('Network connection error');
+        alert('Network error during login.');
     } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
@@ -253,14 +254,21 @@ async function handleAddEbookSubmit(e) {
 
         const data = await res.json();
         if (res.ok) {
-            alert('Ebook uploaded successfully!');
+            alert(`🎉 Success: ${data.message || 'Ebook published successfully!'}`);
+            document.getElementById('addEbookForm').reset();
             closeModal('addEbookModal');
             loadAdminEbooks();
         } else {
-            alert(data.detail || 'Upload failed');
+            if (res.status === 401) {
+                alert('⚠️ Session expired. Please log in to admin panel again.');
+                showLogin();
+            } else {
+                alert(`⚠️ Error: ${data.detail || 'Upload failed. Please check your inputs.'}`);
+            }
         }
     } catch (err) {
         console.error('Upload error', err);
+        alert('Network error while uploading ebook. Please try again.');
     } finally {
         btn.disabled = false;
         btn.innerText = 'Upload & Publish Ebook';
