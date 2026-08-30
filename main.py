@@ -8,10 +8,17 @@ import hashlib
 from datetime import datetime, timedelta
 from typing import Optional, List
 
-from dotenv import load_dotenv
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
-import razorpay
+try:
+    import razorpay
+except Exception:
+    razorpay = None
+
 from fastapi import FastAPI, HTTPException, Request, Form, File, UploadFile, Depends, Header, BackgroundTasks
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -34,7 +41,13 @@ RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "8ba5JKzJGubN5N5Rihh
 def get_razorpay_client():
     key_id = os.environ.get("RAZORPAY_KEY_ID") or RAZORPAY_KEY_ID
     key_secret = os.environ.get("RAZORPAY_KEY_SECRET") or RAZORPAY_KEY_SECRET
-    return razorpay.Client(auth=(key_id, key_secret)), key_id, key_secret
+    client = None
+    if razorpay is not None:
+        try:
+            client = razorpay.Client(auth=(key_id, key_secret))
+        except Exception:
+            client = None
+    return client, key_id, key_secret
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOADS_DIR = os.path.join(BASE_DIR, "uploads")
@@ -1556,24 +1569,24 @@ async def razorpay_create_order(req: dict):
         
     client, key_id, key_secret = get_razorpay_client()
     receipt_code = f"rcpt_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(3)}"
-    
-    try:
-        rzp_order = client.order.create({
-            "amount": amount_in_paise,
-            "currency": "INR",
-            "receipt": receipt_code,
-            "notes": {
-                "store": "QELVORIA",
-                "customer_name": req.get("customer_name", ""),
-                "customer_email": req.get("customer_email", ""),
-                "coupon": coupon_code or "none"
-            }
-        })
-        rzp_order_id = rzp_order["id"]
-    except Exception as e:
-        # If credentials or network issue in test/dev, generate deterministic fallback order ID
-        print(f"Razorpay API Order creation note: {e}")
-        rzp_order_id = f"order_QV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
+    rzp_order_id = f"order_QV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
+    if client is not None:
+        try:
+            rzp_order = client.order.create({
+                "amount": amount_in_paise,
+                "currency": "INR",
+                "receipt": receipt_code,
+                "notes": {
+                    "store": "QELVORIA",
+                    "customer_name": req.get("customer_name", ""),
+                    "customer_email": req.get("customer_email", ""),
+                    "coupon": coupon_code or "none"
+                }
+            })
+            rzp_order_id = rzp_order["id"]
+        except Exception as e:
+            print(f"Razorpay API Order creation note: {e}")
+            rzp_order_id = f"order_QV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
         
     return {
         "success": True,
