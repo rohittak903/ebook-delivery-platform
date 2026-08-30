@@ -359,18 +359,20 @@ async def init_db():
                     ('VIP10', 'percentage', 10.0, 0, 500, 1)
                 """)
 
-        # Seed sample bundles if empty
-        async with db.execute("SELECT COUNT(*) FROM bundles") as cursor:
-            bundle_count = (await cursor.fetchone())[0]
-            if bundle_count == 0:
-                async with db.execute("SELECT id, title FROM ebooks ORDER BY id ASC LIMIT 2") as book_cursor:
-                    books = await book_cursor.fetchall()
-                    if len(books) >= 2:
-                        eids_1 = json.dumps([books[0][0], books[1][0]])
+        # Seed sample bundles if empty or fix empty ebook_ids
+        async with db.execute("SELECT id FROM ebooks ORDER BY id ASC LIMIT 2") as book_cursor:
+            real_books = await book_cursor.fetchall()
+            if len(real_books) >= 2:
+                valid_ids = json.dumps([real_books[0][0], real_books[1][0]])
+                async with db.execute("SELECT COUNT(*) FROM bundles") as cursor:
+                    bundle_count = (await cursor.fetchone())[0]
+                    if bundle_count == 0:
                         await db.execute("""
                             INSERT INTO bundles (title, slug, description, badge_text, price, sale_price, ebook_ids, cover_image, is_featured, is_active, sort_order)
                             VALUES (?, 'ai-solopreneur-super-bundle', 'Get both the Python AI Automation Guide and Solopreneur Blueprint at a massive 45% discount! Includes all PDF and Word docs with lifetime updates.', '⚡ 45% OFF MEGA PACK', 498.0, 269.0, ?, '/uploads/covers/python-ai-cover.jpg', 1, 1, 1)
-                        """, ("AI & Solopreneur Ultimate Master Bundle (2-in-1)", eids_1))
+                        """, ("AI & Solopreneur Ultimate Master Bundle (2-in-1)", valid_ids))
+                    else:
+                        await db.execute("UPDATE bundles SET ebook_ids = ? WHERE id = 1", (valid_ids,))
 
         # Seed sample reviews if empty
         async with db.execute("SELECT COUNT(*) FROM reviews") as cursor:

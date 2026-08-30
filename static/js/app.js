@@ -533,7 +533,7 @@ async function applyCartCoupon() {
 function proceedCartToCheckout() {
     if (cart.length === 0) return;
 
-    if (!currentCustomer) {
+    if (!currentCustomer || !currentCustomer.email) {
         pendingCheckoutAction = () => proceedCartToCheckout();
         openUnifiedAuthModal();
         return;
@@ -550,7 +550,7 @@ function proceedCartToCheckout() {
 // --- Bundle Purchase Flow ---
 
 function handleBuyBundleClick(bundleId) {
-    if (!currentCustomer) {
+    if (!currentCustomer || !currentCustomer.email) {
         pendingCheckoutAction = () => handleBuyBundleClick(bundleId);
         openUnifiedAuthModal();
         return;
@@ -559,20 +559,36 @@ function handleBuyBundleClick(bundleId) {
     startRazorpayFlow({ mode: 'bundle', bundleId: bundleId });
 }
 
+function handleDirectBookPurchase(ebookId) {
+    if (!currentCustomer || !currentCustomer.email) {
+        pendingCheckoutAction = () => handleDirectBookPurchase(ebookId);
+        openUnifiedAuthModal();
+        return;
+    }
+
+    startRazorpayFlow({ mode: 'direct', ebookIds: [ebookId] });
+}
+
 // --- Standard Razorpay Flow ---
 
 async function startRazorpayFlow(context) {
+    if (!currentCustomer || !currentCustomer.email) {
+        pendingCheckoutAction = () => startRazorpayFlow(context);
+        openUnifiedAuthModal();
+        return;
+    }
+
     try {
         const payload = {
             bundle_id: context.bundleId || null,
             ebook_ids: context.ebookIds || [],
-            customer_name: currentCustomer.name,
+            customer_name: currentCustomer.name || 'Valued Reader',
             customer_email: currentCustomer.email,
-            customer_whatsapp: currentCustomer.phone,
+            customer_whatsapp: currentCustomer.phone || '',
             coupon_code: context.couponCode || null
         };
 
-        const res = await fetch('/api/payment/razorpay/create-order', {
+        const res = await fetch('/api/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -580,7 +596,7 @@ async function startRazorpayFlow(context) {
 
         const orderInfo = await res.json();
         if (!res.ok) {
-            alert(orderInfo.detail || 'Failed to initialize checkout.');
+            alert(`⚠️ Checkout Error: ${orderInfo.detail || orderInfo.message || 'Failed to initialize checkout.'}`);
             return;
         }
 
@@ -592,9 +608,9 @@ async function startRazorpayFlow(context) {
             description: orderInfo.description,
             order_id: orderInfo.order_id,
             prefill: {
-                name: currentCustomer.name,
-                email: currentCustomer.email,
-                contact: currentCustomer.phone
+                name: currentCustomer.name || '',
+                email: currentCustomer.email || '',
+                contact: currentCustomer.phone || ''
             },
             theme: { color: '#6366f1' },
             modal: {
@@ -620,12 +636,13 @@ async function startRazorpayFlow(context) {
             });
             rzp.open();
         } else {
+            // Direct verification fallback if razorpay checkout.js script isn't loaded
             await verifyRazorpayFlow(context);
         }
 
     } catch (e) {
-        console.error('Checkout error', e);
-        alert('Network error during checkout.');
+        console.error('Checkout error:', e);
+        alert(`Checkout notice: ${e.message || 'Unable to proceed with checkout.'}`);
     }
 }
 
@@ -634,9 +651,9 @@ async function verifyRazorpayFlow(context) {
         const payload = {
             bundle_id: context.bundleId || null,
             ebook_ids: context.ebookIds || [],
-            customer_name: currentCustomer.name,
-            customer_email: currentCustomer.email,
-            customer_whatsapp: currentCustomer.phone,
+            customer_name: currentCustomer ? currentCustomer.name : 'Valued Reader',
+            customer_email: currentCustomer ? currentCustomer.email : '',
+            customer_whatsapp: currentCustomer ? currentCustomer.phone : '',
             coupon_code: context.couponCode || null,
             razorpay_payment_id: context.razorpay_payment_id || ('pay_' + Date.now()),
             razorpay_order_id: context.razorpay_order_id || null,
@@ -771,6 +788,8 @@ async function handleVerifyOtp(e) {
         if (res.ok) {
             customerToken = data.token;
             currentCustomer = data.user;
+            localStorage.setItem('qelvoria_customer_token', customerToken);
+            localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
             localStorage.setItem('ebookvault_customer_token', customerToken);
             localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
 
@@ -807,6 +826,7 @@ async function handleUnifiedLoginSubmit(e) {
         }
 
         if (data.role === 'admin') {
+            localStorage.setItem('qelvoria_admin_token', data.token);
             localStorage.setItem('ebookvault_admin_token', data.token);
             window.location.href = data.redirect || '/admin.html';
             return;
@@ -814,6 +834,8 @@ async function handleUnifiedLoginSubmit(e) {
 
         customerToken = data.token;
         currentCustomer = data.user;
+        localStorage.setItem('qelvoria_customer_token', customerToken);
+        localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
         localStorage.setItem('ebookvault_customer_token', customerToken);
         localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
 
@@ -837,6 +859,8 @@ function handleGoogleSignInDemo() {
     };
     customerToken = "google_token_" + Date.now();
     currentCustomer = demo;
+    localStorage.setItem('qelvoria_customer_token', customerToken);
+    localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
     localStorage.setItem('ebookvault_customer_token', customerToken);
     localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
 
@@ -852,6 +876,8 @@ function handleGoogleSignInDemo() {
 function handleCustomerLogout() {
     customerToken = '';
     currentCustomer = null;
+    localStorage.removeItem('qelvoria_customer_token');
+    localStorage.removeItem('qelvoria_customer');
     localStorage.removeItem('ebookvault_customer_token');
     localStorage.removeItem('ebookvault_customer_user');
     updateAuthNavbar();

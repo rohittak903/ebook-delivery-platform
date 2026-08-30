@@ -5,12 +5,18 @@ let selectedRating = 5;
 let appliedCoupon = null;
 let lockedPrice = 0;
 
-let customerToken = localStorage.getItem('ebookvault_customer_token') || '';
-let currentCustomer = JSON.parse(localStorage.getItem('ebookvault_customer_user') || 'null');
+let customerToken = localStorage.getItem('qelvoria_customer_token') || localStorage.getItem('ebookvault_customer_token') || '';
+let currentCustomer = null;
+try {
+    currentCustomer = JSON.parse(localStorage.getItem('qelvoria_customer') || localStorage.getItem('ebookvault_customer_user') || 'null');
+} catch (e) {
+    currentCustomer = null;
+}
 let pendingAction = null;
 
 document.addEventListener('DOMContentLoaded', async () => {
     updateAuthNavbar();
+    updateCartBadge();
     const urlParams = new URLSearchParams(window.location.search);
     const ebookParam = urlParams.get('id') || urlParams.get('slug') || '1';
     await loadEbookDetails(ebookParam);
@@ -174,10 +180,249 @@ async function handleApplyProductCoupon() {
     }
 }
 
+// --- Cart Management Logic ---
+
+let cart = [];
+try {
+    cart = JSON.parse(localStorage.getItem('qelvoria_cart') || localStorage.getItem('ebookvault_cart') || '[]');
+} catch (e) {
+    cart = [];
+}
+let cartAppliedCoupon = null;
+
+function saveCart() {
+    localStorage.setItem('qelvoria_cart', JSON.stringify(cart));
+    localStorage.setItem('ebookvault_cart', JSON.stringify(cart));
+    updateCartBadge();
+}
+
+function updateCartBadge() {
+    const badge = document.getElementById('cartBadge');
+    if (!badge) return;
+    const count = cart.length;
+    badge.innerText = count;
+    if (count > 0) {
+        badge.classList.remove('hidden');
+    } else {
+        badge.classList.add('hidden');
+    }
+}
+
+function handleProductAddToCart() {
+    if (!currentEbook) return;
+    const exists = cart.some(item => item.id === currentEbook.id);
+    if (!exists) {
+        cart.push({
+            id: currentEbook.id,
+            title: currentEbook.title,
+            author: currentEbook.author,
+            price: currentEbook.sale_price && currentEbook.sale_price > 0 ? currentEbook.sale_price : currentEbook.price,
+            cover_image: currentEbook.cover_image || '/uploads/covers/python-ai-cover.jpg'
+        });
+        saveCart();
+    }
+    openCartDrawer();
+}
+
+function openCartDrawer() {
+    renderCartDrawer();
+    const backdrop = document.getElementById('cartDrawerBackdrop');
+    const drawer = document.getElementById('cartDrawer');
+    if (backdrop && drawer) {
+        backdrop.classList.remove('hidden');
+        setTimeout(() => drawer.classList.remove('translate-x-full'), 10);
+    }
+    lucide.createIcons();
+}
+
+function closeCartDrawer() {
+    const backdrop = document.getElementById('cartDrawerBackdrop');
+    const drawer = document.getElementById('cartDrawer');
+    if (backdrop && drawer) {
+        drawer.classList.add('translate-x-full');
+        setTimeout(() => backdrop.classList.add('hidden'), 300);
+    }
+}
+
+function removeCartItem(id) {
+    cart = cart.filter(item => item.id !== id);
+    saveCart();
+    renderCartDrawer();
+}
+
+function renderCartDrawer() {
+    const container = document.getElementById('cartItemsContainer');
+    if (!container) return;
+
+    if (cart.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-16">
+                <div class="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-500">
+                    <i data-lucide="shopping-cart" class="w-8 h-8"></i>
+                </div>
+                <h4 class="font-bold text-white text-sm">Your Cart is Empty</h4>
+                <p class="text-xs text-slate-400 mt-1">Browse our bookstore catalog to add books.</p>
+            </div>
+        `;
+        document.getElementById('cartSubtotalText').innerText = '₹0';
+        document.getElementById('cartTotalText').innerText = '₹0';
+        document.getElementById('cartDiscountRow').classList.add('hidden');
+        document.getElementById('cartCheckoutBtn').disabled = true;
+        lucide.createIcons();
+        return;
+    }
+
+    document.getElementById('cartCheckoutBtn').disabled = false;
+
+    let subtotal = 0;
+    container.innerHTML = cart.map(item => {
+        subtotal += item.price;
+        return `
+            <div class="flex items-center gap-3 p-3 bg-slate-950 rounded-2xl border border-slate-800">
+                <img src="${item.cover_image}" alt="Book Cover" class="w-12 h-16 object-cover rounded-lg border border-slate-700 shrink-0">
+                <div class="flex-1 min-w-0">
+                    <h5 class="text-xs font-bold text-white truncate">${item.title}</h5>
+                    <p class="text-[10px] text-slate-400">${item.author || 'Author'}</p>
+                    <span class="text-xs font-extrabold text-brand-400">₹${item.price}</span>
+                </div>
+                <button onclick="removeCartItem(${item.id})" class="p-2 text-slate-500 hover:text-rose-400 transition" title="Remove">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+        `;
+    }).join('');
+
+    let discount = 0;
+    if (cartAppliedCoupon) {
+        if (cartAppliedCoupon.discount_type === 'percentage') {
+            discount = Math.round((subtotal * cartAppliedCoupon.discount_value) / 100);
+        } else {
+            discount = Math.min(cartAppliedCoupon.discount_value, subtotal);
+        }
+    }
+
+    const finalTotal = Math.max(1, subtotal - discount);
+
+    document.getElementById('cartSubtotalText').innerText = `₹${subtotal}`;
+    if (discount > 0) {
+        document.getElementById('cartDiscountRow').classList.remove('hidden');
+        document.getElementById('cartDiscountText').innerText = `-₹${discount}`;
+    } else {
+        document.getElementById('cartDiscountRow').classList.add('hidden');
+    }
+    document.getElementById('cartTotalText').innerText = `₹${finalTotal}`;
+    lucide.createIcons();
+}
+
+async function handleApplyCartCoupon() {
+    const input = document.getElementById('cartCouponInput');
+    const code = input.value.trim().toUpperCase();
+    const status = document.getElementById('cartCouponStatus');
+    if (!code) return;
+
+    let subtotal = cart.reduce((acc, i) => acc + i.price, 0);
+    try {
+        const res = await fetch('/api/coupons/apply', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, amount: subtotal })
+        });
+        const data = await res.json();
+        if (res.ok) {
+            cartAppliedCoupon = data;
+            status.innerText = `✅ Code '${data.code}' applied! Saved ₹${data.discount_amount}`;
+            status.className = 'text-[11px] text-emerald-400 block font-semibold';
+            renderCartDrawer();
+        } else {
+            cartAppliedCoupon = null;
+            status.innerText = `❌ ${data.detail || 'Invalid coupon code.'}`;
+            status.className = 'text-[11px] text-rose-400 block';
+            renderCartDrawer();
+        }
+    } catch (e) {
+        console.error('Coupon error', e);
+    }
+}
+
+function proceedCartToCheckout() {
+    if (cart.length === 0) return;
+
+    if (!currentCustomer || !currentCustomer.email) {
+        pendingAction = () => proceedCartToCheckout();
+        openUnifiedAuthModal();
+        return;
+    }
+
+    closeCartDrawer();
+    startRazorpayCartFlow();
+}
+
+async function startRazorpayCartFlow() {
+    try {
+        const payload = {
+            ebook_ids: cart.map(i => i.id),
+            customer_name: currentCustomer.name || 'Valued Reader',
+            customer_email: currentCustomer.email,
+            customer_whatsapp: currentCustomer.phone || '',
+            coupon_code: cartAppliedCoupon ? cartAppliedCoupon.code : null
+        };
+
+        const res = await fetch('/api/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const orderInfo = await res.json();
+        if (!res.ok) {
+            alert(`⚠️ Checkout Error: ${orderInfo.detail || orderInfo.message || 'Failed to initialize checkout.'}`);
+            return;
+        }
+
+        const options = {
+            key: orderInfo.key_id || 'rzp_test_TVvbybsCXuOmRn',
+            amount: orderInfo.amount,
+            currency: 'INR',
+            name: 'QELVORIA (Raja Rohit Tak)',
+            description: orderInfo.description,
+            order_id: orderInfo.order_id,
+            prefill: {
+                name: currentCustomer.name || '',
+                email: currentCustomer.email || '',
+                contact: currentCustomer.phone || ''
+            },
+            theme: { color: '#6366f1' },
+            modal: {
+                ondismiss: function() {
+                    console.log('Payment modal dismissed by reader.');
+                }
+            },
+            handler: async function (response) {
+                await verifyDirectPayment(response, orderInfo, true);
+            }
+        };
+
+        if (typeof Razorpay !== 'undefined') {
+            const rzp = new Razorpay(options);
+            rzp.on('payment.failed', function (response) {
+                console.error('Razorpay payment failed:', response.error);
+                alert(`❌ Payment Failed: ${response.error.description || 'Transaction declined by bank.'}`);
+            });
+            rzp.open();
+        } else {
+            await verifyDirectPayment({}, orderInfo, true);
+        }
+
+    } catch (e) {
+        console.error('Cart checkout error', e);
+        alert(`Checkout notice: ${e.message || 'Unable to proceed with checkout.'}`);
+    }
+}
+
 // --- Checkout & Purchase Flow ---
 
 function handleProductDirectBuy() {
-    if (!currentCustomer) {
+    if (!currentCustomer || !currentCustomer.email) {
         pendingAction = () => handleProductDirectBuy();
         openUnifiedAuthModal();
         return;
@@ -194,13 +439,13 @@ async function startRazorpayDirectPayment() {
     try {
         const payload = {
             ebook_id: currentEbook.id,
-            customer_name: currentCustomer.name,
+            customer_name: currentCustomer.name || 'Valued Reader',
             customer_email: currentCustomer.email,
-            customer_whatsapp: currentCustomer.phone,
+            customer_whatsapp: currentCustomer.phone || '',
             coupon_code: appliedCoupon ? appliedCoupon.code : null
         };
 
-        const res = await fetch('/api/payment/razorpay/create-order', {
+        const res = await fetch('/api/create-order', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -208,7 +453,7 @@ async function startRazorpayDirectPayment() {
 
         const orderInfo = await res.json();
         if (!res.ok) {
-            alert(orderInfo.detail || 'Failed to initialize payment.');
+            alert(`⚠️ Checkout Error: ${orderInfo.detail || orderInfo.message || 'Failed to initialize payment.'}`);
             btn.disabled = false;
             btn.innerHTML = `<span>Buy Instant Digital Copy Now</span>`;
             return;
@@ -222,9 +467,9 @@ async function startRazorpayDirectPayment() {
             description: orderInfo.description,
             order_id: orderInfo.order_id,
             prefill: {
-                name: currentCustomer.name,
-                email: currentCustomer.email,
-                contact: currentCustomer.phone
+                name: currentCustomer.name || '',
+                email: currentCustomer.email || '',
+                contact: currentCustomer.phone || ''
             },
             theme: { color: '#6366f1' },
             modal: {
@@ -233,7 +478,7 @@ async function startRazorpayDirectPayment() {
                 }
             },
             handler: async function (response) {
-                await verifyDirectPayment(response, orderInfo);
+                await verifyDirectPayment(response, orderInfo, false);
             }
         };
 
@@ -245,12 +490,12 @@ async function startRazorpayDirectPayment() {
             });
             rzp.open();
         } else {
-            await verifyDirectPayment({}, orderInfo);
+            await verifyDirectPayment({}, orderInfo, false);
         }
 
     } catch (e) {
         console.error('Razorpay flow error', e);
-        alert('Network error during checkout.');
+        alert(`Checkout notice: ${e.message || 'Unable to proceed with checkout.'}`);
     } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="zap" class="w-5 h-5 mr-2"></i><span>Buy Instant Digital Copy Now</span>`;
@@ -258,14 +503,15 @@ async function startRazorpayDirectPayment() {
     }
 }
 
-async function verifyDirectPayment(response, orderInfo) {
+async function verifyDirectPayment(response, orderInfo, isCart = false) {
     try {
         const payload = {
-            ebook_id: currentEbook.id,
-            customer_name: currentCustomer.name,
-            customer_email: currentCustomer.email,
-            customer_whatsapp: currentCustomer.phone,
-            coupon_code: appliedCoupon ? appliedCoupon.code : null,
+            ebook_id: isCart ? null : currentEbook.id,
+            ebook_ids: isCart ? cart.map(i => i.id) : [currentEbook.id],
+            customer_name: currentCustomer ? currentCustomer.name : 'Valued Reader',
+            customer_email: currentCustomer ? currentCustomer.email : '',
+            customer_whatsapp: currentCustomer ? currentCustomer.phone : '',
+            coupon_code: isCart ? (cartAppliedCoupon ? cartAppliedCoupon.code : null) : (appliedCoupon ? appliedCoupon.code : null),
             razorpay_payment_id: response.razorpay_payment_id || ('pay_' + Date.now()),
             razorpay_order_id: response.razorpay_order_id || orderInfo.order_id,
             razorpay_signature: response.razorpay_signature || null
@@ -281,6 +527,12 @@ async function verifyDirectPayment(response, orderInfo) {
         if (!res.ok) {
             alert(`❌ ${result.detail || 'Payment verification failed.'}`);
             return;
+        }
+
+        if (isCart) {
+            cart = [];
+            cartAppliedCoupon = null;
+            saveCart();
         }
 
         document.getElementById('successCustomerGreeting').innerText = `Thank you, ${result.customer_name}! Your ebook is ready.`;
@@ -439,6 +691,8 @@ async function handleVerifyOtp(e) {
         if (res.ok) {
             customerToken = data.token;
             currentCustomer = data.user;
+            localStorage.setItem('qelvoria_customer_token', customerToken);
+            localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
             localStorage.setItem('ebookvault_customer_token', customerToken);
             localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
 
@@ -465,6 +719,8 @@ function handleGoogleSignInDemo() {
     };
     customerToken = "google_token_" + Date.now();
     currentCustomer = demoUser;
+    localStorage.setItem('qelvoria_customer_token', customerToken);
+    localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
     localStorage.setItem('ebookvault_customer_token', customerToken);
     localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
 
@@ -480,6 +736,8 @@ function handleGoogleSignInDemo() {
 function handleCustomerLogout() {
     customerToken = '';
     currentCustomer = null;
+    localStorage.removeItem('qelvoria_customer_token');
+    localStorage.removeItem('qelvoria_customer');
     localStorage.removeItem('ebookvault_customer_token');
     localStorage.removeItem('ebookvault_customer_user');
     updateAuthNavbar();

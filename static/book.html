@@ -65,6 +65,10 @@
             </nav>
 
             <div class="flex items-center gap-3">
+                <button onclick="openCartDrawer()" class="relative p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition border border-slate-700 flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                    <span id="cartBadge" class="absolute -top-1.5 -right-1.5 bg-brand-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900 hidden">0</span>
+                </button>
                 <div id="authNavContainer">
                     <button onclick="openUnifiedAuthModal()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-900 bg-white hover:bg-slate-200 rounded-xl transition shadow-sm">
                         <i data-lucide="user" class="w-3.5 h-3.5"></i>
@@ -176,7 +180,7 @@
                         <div id="couponStatusMessage" class="text-xs hidden"></div>
                     </div>
 
-                    <!-- Primary Buy Now Button -->
+                    <!-- Primary Buy Now & Add to Cart Buttons -->
                     <div class="mt-6 flex flex-col sm:flex-row gap-3">
                         <button 
                             onclick="handleProductDirectBuy()" 
@@ -185,6 +189,14 @@
                         >
                             <i data-lucide="zap" class="w-5 h-5"></i>
                             <span>Buy Instant Digital Copy Now</span>
+                        </button>
+                        <button 
+                            onclick="handleProductAddToCart()" 
+                            id="productAddToCartBtn"
+                            class="px-6 py-4 bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-brand-500/50 text-white font-bold text-sm rounded-2xl transition flex items-center justify-center gap-2 shadow-lg"
+                        >
+                            <i data-lucide="shopping-cart" class="w-5 h-5 text-emerald-400"></i>
+                            <span>Add to Cart</span>
                         </button>
                     </div>
 
@@ -390,6 +402,70 @@
                     <span>Continue with Google</span>
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- Cart Drawer Modal -->
+    <div id="cartDrawerBackdrop" onclick="closeCartDrawer()" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 transition-opacity hidden"></div>
+    <div id="cartDrawer" class="fixed top-0 right-0 bottom-0 w-full max-w-md bg-slate-900 border-l border-slate-800 z-50 transform translate-x-full transition-transform duration-300 flex flex-col shadow-2xl">
+        <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shopping-bag" class="w-5 h-5 text-brand-400"></i>
+                <h3 class="font-extrabold text-base text-white">Your Reading Cart</h3>
+            </div>
+            <button onclick="closeCartDrawer()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+
+        <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-5 space-y-3">
+            <!-- Items injected by JS -->
+        </div>
+
+        <div class="p-5 border-t border-slate-800 bg-slate-950 space-y-3">
+            <!-- Coupon Code Section -->
+            <div class="space-y-1.5">
+                <div class="flex gap-2">
+                    <input 
+                        type="text" 
+                        id="cartCouponInput" 
+                        placeholder="PROMO CODE (e.g. ROHIT20)" 
+                        class="flex-1 px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs font-mono uppercase text-white focus:outline-none focus:ring-1 focus:ring-brand-500"
+                    >
+                    <button 
+                        onclick="handleApplyCartCoupon()" 
+                        class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition border border-slate-700"
+                    >
+                        Apply
+                    </button>
+                </div>
+                <div id="cartCouponStatus" class="text-[11px] hidden"></div>
+            </div>
+
+            <!-- Price Summary -->
+            <div class="space-y-1 pt-2 border-t border-slate-800/80 text-xs">
+                <div class="flex justify-between text-slate-400">
+                    <span>Subtotal</span>
+                    <span id="cartSubtotalText">₹0</span>
+                </div>
+                <div id="cartDiscountRow" class="flex justify-between text-emerald-400 hidden">
+                    <span>Discount</span>
+                    <span id="cartDiscountText">-₹0</span>
+                </div>
+                <div class="flex justify-between text-sm font-extrabold text-white pt-1 border-t border-slate-800">
+                    <span>Total Amount</span>
+                    <span id="cartTotalText" class="text-brand-400 text-base">₹0</span>
+                </div>
+            </div>
+
+            <button 
+                onclick="proceedCartToCheckout()" 
+                id="cartCheckoutBtn" 
+                class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-brand-600/30 transition flex items-center justify-center gap-2"
+            >
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>Proceed to Razorpay Checkout</span>
+            </button>
         </div>
     </div>
 

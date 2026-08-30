@@ -1,4 +1,5 @@
 import os
+import json
 import secrets
 import shutil
 import uuid
@@ -1301,17 +1302,24 @@ async def get_public_bundles():
         bundles = []
         for b in bundle_rows:
             b_dict = dict(b)
+            ebook_ids = []
             try:
-                ebook_ids = json.loads(b["ebook_ids"])
+                raw_ids = json.loads(b["ebook_ids"]) if isinstance(b["ebook_ids"], str) else (b["ebook_ids"] or [])
+                for x in raw_ids:
+                    try:
+                        ebook_ids.append(int(x))
+                    except Exception:
+                        pass
             except Exception:
                 ebook_ids = []
                 
             attached_books = []
             if ebook_ids:
-                placeholders = ",".join("?" * len(ebook_ids))
-                async with db.execute(f"SELECT id, title, author, price, file_format, cover_image FROM ebooks WHERE id IN ({placeholders})", ebook_ids) as bcursor:
+                placeholders = ",".join(["?"] * len(ebook_ids))
+                async with db.execute(f"SELECT id, title, author, price, file_format, cover_image FROM ebooks WHERE id IN ({placeholders})", tuple(ebook_ids)) as bcursor:
                     attached_books = [dict(row) for row in await bcursor.fetchall()]
                     
+            b_dict["ebook_ids"] = ebook_ids
             b_dict["books"] = attached_books
             b_dict["savings_amount"] = round(b["price"] - b["sale_price"], 2)
             bundles.append(b_dict)
