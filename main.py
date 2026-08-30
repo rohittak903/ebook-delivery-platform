@@ -117,6 +117,19 @@ class ChangePasswordRequest(BaseModel):
 
 # In-memory customer sessions
 ACTIVE_CUSTOMER_SESSIONS = {}
+DB_INITIALIZED = False
+
+@app.middleware("http")
+async def ensure_db_ready(request: Request, call_next):
+    global DB_INITIALIZED
+    if not DB_INITIALIZED:
+        try:
+            await init_db()
+            DB_INITIALIZED = True
+        except Exception as e:
+            print(f"DB Init in middleware error: {e}")
+    response = await call_next(request)
+    return response
 
 # Helper to verify Admin Auth
 async def require_admin_auth(authorization: Optional[str] = Header(None)):
@@ -129,7 +142,12 @@ async def require_admin_auth(authorization: Optional[str] = Header(None)):
 
 @app.on_event("startup")
 async def startup_event():
-    await init_db()
+    global DB_INITIALIZED
+    try:
+        await init_db()
+        DB_INITIALIZED = True
+    except Exception as e:
+        print(f"Startup DB init error: {e}")
 
 # --- Unified Authentication API (Handles Admin & Customer logins) ---
 
