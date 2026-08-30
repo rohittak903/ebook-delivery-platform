@@ -35,7 +35,9 @@ async function loadStoreInfo() {
         const data = await res.json();
         if (data.store_name) {
             document.getElementById('brandName').innerText = data.store_name;
-            storeCurrency = data.currency || '₹';
+            let c = data.currency || '₹';
+            if (c.includes('100') || c.length > 3) c = '₹';
+            storeCurrency = c;
         }
     } catch (e) {
         console.error('Store info error', e);

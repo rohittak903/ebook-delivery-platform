@@ -492,13 +492,16 @@ async def create_support_ticket(req: SupportTicketRequest):
 @app.get("/api/store-info")
 async def get_store_info():
     settings = await get_settings()
+    curr_sym = settings.get("store_currency", "₹")
+    if not curr_sym or "100" in curr_sym or len(curr_sym) > 3:
+        curr_sym = "₹"
     return {
-        "store_name": settings.get("store_name", "EBookVault"),
-        "store_tagline": settings.get("store_tagline", ""),
-        "currency": settings.get("store_currency", "₹"),
+        "store_name": settings.get("store_name", "QELVORIA"),
+        "store_tagline": settings.get("store_tagline", "Premium Digital Publishing & Ebooks by Raja Rohit Tak"),
+        "currency": curr_sym,
         "currency_code": settings.get("currency_code", "INR"),
         "support_email": settings.get("support_email", "rohittak903@gmail.com"),
-        "support_whatsapp": settings.get("support_whatsapp", "+919876543210"),
+        "support_whatsapp": settings.get("support_whatsapp", "+919035630901"),
         "bank_account_no": settings.get("bank_account_no", "110076462071"),
         "bank_ifsc": settings.get("bank_ifsc", "CNRB0002614"),
         "bank_name": settings.get("bank_name", "Canara Bank"),

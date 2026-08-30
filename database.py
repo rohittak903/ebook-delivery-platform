@@ -293,6 +293,8 @@ async def init_db():
                 (key, val)
             )
             
+        await db.execute("UPDATE settings SET value = '₹' WHERE key = 'store_currency' AND (value = '₹100' OR value LIKE '%100%' OR length(value) > 3)")
+            
         # Seed & Upsert Admin User (Username: RajaRohitTak / Password: Rajatak.com)
         admin_pass_hash = hash_password("Rajatak.com")
         await db.execute(
