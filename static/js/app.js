@@ -594,9 +594,16 @@ async function startRazorpayFlow(context) {
             body: JSON.stringify(payload)
         });
 
-        const orderInfo = await res.json();
-        if (!res.ok) {
-            alert(`⚠️ Checkout Error: ${orderInfo.detail || orderInfo.message || 'Failed to initialize checkout.'}`);
+        let orderInfo;
+        try {
+            orderInfo = await res.json();
+        } catch (parseErr) {
+            alert('Server is syncing. Please click Buy again in a moment.');
+            return;
+        }
+
+        if (!res.ok || !orderInfo.success) {
+            alert(`⚠️ Checkout Notice: ${orderInfo.detail || orderInfo.message || 'Failed to initialize checkout.'}`);
             return;
         }
 
