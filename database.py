@@ -4,6 +4,7 @@ import sys
 import shutil
 import hashlib
 import json
+import tempfile
 from datetime import datetime
 
 # Serverless DB Path Handling (Vercel has read-only root, /tmp is writable)
@@ -25,7 +26,12 @@ def get_db_path():
     if is_writable and not os.environ.get("VERCEL") and not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         return default_db
     else:
-        tmp_db = "/tmp/store.db"
+        tmp_dir = tempfile.gettempdir()
+        try:
+            os.makedirs(tmp_dir, exist_ok=True)
+        except Exception:
+            pass
+        tmp_db = os.path.join(tmp_dir, "store.db")
         if not os.path.exists(tmp_db) and os.path.exists(default_db):
             try:
                 shutil.copy2(default_db, tmp_db)
