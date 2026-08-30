@@ -15,9 +15,14 @@ def test_razorpay_integration():
         assert key_id == "rzp_live_TVwW1GpXBFloh7"
         assert key_secret == "VN4EU5sjf9zgttRSswGwLmFh"
         
+        # Get active book ID
+        eb_res = client.get("/api/ebooks")
+        ebooks = eb_res.json().get("ebooks", [])
+        test_eid = ebooks[0]["id"] if ebooks else 6
+
         # 2. Test Create Order API
         order_payload = {
-            "ebook_id": 1,
+            "ebook_id": test_eid,
             "customer_name": "Rohit Tester",
             "customer_email": "test_reader@qelvoria.com",
             "customer_whatsapp": "+919035630901"
@@ -35,7 +40,7 @@ def test_razorpay_integration():
         
         # 3. Test Signature Mismatch (Tampered Signature -> Expect 400)
         invalid_sig_payload = {
-            "ebook_id": 1,
+            "ebook_id": test_eid,
             "customer_name": "Rohit Tester",
             "customer_email": "test_reader@qelvoria.com",
             "customer_whatsapp": "+919035630901",
@@ -56,7 +61,7 @@ def test_razorpay_integration():
         ).hexdigest()
         
         valid_sig_payload = {
-            "ebook_id": 1,
+            "ebook_id": test_eid,
             "customer_name": "Rohit Tester",
             "customer_email": "test_reader@qelvoria.com",
             "customer_whatsapp": "+919035630901",

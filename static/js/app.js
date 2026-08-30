@@ -410,11 +410,19 @@ function setupSearchListeners() {
 
 function updateCartBadge() {
     const badge = document.getElementById('cartBadge');
+    const mobBadge = document.getElementById('mobileCartBadge');
     if (cart.length > 0) {
-        badge.innerText = cart.length;
-        badge.classList.remove('hidden');
+        if (badge) {
+            badge.innerText = cart.length;
+            badge.classList.remove('hidden');
+        }
+        if (mobBadge) {
+            mobBadge.innerText = cart.length;
+            mobBadge.classList.remove('hidden');
+        }
     } else {
-        badge.classList.add('hidden');
+        if (badge) badge.classList.add('hidden');
+        if (mobBadge) mobBadge.classList.add('hidden');
     }
 }
 

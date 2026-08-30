@@ -304,72 +304,7 @@ async def init_db():
             ("RajaRohitTak", admin_pass_hash)
         )
 
-        # Seed starter ebooks if empty or few
-        async with db.execute("SELECT COUNT(*) FROM ebooks") as cursor:
-            ebook_count = (await cursor.fetchone())[0]
-            if ebook_count < 2:
-                # Ensure uploads directory structure safely
-                sample_pdf_path = os.path.join(os.path.dirname(__file__), "uploads", "ebooks", "mastering-python-ai.pdf")
-                sample_docx_path = os.path.join(os.path.dirname(__file__), "uploads", "ebooks", "solopreneur-blueprint.docx")
-                try:
-                    os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "ebooks"), exist_ok=True)
-                    os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "covers"), exist_ok=True)
-                    if not os.path.exists(sample_pdf_path):
-                        with open(sample_pdf_path, "wb") as f:
-                            f.write(b"%PDF-1.4 sample ebook content for QELVORIA by Raja Rohit Tak")
-                    if not os.path.exists(sample_docx_path):
-                        with open(sample_docx_path, "wb") as f:
-                            f.write(b"PK sample docx content for QELVORIA by Raja Rohit Tak")
-                except Exception:
-                    # In read-only serverless environment (Vercel)
-                    sample_pdf_path = "/tmp/mastering-python-ai.pdf"
-                    sample_docx_path = "/tmp/solopreneur-blueprint.docx"
-                    try:
-                        with open(sample_pdf_path, "wb") as f:
-                            f.write(b"%PDF-1.4 sample ebook content for QELVORIA by Raja Rohit Tak")
-                        with open(sample_docx_path, "wb") as f:
-                            f.write(b"PK sample docx content for QELVORIA by Raja Rohit Tak")
-                    except Exception:
-                        pass
-                        
-                await db.execute("""
-                    INSERT OR IGNORE INTO ebooks (
-                        id, title, slug, author, description, price, sale_price, category,
-                        cover_image, file_path, file_name, file_format, file_size_bytes,
-                        sample_text, google_books_url, kindle_url, apple_books_url,
-                        is_featured, is_active, downloads_count
-                    ) VALUES 
-                    (
-                        1, 
-                        'Mastering Python & AI Automation: Build 20+ Real-World Agents',
-                        'mastering-python-ai-automation',
-                        'Raja Rohit Tak',
-                        'The comprehensive industry handbook for building production-grade LLM workflows, autonomous AI agents, multi-modal pipelines, and workflow automation. Includes complete Python code templates, Jupyter notebooks, and editable MS Word DOCX templates.',
-                        399.0, 199.0, 'Technology',
-                        '/uploads/covers/python-ai-cover.jpg',
-                        ?, 'mastering-python-ai.pdf', 'pdf', 1048576,
-                        'Chapter 1: The AI Revolution & Autonomous Agent Architectures\nChapter 2: Function Calling & Tool Augmentation\nChapter 3: Memory Systems & Vector Embeddings\nChapter 4: Multi-Agent Collaboration Frameworks',
-                        'https://play.google.com/store/books/details?id=sample_python_ai',
-                        'https://www.amazon.in/dp/B0SAMPLEAI',
-                        'https://books.apple.com/us/book/sample-python-ai/id123456789',
-                        1, 1, 342
-                    ),
-                    (
-                        2,
-                        'The Solopreneur Blueprint 2026: 0 to ₹10L/Month in Digital Products',
-                        'solopreneur-blueprint-2026',
-                        'Raja Rohit Tak',
-                        'A tactical, zero-fluff playbook on turning your expertise into high-margin digital products, ebooks, and automated micro-SaaS systems. Covers niche selection, high-converting copy frameworks, Razorpay checkout funnels, and organic traffic growth.',
-                        499.0, 199.0, 'Business & Finance',
-                        '/uploads/covers/solopreneur-cover.jpg',
-                        ?, 'solopreneur-blueprint.docx', 'docx', 840000,
-                        'Section 1: Finding Your Unfair Advantage & High-Intent Niche\nSection 2: Creating Your Flagship Digital Asset in 7 Days\nSection 3: Designing Irresistible Bundle Offers & Value Stacks\nSection 4: Automated WhatsApp & Email Retention Systems',
-                        'https://play.google.com/store/books/details?id=sample_solopreneur',
-                        'https://www.amazon.in/dp/B0SAMPLESOLO',
-                        'https://books.apple.com/us/book/sample-solopreneur/id987654321',
-                        1, 1, 518
-                    )
-                """, (sample_pdf_path, sample_docx_path))
+        # Starter ebooks are managed directly via Admin Panel (no auto-seeding)
 
         # Seed sample coupons if empty
         async with db.execute("SELECT COUNT(*) FROM coupons") as cursor:

@@ -507,7 +507,30 @@
         </div>
     </div>
 
+    <!-- ================= MOBILE STICKY BOTTOM NAVIGATION BAR ================= -->
+    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-2 py-2 flex items-center justify-around shadow-2xl">
+        <a href="/" class="flex flex-col items-center gap-1 py-1 px-2.5 text-slate-300 hover:text-white transition">
+            <i data-lucide="home" class="w-5 h-5 text-brand-400"></i>
+            <span class="text-[10px] font-bold">Home</span>
+        </a>
+        <a href="/#catalog" class="flex flex-col items-center gap-1 py-1 px-2.5 text-slate-300 hover:text-white transition">
+            <i data-lucide="book-open" class="w-5 h-5"></i>
+            <span class="text-[10px] font-bold">Catalog</span>
+        </a>
+        <a href="/#bundles" class="flex flex-col items-center gap-1 py-1 px-2.5 text-amber-400 hover:text-amber-300 transition">
+            <span class="text-base leading-none">🎁</span>
+            <span class="text-[10px] font-bold">Bundles</span>
+        </a>
+        <button onclick="openCartDrawer()" class="relative flex flex-col items-center gap-1 py-1 px-2.5 text-slate-300 hover:text-white transition">
+            <div class="relative">
+                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                <span id="mobileCartBadge" class="hidden absolute -top-1.5 -right-2 w-4 h-4 bg-brand-600 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center shadow">0</span>
+            </div>
+            <span class="text-[10px] font-bold">Cart</span>
+        </button>
+    </nav>
+
     <!-- Product JS -->
-    <script src="/static/js/book.js?v=3.2.0"></script>
+    <script src="/static/js/book.js?v=3.5.0"></script>
 </body>
 </html>

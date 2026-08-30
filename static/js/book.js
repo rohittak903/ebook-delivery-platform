@@ -198,13 +198,17 @@ function saveCart() {
 
 function updateCartBadge() {
     const badge = document.getElementById('cartBadge');
-    if (!badge) return;
+    const mobBadge = document.getElementById('mobileCartBadge');
     const count = cart.length;
-    badge.innerText = count;
-    if (count > 0) {
-        badge.classList.remove('hidden');
-    } else {
-        badge.classList.add('hidden');
+    if (badge) {
+        badge.innerText = count;
+        if (count > 0) badge.classList.remove('hidden');
+        else badge.classList.add('hidden');
+    }
+    if (mobBadge) {
+        mobBadge.innerText = count;
+        if (count > 0) mobBadge.classList.remove('hidden');
+        else mobBadge.classList.add('hidden');
     }
 }
 
