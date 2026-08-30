@@ -400,8 +400,24 @@ function renderCatalog() {
 function setupSearchListeners() {
     const input = document.getElementById('searchInput');
     if (input) {
+        // Handle URL search parameter if passed from product page
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryParam = urlParams.get('q');
+        if (queryParam) {
+            input.value = queryParam;
+            renderCatalog();
+            setTimeout(() => {
+                const cat = document.getElementById('catalog');
+                if (cat) cat.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        }
+
         input.addEventListener('input', () => {
             renderCatalog();
+            const cat = document.getElementById('catalog');
+            if (cat && input.value.trim().length > 0) {
+                cat.scrollIntoView({ behavior: 'smooth' });
+            }
         });
     }
 }

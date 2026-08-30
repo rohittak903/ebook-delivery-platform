@@ -45,41 +45,47 @@
     </div>
 
     <!-- Navigation Header -->
-    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 py-3 flex items-center justify-between gap-4">
+    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3 sm:gap-6">
             
             <!-- QELVORIA Logo & Brand -->
-            <a href="/" class="flex items-center gap-3.5 group">
-                <div class="relative w-11 h-11 rounded-2xl overflow-hidden shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300 border border-purple-500/30 bg-slate-950 flex-shrink-0">
+            <a href="/" class="flex items-center gap-2.5 sm:gap-3.5 group flex-shrink-0">
+                <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300 border border-purple-500/30 bg-slate-950 flex-shrink-0">
                     <img src="/static/images/qelvoria-logo.png" alt="QELVORIA Logo" class="w-full h-full object-cover">
                 </div>
                 <div>
-                    <h1 class="font-black text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300 leading-none">
+                    <h1 class="font-black text-xl sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300 leading-none">
                         QELVORIA
                     </h1>
-                    <p class="text-[10px] font-bold text-brand-400 uppercase tracking-widest mt-1">Digital Publishing • Raja Rohit Tak</p>
+                    <p class="text-[9px] sm:text-[10px] font-bold text-brand-400 uppercase tracking-widest mt-0.5 hidden xs:block">Raja Rohit Tak</p>
                 </div>
             </a>
 
-            <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-300">
-                <a href="/#bundles" class="hover:text-brand-400 transition flex items-center gap-1"><span class="text-rose-400">🎁</span> Bundle Deals</a>
-                <a href="/#bestsellers" class="hover:text-brand-400 transition">Best Sellers</a>
-                <a href="/#catalog" class="hover:text-brand-400 transition">Full Catalog</a>
-                <a href="/#reviews" class="hover:text-brand-400 transition">Reader Reviews</a>
-            </nav>
+            <!-- Search Bar (Top Middle) -->
+            <div class="flex-1 max-w-lg mx-1 sm:mx-4 relative">
+                <form onsubmit="event.preventDefault(); window.location.href='/?q=' + encodeURIComponent(document.getElementById('productSearchInput').value);" class="relative w-full">
+                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                    <input 
+                        type="text" 
+                        id="productSearchInput" 
+                        placeholder="Search books, topics, authors..." 
+                        class="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-950/90 border border-slate-700/80 focus:border-brand-500 text-white placeholder:text-slate-500 rounded-xl text-xs sm:text-sm font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                    >
+                </form>
+            </div>
 
-            <div class="flex items-center gap-3">
-                <button onclick="openCartDrawer()" class="relative p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition border border-slate-700 flex items-center justify-center">
-                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                <button onclick="openCartDrawer()" class="relative p-2 sm:p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl transition border border-slate-700 flex items-center justify-center">
+                    <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-5 sm:h-5"></i>
                     <span id="cartBadge" class="absolute -top-1.5 -right-1.5 bg-brand-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border-2 border-slate-900 hidden">0</span>
                 </button>
                 <div id="authNavContainer">
-                    <button onclick="openUnifiedAuthModal()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-900 bg-white hover:bg-slate-200 rounded-xl transition shadow-sm">
+                    <button onclick="openUnifiedAuthModal()" class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold text-slate-900 bg-white hover:bg-slate-200 rounded-xl transition shadow-sm">
                         <i data-lucide="user" class="w-3.5 h-3.5"></i>
                         <span>Sign In</span>
                     </button>
                 </div>
-                <a href="/" class="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 flex items-center gap-1.5">
+                <a href="/" class="px-3 sm:px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 flex items-center gap-1.5">
                     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
                     <span>Store</span>
                 </a>
@@ -286,6 +292,74 @@
             <!-- Reviews List Grid -->
             <div id="reviewsListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <p class="col-span-full text-center py-8 text-slate-500 text-sm">Loading reviews...</p>
+            </div>
+        </div>
+
+        <!-- ================= PERMANENT WE ACCEPT ALL PAYMENT METHODS SECTION ================= -->
+        <div class="mt-12 bg-slate-900/95 rounded-3xl border border-slate-800 py-6 px-4 sm:px-8 shadow-inner">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                
+                <!-- Left: We Accept & Brand Badges -->
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-4">
+                    <span class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-300 flex items-center gap-1.5 mr-1">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                        <span>We Accept</span>
+                    </span>
+
+                    <!-- Payment Badges Container -->
+                    <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                        <!-- VISA -->
+                        <div class="flex items-center bg-white px-2.5 py-1 rounded-md shadow-sm border border-slate-300" title="Visa Cards">
+                            <span class="font-black italic text-blue-800 text-xs sm:text-sm tracking-tighter leading-none">VISA</span>
+                        </div>
+
+                        <!-- Mastercard -->
+                        <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-md shadow-sm border border-slate-300" title="Mastercard">
+                            <div class="flex -space-x-1.5 items-center">
+                                <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#EB001B] inline-block"></span>
+                                <span class="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#F79E1B] inline-block opacity-90"></span>
+                            </div>
+                            <span class="text-[9px] sm:text-[10px] font-extrabold text-slate-900 leading-none">mastercard</span>
+                        </div>
+
+                        <!-- Google Pay (GPay) -->
+                        <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-md shadow-sm border border-slate-300" title="Google Pay">
+                            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.93 6.72-4.93z"/></svg>
+                            <span class="text-[10px] sm:text-[11px] font-bold text-slate-800 leading-none">Pay</span>
+                        </div>
+
+                        <!-- BHIM UPI -->
+                        <div class="flex items-center gap-1 bg-white px-2.5 py-1 rounded-md shadow-sm border border-slate-300" title="BHIM UPI & All UPI Apps">
+                            <span class="text-[10px] sm:text-[11px] font-black italic tracking-tighter text-emerald-700 leading-none">BHIM</span>
+                            <span class="text-[10px] sm:text-[11px] font-black italic tracking-tighter text-blue-900 leading-none">UPI❯❯</span>
+                        </div>
+
+                        <!-- Net Banking -->
+                        <div class="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-md text-slate-200 border border-slate-700 text-[10px] sm:text-[11px] font-bold shadow-sm" title="All Indian Banks Supported">
+                            <i data-lucide="landmark" class="w-3.5 h-3.5 text-brand-400"></i>
+                            <span>Net Banking</span>
+                        </div>
+
+                        <!-- Wallets -->
+                        <div class="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-md text-slate-200 border border-slate-700 text-[10px] sm:text-[11px] font-bold shadow-sm" title="Paytm, PhonePe, Mobikwik, AmazonPay">
+                            <i data-lucide="wallet" class="w-3.5 h-3.5 text-purple-400"></i>
+                            <span>Wallet</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Instant Delivery & 256-Bit SSL Guarantee -->
+                <div class="flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+                    <div class="flex items-center gap-1.5 text-emerald-400 font-bold">
+                        <i data-lucide="zap" class="w-4 h-4"></i>
+                        <span>Instant Delivery to Email & WhatsApp</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-slate-400 font-medium">
+                        <i data-lucide="lock" class="w-3.5 h-3.5 text-brand-400"></i>
+                        <span>256-Bit SSL via Razorpay</span>
+                    </div>
+                </div>
+
             </div>
         </div>
     </main>
@@ -507,30 +581,7 @@
         </div>
     </div>
 
-    <!-- ================= MOBILE STICKY BOTTOM NAVIGATION BAR ================= -->
-    <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900/95 backdrop-blur-lg border-t border-slate-800 px-2 py-2 flex items-center justify-around shadow-2xl">
-        <a href="/" class="flex flex-col items-center gap-1 py-1 px-2.5 text-slate-300 hover:text-white transition">
-            <i data-lucide="home" class="w-5 h-5 text-brand-400"></i>
-            <span class="text-[10px] font-bold">Home</span>
-        </a>
-        <a href="/#catalog" class="flex flex-col items-center gap-1 py-1 px-2.5 text-slate-300 hover:text-white transition">
-            <i data-lucide="book-open" class="w-5 h-5"></i>
-            <span class="text-[10px] font-bold">Catalog</span>
-        </a>
-        <a href="/#bundles" class="flex flex-col items-center gap-1 py-1 px-2.5 text-amber-400 hover:text-amber-300 transition">
-            <span class="text-base leading-none">🎁</span>
-            <span class="text-[10px] font-bold">Bundles</span>
-        </a>
-        <button onclick="openCartDrawer()" class="relative flex flex-col items-center gap-1 py-1 px-2.5 text-slate-300 hover:text-white transition">
-            <div class="relative">
-                <i data-lucide="shopping-cart" class="w-5 h-5"></i>
-                <span id="mobileCartBadge" class="hidden absolute -top-1.5 -right-2 w-4 h-4 bg-brand-600 text-white text-[9px] font-extrabold rounded-full flex items-center justify-center shadow">0</span>
-            </div>
-            <span class="text-[10px] font-bold">Cart</span>
-        </button>
-    </nav>
-
     <!-- Product JS -->
-    <script src="/static/js/book.js?v=3.5.0"></script>
+    <script src="/static/js/book.js?v=3.6.0"></script>
 </body>
 </html>
