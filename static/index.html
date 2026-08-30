@@ -510,73 +510,44 @@
         </div>
     </div>
 
-    <!-- 2. UNIFIED SIGN IN & OTP MODAL -->
+    <!-- 2. UNIFIED SIGN IN MODAL -->
     <div id="unifiedAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-800 animate-fade-in">
             
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center justify-between mb-5">
                 <div>
                     <h3 class="font-bold text-lg text-white">Sign In / Register</h3>
-                    <p class="text-[11px] text-slate-400">Instant access via Mobile OTP, Password, or Google</p>
+                    <p class="text-[11px] text-slate-400">Instant access via Google or Account Password</p>
                 </div>
                 <button onclick="closeModal('unifiedAuthModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <!-- OTP Phone Login / Signup Tab -->
-            <div class="space-y-3">
-                <form id="otpPhoneForm" onsubmit="handleSendOtp(event)" class="space-y-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">WhatsApp / Mobile Number</label>
-                        <input type="tel" id="otpPhoneInput" required placeholder="+91 9876543210" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    </div>
-                    <button type="submit" id="sendOtpBtn" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
-                        <i data-lucide="smartphone" class="w-4 h-4"></i>
-                        <span>Send 6-Digit OTP</span>
-                    </button>
-                </form>
-
-                <form id="otpVerifyForm" onsubmit="handleVerifyOtp(event)" class="space-y-3 hidden">
-                    <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-xs text-brand-300" id="otpSentNotice">
-                        OTP sent! Enter code below.
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Enter 6-Digit OTP</label>
-                        <input type="text" id="otpCodeInput" maxlength="6" required placeholder="123456" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-center font-mono text-base tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    </div>
-                    <button type="submit" id="verifyOtpBtn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition">
-                        Verify OTP & Sign In
-                    </button>
-                </form>
-
-                <div class="flex items-center my-3">
-                    <div class="flex-1 border-t border-slate-800"></div>
-                    <span class="px-2 text-[10px] font-bold text-slate-500 uppercase">or Google / Email</span>
-                    <div class="flex-1 border-t border-slate-800"></div>
-                </div>
-
-                <!-- Google Firebase Auth Button -->
-                <button onclick="handleGoogleSignIn()" class="w-full py-2.5 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+            <div class="space-y-4">
+                <!-- Google Firebase Auth Button (Primary 1-Click) -->
+                <button onclick="handleGoogleSignIn()" class="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2.5">
                     <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.93 6.72-4.93z"/></svg>
                     <span>Continue with Google</span>
                 </button>
 
-                <!-- Email/Admin Form Toggle -->
-                <button onclick="toggleEmailPasswordSection()" class="w-full text-center text-xs text-slate-400 hover:text-slate-200 mt-2 font-medium">
-                    Or sign in with Admin / Email Password &rarr;
-                </button>
+                <div class="flex items-center my-3">
+                    <div class="flex-1 border-t border-slate-800"></div>
+                    <span class="px-2 text-[10px] font-bold text-slate-500 uppercase">or sign in with password</span>
+                    <div class="flex-1 border-t border-slate-800"></div>
+                </div>
 
-                <form id="emailPasswordForm" onsubmit="handleUnifiedLoginSubmit(event)" class="space-y-3 hidden pt-3 border-t border-slate-800">
+                <!-- Email / Username & Password Form -->
+                <form id="emailPasswordForm" onsubmit="handleUnifiedLoginSubmit(event)" class="space-y-3">
                     <div>
-                        <label class="block text-xs font-bold text-slate-300 mb-1">Username / Email</label>
-                        <input type="text" id="unifiedLoginInput" placeholder="RajaRohitTak or email" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Email or Username</label>
+                        <input type="text" id="unifiedLoginInput" required placeholder="name@example.com or RajaRohitTak" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Password</label>
-                        <input type="password" id="unifiedPasswordInput" placeholder="••••••••" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                        <input type="password" id="unifiedPasswordInput" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
                     </div>
-                    <button type="submit" id="unifiedLoginBtn" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl shadow transition">
+                    <button type="submit" id="unifiedLoginBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition">
                         Sign In with Password
                     </button>
                 </form>
@@ -693,6 +664,6 @@
     </div>
 
     <!-- Frontend App Scripts -->
-    <script src="/static/js/app.js?v=3.1.0"></script>
+    <script src="/static/js/app.js?v=3.2.0"></script>
 </body>
 </html>

@@ -709,70 +709,46 @@ function openUnifiedAuthModal() {
     openModal('unifiedAuthModal');
 }
 
-async function handleSendOtp(e) {
+async function handleUnifiedLoginSubmit(e) {
     e.preventDefault();
-    const phone = document.getElementById('otpPhoneInput').value.trim();
-    const btn = document.getElementById('sendOtpBtn');
-    btn.disabled = true;
-    btn.innerText = 'Sending OTP...';
+    const id = document.getElementById('unifiedLoginInput').value.trim();
+    const pw = document.getElementById('unifiedPasswordInput').value.trim();
 
     try {
-        const res = await fetch('/api/auth/otp/send', {
+        const res = await fetch('/api/auth/unified-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone })
+            body: JSON.stringify({ username_or_email: id, password: pw })
         });
         const data = await res.json();
-        if (res.ok) {
-            document.getElementById('otpPhoneForm').classList.add('hidden');
-            document.getElementById('otpVerifyForm').classList.remove('hidden');
-            document.getElementById('otpSentNotice').innerText = `OTP sent to ${phone}! (Demo Code: ${data.otp_demo})`;
-            if (data.otp_demo) {
-                document.getElementById('otpCodeInput').value = data.otp_demo;
-            }
-        } else {
-            alert(data.detail || 'Failed to send OTP.');
+        if (!res.ok) {
+            alert(data.detail || 'Invalid login.');
+            return;
+        }
+
+        if (data.role === 'admin') {
+            localStorage.setItem('qelvoria_admin_token', data.token);
+            localStorage.setItem('ebookvault_admin_token', data.token);
+            window.location.href = data.redirect || '/admin.html';
+            return;
+        }
+
+        customerToken = data.token;
+        currentCustomer = data.user;
+        localStorage.setItem('qelvoria_customer_token', customerToken);
+        localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
+        localStorage.setItem('ebookvault_customer_token', customerToken);
+        localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
+
+        closeModal('unifiedAuthModal');
+        updateAuthNavbar();
+        if (pendingAction) {
+            const act = pendingAction;
+            pendingAction = null;
+            act();
         }
     } catch (e) {
-        console.error('OTP error', e);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = 'Send 6-Digit OTP';
-    }
-}
-
-async function handleVerifyOtp(e) {
-    e.preventDefault();
-    const phone = document.getElementById('otpPhoneInput').value.trim();
-    const otp = document.getElementById('otpCodeInput').value.trim();
-
-    try {
-        const res = await fetch('/api/auth/otp/verify', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, otp_code: otp })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            customerToken = data.token;
-            currentCustomer = data.user;
-            localStorage.setItem('qelvoria_customer_token', customerToken);
-            localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
-            localStorage.setItem('ebookvault_customer_token', customerToken);
-            localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
-
-            closeModal('unifiedAuthModal');
-            updateAuthNavbar();
-            if (pendingAction) {
-                const act = pendingAction;
-                pendingAction = null;
-                act();
-            }
-        } else {
-            alert(data.detail || 'OTP verification failed.');
-        }
-    } catch (e) {
-        console.error('Verify error', e);
+        console.error('Login error', e);
     }
 }
 
