@@ -466,6 +466,46 @@
         </div>
     </div>
 
+    <!-- ================= INSTANT CHECKOUT CUSTOMER DETAILS MODAL ================= -->
+    <div id="checkoutCustomerModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-lg text-white">Instant Ebook Delivery Details</h3>
+                    <p class="text-[11px] text-brand-300">Enter your details to receive your instant digital copy & receipt</p>
+                </div>
+                <button onclick="closeModal('checkoutCustomerModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form id="checkoutCustomerForm" onsubmit="handleProceedToPaymentWithDetails(event)" class="space-y-3.5">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Full Name *</label>
+                    <input type="text" id="custCheckoutName" required placeholder="e.g. Raja Rohit Tak" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Email Address (For PDF & Receipt Delivery) *</label>
+                    <input type="email" id="custCheckoutEmail" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">WhatsApp / Mobile Number (For Instant WhatsApp Copy) *</label>
+                    <input type="tel" id="custCheckoutPhone" required placeholder="+91 9035630901" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+
+                <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-[11px] text-brand-300 flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0 text-brand-400 mt-0.5"></i>
+                    <span>Your copy will be delivered to your Email, WhatsApp, and downloaded directly upon payment.</span>
+                </div>
+
+                <button type="submit" id="proceedToPayBtn" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+                    <i data-lucide="lock" class="w-4 h-4"></i>
+                    <span id="proceedToPayBtnText">Proceed to Razorpay Payment</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- 2. UNIFIED SIGN IN & OTP MODAL -->
     <div id="unifiedAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-800 animate-fade-in">
@@ -649,6 +689,6 @@
     </div>
 
     <!-- Frontend App Scripts -->
-    <script src="/static/js/app.js"></script>
+    <script src="/static/js/app.js?v=3.0.0"></script>
 </body>
 </html>

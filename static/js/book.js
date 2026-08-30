@@ -344,17 +344,68 @@ async function handleApplyCartCoupon() {
     }
 }
 
-function proceedCartToCheckout() {
-    if (cart.length === 0) return;
+let pendingCheckoutMode = 'direct'; // 'direct' or 'cart'
 
-    if (!currentCustomer || !currentCustomer.email) {
-        pendingAction = () => proceedCartToCheckout();
-        openUnifiedAuthModal();
+function openCheckoutCustomerModal(mode = 'direct') {
+    pendingCheckoutMode = mode;
+    
+    // Prefill from currentCustomer or localStorage
+    const savedName = (currentCustomer && currentCustomer.name) || localStorage.getItem('qelvoria_cust_name') || '';
+    const savedEmail = (currentCustomer && currentCustomer.email) || localStorage.getItem('qelvoria_cust_email') || '';
+    const savedPhone = (currentCustomer && currentCustomer.phone) || localStorage.getItem('qelvoria_cust_phone') || '';
+    
+    const nameInput = document.getElementById('custCheckoutName');
+    const emailInput = document.getElementById('custCheckoutEmail');
+    const phoneInput = document.getElementById('custCheckoutPhone');
+    
+    if (nameInput) nameInput.value = savedName;
+    if (emailInput) emailInput.value = savedEmail;
+    if (phoneInput) phoneInput.value = savedPhone;
+    
+    const btnText = document.getElementById('proceedToPayBtnText');
+    if (btnText) {
+        if (mode === 'cart') {
+            btnText.innerText = `Proceed to Razorpay Payment`;
+        } else if (currentEbook) {
+            const price = currentEbook.sale_price && currentEbook.sale_price > 0 ? currentEbook.sale_price : currentEbook.price;
+            btnText.innerText = `Proceed to Razorpay Payment (₹${price.toFixed(2)})`;
+        }
+    }
+    
+    openModal('checkoutCustomerModal');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function handleProceedToPaymentWithDetails(e) {
+    e.preventDefault();
+    const name = document.getElementById('custCheckoutName').value.trim();
+    const email = document.getElementById('custCheckoutEmail').value.trim().toLowerCase();
+    const phone = document.getElementById('custCheckoutPhone').value.trim();
+
+    if (!name || !email || !phone) {
+        alert('Please fill in your name, email, and mobile number.');
         return;
     }
 
-    closeCartDrawer();
-    startRazorpayCartFlow();
+    currentCustomer = { name, email, phone };
+    localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
+    localStorage.setItem('qelvoria_cust_name', name);
+    localStorage.setItem('qelvoria_cust_email', email);
+    localStorage.setItem('qelvoria_cust_phone', phone);
+
+    closeModal('checkoutCustomerModal');
+
+    if (pendingCheckoutMode === 'cart') {
+        closeCartDrawer();
+        startRazorpayCartFlow();
+    } else {
+        startRazorpayDirectPayment();
+    }
+}
+
+function proceedCartToCheckout() {
+    if (cart.length === 0) return;
+    openCheckoutCustomerModal('cart');
 }
 
 async function startRazorpayCartFlow() {
@@ -429,19 +480,15 @@ async function startRazorpayCartFlow() {
 // --- Checkout & Purchase Flow ---
 
 function handleProductDirectBuy() {
-    if (!currentCustomer || !currentCustomer.email) {
-        pendingAction = () => handleProductDirectBuy();
-        openUnifiedAuthModal();
-        return;
-    }
-
-    startRazorpayDirectPayment();
+    openCheckoutCustomerModal('direct');
 }
 
 async function startRazorpayDirectPayment() {
     const btn = document.getElementById('directBuyBtn');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Initializing Payment...`;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Initializing Payment...`;
+    }
 
     try {
         const payload = {

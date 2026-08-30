@@ -225,15 +225,87 @@ async function loadAdminEbooks() {
                     </div>
                 </td>
                 <td class="py-3 px-4 font-mono text-slate-400">${b.downloads_count || 0}</td>
-                <td class="py-3 px-6 text-right">
+                <td class="py-3 px-6 text-right whitespace-nowrap">
+                    <button onclick="openEditEbookModal(${b.id})" class="p-1.5 text-slate-400 hover:text-brand-400 rounded-lg hover:bg-slate-800 transition mr-1" title="Edit Ebook & Pricing">
+                        <i data-lucide="edit-2" class="w-4 h-4"></i>
+                    </button>
                     <button onclick="deleteAdminEbook(${b.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </td>
             </tr>
         `).join('');
+        lucide.createIcons();
     } catch (e) {
         console.error('Ebooks load error', e);
+    }
+}
+
+function openEditEbookModal(id) {
+    const book = cachedEbooks.find(b => b.id === id);
+    if (!book) return;
+
+    document.getElementById('editEbookId').value = book.id;
+    document.getElementById('editEbookTitle').value = book.title || '';
+    document.getElementById('editEbookAuthor').value = book.author || '';
+    document.getElementById('editEbookCategory').value = book.category || 'Technology';
+    document.getElementById('editEbookPrice').value = book.price || '';
+    document.getElementById('editEbookSalePrice').value = book.sale_price !== null && book.sale_price !== undefined ? book.sale_price : '';
+    document.getElementById('editEbookGoogle').value = book.google_books_url || '';
+    document.getElementById('editEbookKindle').value = book.kindle_url || '';
+    document.getElementById('editEbookApple').value = book.apple_books_url || '';
+    document.getElementById('editEbookDesc').value = book.description || '';
+    document.getElementById('editEbookFeatured').checked = !!book.is_featured;
+
+    openModal('editEbookModal');
+}
+
+async function handleEditEbookSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('updateEbookBtn');
+    btn.disabled = true;
+    btn.innerText = 'Saving Changes...';
+
+    const id = document.getElementById('editEbookId').value;
+    const saleVal = document.getElementById('editEbookSalePrice').value.trim();
+    const payload = {
+        title: document.getElementById('editEbookTitle').value.trim(),
+        author: document.getElementById('editEbookAuthor').value.trim(),
+        category: document.getElementById('editEbookCategory').value,
+        price: parseFloat(document.getElementById('editEbookPrice').value),
+        sale_price: saleVal ? parseFloat(saleVal) : null,
+        google_books_url: document.getElementById('editEbookGoogle').value.trim() || null,
+        kindle_url: document.getElementById('editEbookKindle').value.trim() || null,
+        apple_books_url: document.getElementById('editEbookApple').value.trim() || null,
+        description: document.getElementById('editEbookDesc').value.trim(),
+        is_featured: document.getElementById('editEbookFeatured').checked
+    };
+
+    try {
+        const res = await fetch(`/api/admin/ebooks/${id}`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (res.ok) {
+            alert('🎉 Ebook and pricing updated successfully!');
+            closeModal('editEbookModal');
+            loadAdminEbooks();
+        } else {
+            alert(`⚠️ Update failed: ${data.detail || 'Could not update ebook'}`);
+        }
+    } catch (err) {
+        console.error('Edit error', err);
+        alert('Network error while updating ebook.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check" class="w-4 h-4 mr-1"></i><span>Save Ebook Changes</span>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 }
 

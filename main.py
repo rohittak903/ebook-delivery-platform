@@ -1158,7 +1158,19 @@ async def admin_update_ebook(
     req: dict,
     token: str = Depends(require_admin_auth)
 ):
-    async with aiosqlite.connect(DB_PATH) as db:
+    title = req.get("title")
+    author = req.get("author")
+    description = req.get("description")
+    category = req.get("category")
+    price = float(req["price"]) if req.get("price") is not None else None
+    sale_price = float(req["sale_price"]) if req.get("sale_price") is not None and str(req.get("sale_price")).strip() != "" else None
+    is_featured = 1 if req.get("is_featured") else 0
+    sample_text = req.get("sample_text")
+    google_books_url = req.get("google_books_url")
+    kindle_url = req.get("kindle_url")
+    apple_books_url = req.get("apple_books_url")
+
+    async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
         await db.execute("""
             UPDATE ebooks SET
                 title = COALESCE(?, title),
@@ -1167,25 +1179,29 @@ async def admin_update_ebook(
                 price = COALESCE(?, price),
                 sale_price = ?,
                 category = COALESCE(?, category),
-                is_featured = COALESCE(?, is_featured),
-                is_active = COALESCE(?, is_active),
+                is_featured = ?,
                 sample_text = COALESCE(?, sample_text),
+                google_books_url = ?,
+                kindle_url = ?,
+                apple_books_url = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """, (
-            req.get("title"),
-            req.get("author"),
-            req.get("description"),
-            req.get("price"),
-            req.get("sale_price"),
-            req.get("category"),
-            req.get("is_featured"),
-            req.get("is_active"),
-            req.get("sample_text"),
+            title,
+            author,
+            description,
+            price,
+            sale_price,
+            category,
+            is_featured,
+            sample_text,
+            google_books_url,
+            kindle_url,
+            apple_books_url,
             ebook_id
         ))
         await db.commit()
-    return {"success": True, "message": "Ebook updated successfully"}
+    return {"success": True, "message": "Ebook updated successfully!"}
 
 @app.delete("/api/admin/ebooks/{ebook_id}")
 async def admin_delete_ebook(ebook_id: int, token: str = Depends(require_admin_auth)):
