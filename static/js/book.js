@@ -34,7 +34,7 @@ async function loadEbookDetails(param) {
 function renderEbookDetails() {
     if (!currentEbook) return;
 
-    document.title = `${currentEbook.title} - EBookVault`;
+    document.title = `${currentEbook.title} - QELVORIA Digital Publishing`;
     document.getElementById('breadcrumbTitle').innerText = currentEbook.title;
 
     document.getElementById('productCover').src = currentEbook.cover_image || '/uploads/covers/python-ai-cover.jpg';
@@ -218,7 +218,7 @@ async function startRazorpayDirectPayment() {
             key: orderInfo.key_id || 'rzp_live_9035630901',
             amount: orderInfo.amount,
             currency: 'INR',
-            name: 'EBookVault (Raja Rohit Tak)',
+            name: 'QELVORIA (Raja Rohit Tak)',
             description: orderInfo.description,
             order_id: orderInfo.order_id,
             prefill: {

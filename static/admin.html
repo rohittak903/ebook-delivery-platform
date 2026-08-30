@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Raja Rohit Tak</title>
+    <title>QELVORIA Admin Dashboard - Raja Rohit Tak</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -35,11 +36,13 @@
     <div id="loginView" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
         <div class="bg-slate-900 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-800 animate-fade-in">
             <div class="text-center mb-6">
-                <div class="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
-                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                <div class="w-16 h-16 rounded-2xl overflow-hidden border border-purple-500/40 bg-slate-950 flex items-center justify-center mx-auto mb-3 shadow-xl shadow-purple-500/20">
+                    <img src="/static/images/qelvoria-logo.png" alt="QELVORIA" class="w-full h-full object-cover">
                 </div>
-                <h2 class="text-2xl font-extrabold text-white">Raja Rohit Tak Admin</h2>
-                <p class="text-xs text-slate-400 mt-1">Ebook platform management & store controls</p>
+                <h2 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300">
+                    QELVORIA
+                </h2>
+                <p class="text-xs text-brand-400 font-bold uppercase tracking-wider mt-1">Admin Dashboard • Raja Rohit Tak</p>
             </div>
 
             <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
@@ -65,7 +68,7 @@
                 </div>
                 <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-[11px] text-brand-300 flex items-start gap-2">
                     <i data-lucide="key" class="w-4 h-4 flex-shrink-0 text-brand-400 mt-0.5"></i>
-                    <span>Default Admin Credentials: <strong>RajaRohitTak / Rajatak.com</strong> (Changeable in Settings).</span>
+                    <span>Default Credentials: <strong>RajaRohitTak / Rajatak.com</strong> (Changeable in Settings).</span>
                 </div>
                 <button 
                     type="submit" 
@@ -94,11 +97,11 @@
             <div>
                 <!-- Brand -->
                 <div class="p-6 flex items-center gap-3 border-b border-slate-800">
-                    <div class="w-9 h-9 rounded-xl bg-brand-600 text-white flex items-center justify-center shadow-md">
-                        <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-purple-500/30 bg-slate-950 flex-shrink-0 shadow-md">
+                        <img src="/static/images/qelvoria-logo.png" alt="QELVORIA Logo" class="w-full h-full object-cover">
                     </div>
                     <div>
-                        <h2 class="font-extrabold text-white text-base leading-none">EBookVault</h2>
+                        <h2 class="font-black text-white text-base tracking-wider leading-none">QELVORIA</h2>
                         <span class="text-[10px] text-brand-400 font-bold uppercase tracking-wider">Raja Rohit Tak</span>
                     </div>
                 </div>

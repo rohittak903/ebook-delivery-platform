@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ebook Details - EBookVault Digital Delivery</title>
+    <title>Ebook Details - QELVORIA Digital Publishing</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -34,22 +35,25 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
 
     <!-- Top Announcement Bar -->
-    <div class="bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2">
+    <div class="bg-gradient-to-r from-purple-700 via-brand-600 to-indigo-700 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span>🎉 Special Offer: Use coupon code <strong class="underline font-mono">ROHIT20</strong> for 20% OFF! Instant delivery to Email & WhatsApp.</span>
+        <span>🎉 Special Offer: Use coupon code <strong class="underline font-mono bg-white/20 px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
     </div>
 
     <!-- Navigation Header -->
     <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 py-3 flex items-center justify-between gap-4">
             
-            <a href="/" class="flex items-center gap-3 group">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
-                    <i data-lucide="book-open" class="w-5 h-5"></i>
+            <!-- QELVORIA Logo & Brand -->
+            <a href="/" class="flex items-center gap-3.5 group">
+                <div class="relative w-11 h-11 rounded-2xl overflow-hidden shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300 border border-purple-500/30 bg-slate-950 flex-shrink-0">
+                    <img src="/static/images/qelvoria-logo.png" alt="QELVORIA Logo" class="w-full h-full object-cover">
                 </div>
                 <div>
-                    <h1 class="font-extrabold text-xl tracking-tight text-white leading-none">EBookVault</h1>
-                    <p class="text-[11px] font-medium text-slate-400 mt-0.5">By Raja Rohit Tak • Instant Delivery</p>
+                    <h1 class="font-black text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300 leading-none">
+                        QELVORIA
+                    </h1>
+                    <p class="text-[10px] font-bold text-brand-400 uppercase tracking-widest mt-1">Digital Publishing • Raja Rohit Tak</p>
                 </div>
             </a>
 

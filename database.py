@@ -171,13 +171,13 @@ CREATE TABLE IF NOT EXISTS admins (
 """
 
 DEFAULT_SETTINGS = {
-    "store_name": "EBookVault - Instant Digital Delivery",
-    "store_tagline": "Premium Ebooks Delivered Instantly to Your Email & WhatsApp",
+    "store_name": "QELVORIA",
+    "store_tagline": "Premium Digital Publishing & Ebook Bundles by Raja Rohit Tak",
     "store_currency": "₹",
     "currency_code": "INR",
     "support_email": "rohittak903@gmail.com",
     "support_whatsapp": "+919035630901",
-    "email_sender_name": "Rohit Tak (EBookVault)",
+    "email_sender_name": "QELVORIA Publishing (Raja Rohit Tak)",
     "email_from_address": "rohittak903@gmail.com",
     "smtp_enabled": "false",
     "smtp_host": "smtp.gmail.com",
@@ -198,8 +198,8 @@ DEFAULT_SETTINGS = {
     "whatsapp_mode": "direct_link",
     "whatsapp_api_url": "https://graph.facebook.com/v18.0/YOUR_PHONE_NUMBER_ID/messages",
     "whatsapp_api_token": "",
-    "whatsapp_template": "Hello {customer_name}! 🎉\n\nThank you for purchasing *{ebook_title}*!\n\n📥 You can download your ebook instantly here:\n{download_link}\n\n🧾 Order ID: {order_code}\n\nIf you need any help, reply to this message. Enjoy reading!",
-    "email_template": "<h2>Thank you for purchasing {ebook_title}!</h2><p>Dear {customer_name},</p><p>Thank you for purchasing from us! Your ebook <strong>{ebook_title}</strong> is ready for instant download and is also attached to this email.</p><p><a href=\"{download_link}\" style=\"background:#4f46e5;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:bold;\">📥 Download {ebook_title}</a></p><p><strong>Order ID:</strong> {order_code}</p><p>Thank you for your trust and happy reading!<br/>Best regards,<br/><strong>Rohit Tak</strong></p>"
+    "whatsapp_template": "Hello {customer_name}! 🎉\n\nThank you for purchasing *{ebook_title}* from *QELVORIA*!\n\n📥 You can download your ebook instantly here:\n{download_link}\n\n🧾 Order ID: {order_code}\n\nThank you for choosing QELVORIA by Raja Rohit Tak! Enjoy reading!",
+    "email_template": "<h2>Thank you for purchasing from QELVORIA!</h2><p>Dear {customer_name},</p><p>Thank you for purchasing <strong>{ebook_title}</strong> from QELVORIA. Your digital copy is ready for instant download and is attached to this email.</p><p><a href=\"{download_link}\" style=\"background:#4f46e5;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:bold;\">📥 Download {ebook_title}</a></p><p><strong>Order ID:</strong> {order_code}</p><p>Best regards,<br/><strong>Raja Rohit Tak</strong><br/>QELVORIA Publishing</p>"
 }
 
 def hash_password(password: str) -> str:

@@ -1513,7 +1513,7 @@ async def razorpay_create_order(req: dict):
         "coupon_code": coupon_code if discount_amount > 0 else None,
         "currency": "INR",
         "key_id": key_id,
-        "name": settings.get("store_name", "EBookVault"),
+        "name": settings.get("store_name", "QELVORIA"),
         "description": f"Purchase: {', '.join(ebook_titles)[:60]}",
         "customer_name": req.get("customer_name", ""),
         "customer_email": req.get("customer_email", ""),
@@ -1570,7 +1570,7 @@ async def razorpay_verify_payment(
                 if not ebook:
                     continue
                     
-            order_code = f"EV-RZP-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(3).upper()}"
+            order_code = f"QV-RZP-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(3).upper()}"
             access_token = secrets.token_urlsafe(32)
             price = ebook["sale_price"] if ebook["sale_price"] and ebook["sale_price"] > 0 else ebook["price"]
             total_amount += price
@@ -1730,7 +1730,7 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
     customers = []
     for r in rows:
         cust = dict(r)
-        msg_text = f"Hello {cust['name']}, this is Raja Rohit Tak from EBookVault! How is your reading experience going?"
+        msg_text = f"Hello {cust['name']}, this is Raja Rohit Tak from QELVORIA! How is your reading experience going?"
         cust["whatsapp_url"] = generate_whatsapp_link(cust["phone"], msg_text)
         customers.append(cust)
         

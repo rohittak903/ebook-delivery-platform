@@ -588,7 +588,7 @@ async function startRazorpayFlow(context) {
             key: orderInfo.key_id || 'rzp_live_9035630901',
             amount: orderInfo.amount,
             currency: 'INR',
-            name: 'EBookVault (Raja Rohit Tak)',
+            name: 'QELVORIA (Raja Rohit Tak)',
             description: orderInfo.description,
             order_id: orderInfo.order_id,
             prefill: {
