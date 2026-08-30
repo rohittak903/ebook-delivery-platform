@@ -45,13 +45,27 @@ function showDashboard() {
 }
 
 async function handleAdminLogin(e) {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     const btn = document.getElementById('loginSubmitBtn');
-    btn.disabled = true;
-    btn.innerText = 'Verifying...';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Verifying...`;
+    }
 
-    const username = document.getElementById('adminUsername').value.trim();
-    const password = document.getElementById('adminPassword').value.trim();
+    const usernameInput = document.getElementById('adminUsername');
+    const passwordInput = document.getElementById('adminPassword');
+    const username = usernameInput ? usernameInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value.trim() : '';
+
+    if (!username || !password) {
+        alert('Please provide both username and password.');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+        return;
+    }
 
     try {
         const res = await fetch('/api/admin/login', {
@@ -60,28 +74,38 @@ async function handleAdminLogin(e) {
             body: JSON.stringify({ username, password })
         });
 
-        const data = await res.json();
-        if (res.ok) {
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseErr) {
+            alert('Server is syncing. Please click Sign In again in a moment.');
+            return;
+        }
+
+        if (res.ok && data.token) {
             adminToken = data.token;
             localStorage.setItem('ebookvault_admin_token', adminToken);
             localStorage.setItem('qelvoria_admin_token', adminToken);
             showDashboard();
         } else {
-            alert(data.detail || 'Login failed. Please check your username and password.');
+            alert(data.detail || 'Login failed. Please use credentials RajaRohitTak / Rajatak.com');
         }
     } catch (err) {
         console.error('Login error', err);
-        alert('Network error during login.');
+        alert('Network error during login: ' + (err.message || 'Connection failed'));
     } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
-        lucide.createIcons();
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
     }
 }
 
 function adminLogout() {
     adminToken = '';
     localStorage.removeItem('ebookvault_admin_token');
+    localStorage.removeItem('qelvoria_admin_token');
     showLogin();
 }
 
