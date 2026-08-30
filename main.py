@@ -91,6 +91,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Mount uploads and static assets directory
+if os.path.exists(STATIC_DIR):
+    try:
+        app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+    except Exception as e:
+        print(f"Error mounting static: {e}")
+
+if os.path.exists(UPLOADS_DIR):
+    try:
+        app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
+    except Exception as e:
+        print(f"Error mounting uploads: {e}")
+
 # In-memory admin sessions cache
 ACTIVE_ADMIN_SESSIONS = set()
 
@@ -2007,6 +2020,16 @@ async def serve_admin():
         with open(p, "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Admin panel is loading...</h1>"
+
+@app.get("/static/{subpath:path}")
+async def serve_static_file(subpath: str):
+    p = os.path.join(STATIC_DIR, subpath)
+    if os.path.exists(p) and os.path.isfile(p):
+        return FileResponse(p)
+    p2 = os.path.join(BASE_DIR, "static", subpath)
+    if os.path.exists(p2) and os.path.isfile(p2):
+        return FileResponse(p2)
+    raise HTTPException(status_code=404, detail="Static asset not found")
 
 @app.get("/uploads/{subpath:path}")
 async def serve_uploaded_file(subpath: str):

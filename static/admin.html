@@ -37,7 +37,7 @@
         <div class="bg-slate-900 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-800 animate-fade-in">
             <div class="text-center mb-6">
                 <div class="w-16 h-16 rounded-2xl overflow-hidden border border-purple-500/40 bg-slate-950 flex items-center justify-center mx-auto mb-3 shadow-xl shadow-purple-500/20">
-                    <img src="/static/images/qelvoria-logo.png" alt="QELVORIA" class="w-full h-full object-cover">
+                    <img src="/static/images/qelvoria-logo.png" onerror="this.src='/static/images/qelvoria-logo.jpg'" alt="QELVORIA" class="w-full h-full object-cover">
                 </div>
                 <h2 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300">
                     QELVORIA
@@ -73,6 +73,7 @@
                 <button 
                     type="submit" 
                     id="loginSubmitBtn"
+                    onclick="handleAdminLogin(event)"
                     class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2 text-xs"
                 >
                     <i data-lucide="log-in" class="w-4 h-4"></i>
@@ -808,7 +809,7 @@
         </div>
     </div>
 
-    <!-- Admin JS -->
-    <script src="/static/js/admin.js"></script>
+    <!-- Admin JS with cache buster -->
+    <script src="/static/js/admin.js?v=2.5.0"></script>
 </body>
 </html>
