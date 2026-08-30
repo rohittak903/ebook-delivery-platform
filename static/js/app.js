@@ -887,33 +887,113 @@ async function handleUnifiedLoginSubmit(e) {
     }
 }
 
-function handleGoogleSignInDemo() {
-    const demo = {
-        name: "Google Reader",
-        email: "reader.google@example.com",
-        phone: "+919035630901"
-    };
-    customerToken = "google_token_" + Date.now();
-    currentCustomer = demo;
-    localStorage.setItem('qelvoria_customer_token', customerToken);
-    localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
-    localStorage.setItem('ebookvault_customer_token', customerToken);
-    localStorage.setItem('ebookvault_customer_user', JSON.stringify(currentCustomer));
+// --- Firebase Authentication Setup ---
+const firebaseConfig = {
+    apiKey: "AIzaSyAxjODfrgNIP7_wijJlgc01uXTArdQUiLE",
+    authDomain: "qelvoria-publishing.firebaseapp.com",
+    projectId: "qelvoria-publishing",
+    storageBucket: "qelvoria-publishing.firebasestorage.app",
+    messagingSenderId: "331946961771",
+    appId: "1:331946961771:web:e8bc939ec409de91183a2e",
+    measurementId: "G-82XC8LWNZC"
+};
 
-    closeModal('unifiedAuthModal');
-    updateAuthNavbar();
-    if (pendingCheckoutAction) {
-        const act = pendingCheckoutAction;
-        pendingCheckoutAction = null;
-        act();
+let firebaseApp = null;
+let firebaseAuth = null;
+
+try {
+    if (typeof firebase !== 'undefined') {
+        if (!firebase.apps.length) {
+            firebaseApp = firebase.initializeApp(firebaseConfig);
+        } else {
+            firebaseApp = firebase.app();
+        }
+        firebaseAuth = firebase.auth();
+
+        firebaseAuth.onAuthStateChanged((user) => {
+            if (user) {
+                currentCustomer = {
+                    name: user.displayName || 'Valued Reader',
+                    email: user.email,
+                    phone: user.phoneNumber || localStorage.getItem('qelvoria_cust_phone') || ''
+                };
+                customerToken = user.uid;
+                localStorage.setItem('qelvoria_customer_token', customerToken);
+                localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
+                localStorage.setItem('qelvoria_cust_name', currentCustomer.name);
+                localStorage.setItem('qelvoria_cust_email', currentCustomer.email);
+                updateAuthNavbar();
+            }
+        });
+    }
+} catch (e) {
+    console.warn('Firebase init warning:', e);
+}
+
+async function handleGoogleSignIn() {
+    try {
+        if (typeof firebase === 'undefined' || !firebase.auth) {
+            alert('Connecting to Google Auth service. Please try again in 1 second.');
+            return;
+        }
+
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: 'select_account' });
+
+        const result = await firebase.auth().signInWithPopup(provider);
+        const user = result.user;
+
+        currentCustomer = {
+            name: user.displayName || 'Valued Reader',
+            email: user.email,
+            phone: user.phoneNumber || localStorage.getItem('qelvoria_cust_phone') || ''
+        };
+        customerToken = user.uid;
+
+        localStorage.setItem('qelvoria_customer_token', customerToken);
+        localStorage.setItem('qelvoria_customer', JSON.stringify(currentCustomer));
+        localStorage.setItem('qelvoria_cust_name', currentCustomer.name);
+        localStorage.setItem('qelvoria_cust_email', currentCustomer.email);
+        if (user.phoneNumber) {
+            localStorage.setItem('qelvoria_cust_phone', user.phoneNumber);
+        }
+
+        closeModal('unifiedAuthModal');
+        updateAuthNavbar();
+
+        // If a checkout action was pending, run it immediately
+        if (pendingAppContext) {
+            startRazorpayFlow(pendingAppContext);
+            pendingAppContext = null;
+        } else if (pendingCheckoutAction) {
+            const act = pendingCheckoutAction;
+            pendingCheckoutAction = null;
+            act();
+        } else {
+            alert(`🎉 Welcome, ${currentCustomer.name}! Signed in successfully with Google.`);
+        }
+    } catch (error) {
+        console.error('Firebase Google Sign-In error:', error);
+        if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+            alert(`Google Sign-In Notice: ${error.message || 'Sign in canceled'}`);
+        }
     }
 }
 
+function handleGoogleSignInDemo() {
+    handleGoogleSignIn();
+}
+
 function handleCustomerLogout() {
+    if (typeof firebase !== 'undefined' && firebase.auth) {
+        try { firebase.auth().signOut(); } catch (e) {}
+    }
     customerToken = '';
     currentCustomer = null;
     localStorage.removeItem('qelvoria_customer_token');
     localStorage.removeItem('qelvoria_customer');
+    localStorage.removeItem('qelvoria_cust_name');
+    localStorage.removeItem('qelvoria_cust_email');
     localStorage.removeItem('ebookvault_customer_token');
     localStorage.removeItem('ebookvault_customer_user');
     updateAuthNavbar();
