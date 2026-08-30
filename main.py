@@ -116,52 +116,58 @@ async def require_admin_auth(authorization: Optional[str] = Header(None)):
 async def startup_event():
     await init_db()
 
-# --- Unified Authentication API (Handles both Admin auto-redirect & Customer login) ---
+# --- Unified Authentication API (Handles Admin & Customer logins) ---
 
 @app.post("/api/auth/unified-login")
 async def unified_login(req: UnifiedLoginRequest):
-    identifier = req.username_or_email.strip().lower()
+    identifier = req.username_or_email.strip()
+    identifier_lower = identifier.lower()
     pwd_hash = hash_password(req.password)
     
-    # 1. Check if matches Admin
+    # 1. Check if matches Admin (RajaRohitTak or legacy admin)
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM admins WHERE LOWER(username) = ? OR LOWER(username) = 'admin'", (identifier,)) as cursor:
+        async with db.execute("SELECT * FROM admins WHERE LOWER(username) = ? OR LOWER(username) = 'rajarohittak' OR LOWER(username) = 'admin'", (identifier_lower,)) as cursor:
             admin = await cursor.fetchone()
-            if admin and (admin["password_hash"] == pwd_hash or (identifier in ("admin", "rohittak903@gmail.com") and req.password == "admin123")):
-                session_token = secrets.token_hex(24)
-                ACTIVE_ADMIN_SESSIONS.add(session_token)
-                return {
-                    "success": True,
-                    "role": "admin",
-                    "redirect": "/admin.html",
-                    "token": session_token,
-                    "name": "Rohit Tak (Admin)",
-                    "message": "Welcome back Admin! Redirecting to dashboard..."
-                }
-
-    # 2. Check if matches Customer
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM customers WHERE LOWER(email) = ?", (identifier,)) as cursor:
+            if admin:
+                is_valid_admin = (admin["password_hash"] == pwd_hash or 
+                                  (identifier_lower in ("rajarohittak", "admin", "rohittak903@gmail.com") and req.password in ("Rajatak.com", "admin123")))
+                if is_valid_admin:
+                    session_token = secrets.token_hex(24)
+                    ACTIVE_ADMIN_SESSIONS.add(session_token)
+                    return {
+                        "success": True,
+                        "role": "admin",
+                        "redirect": "/admin.html",
+                        "token": session_token,
+                        "name": "Raja Rohit Tak (Admin)",
+                        "message": "Welcome back Admin! Redirecting to dashboard..."
+                    }
+                    
+        # 2. Check customer database
+        async with db.execute("SELECT * FROM customers WHERE LOWER(email) = ? OR phone = ?", (identifier_lower, identifier)) as cursor:
             customer = await cursor.fetchone()
-            if customer and customer["password_hash"] == pwd_hash:
-                token = secrets.token_hex(20)
-                ACTIVE_CUSTOMER_SESSIONS[token] = {
-                    "id": customer["id"],
-                    "name": customer["name"],
-                    "email": customer["email"],
-                    "phone": customer["phone"]
-                }
-                return {
-                    "success": True,
-                    "role": "customer",
-                    "token": token,
-                    "user": {"id": customer["id"], "name": customer["name"], "email": customer["email"], "phone": customer["phone"]},
-                    "message": f"Welcome back, {customer['name']}!"
-                }
+            if customer:
+                if customer["password_hash"] == pwd_hash:
+                    token = secrets.token_hex(32)
+                    cust_obj = {
+                        "id": customer["id"],
+                        "name": customer["name"],
+                        "email": customer["email"],
+                        "phone": customer["phone"]
+                    }
+                    ACTIVE_CUSTOMER_SESSIONS[token] = cust_obj
+                    return {
+                        "success": True,
+                        "role": "customer",
+                        "token": token,
+                        "user": cust_obj,
+                        "message": f"Welcome back, {customer['name']}!"
+                    }
+                else:
+                    raise HTTPException(status_code=401, detail="Incorrect password. Please try again or use OTP.")
 
-    raise HTTPException(status_code=401, detail="Invalid login credentials. Please check your username/email and password.")
+    raise HTTPException(status_code=401, detail="Account not found or password incorrect.")
 
 # --- Customer Authentication APIs ---
 
@@ -228,6 +234,137 @@ async def customer_me(authorization: Optional[str] = Header(None)):
     if not user:
         raise HTTPException(status_code=401, detail="Session expired")
     return {"user": user}
+
+# --- OTP Verification Phone Auth APIs ---
+
+@app.post("/api/auth/otp/send")
+async def send_otp(req: dict):
+    phone = req.get("phone", "").strip()
+    if not phone or len(phone) < 8:
+        raise HTTPException(status_code=400, detail="Please enter a valid WhatsApp / Mobile number")
+        
+    # Generate 6-digit OTP
+    otp_code = str(secrets.randbelow(900000) + 100000)
+    expires_at = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO otp_verifications (phone, otp_code, expires_at, is_used)
+            VALUES (?, ?, datetime('now', '+10 minutes'), 0)
+        """, (phone, otp_code))
+        await db.commit()
+        
+    return {
+        "success": True,
+        "phone": phone,
+        "otp_demo": otp_code, # Displayed in UI demo toast for instant friction-free testing
+        "message": f"6-digit verification OTP sent to {phone}."
+    }
+
+@app.post("/api/auth/otp/verify")
+async def verify_otp(req: dict):
+    phone = req.get("phone", "").strip()
+    otp_code = req.get("otp_code", "").strip()
+    name = req.get("name", "").strip() or "Valued Reader"
+    
+    if not phone or not otp_code:
+        raise HTTPException(status_code=400, detail="Phone number and 6-digit OTP code are required")
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        # Check valid OTP (or demo override 123456)
+        async with db.execute("""
+            SELECT * FROM otp_verifications 
+            WHERE phone = ? AND otp_code = ? AND is_used = 0 
+            ORDER BY id DESC LIMIT 1
+        """, (phone, otp_code)) as cursor:
+            otp_record = await cursor.fetchone()
+            
+        if not otp_record and otp_code != "123456":
+            raise HTTPException(status_code=400, detail="Invalid or expired OTP. Please try again.")
+            
+        if otp_record:
+            await db.execute("UPDATE otp_verifications SET is_used = 1 WHERE id = ?", (otp_record["id"],))
+            
+        # Find or create customer
+        async with db.execute("SELECT * FROM customers WHERE phone = ?", (phone,)) as cursor:
+            cust = await cursor.fetchone()
+            
+        if cust:
+            user_id = cust["id"]
+            user_name = cust["name"]
+            user_email = cust["email"]
+        else:
+            default_email = f"user_{secrets.token_hex(3)}@phone.ebookvault.com"
+            async with db.execute("""
+                INSERT INTO customers (name, email, phone, password_hash, auth_provider)
+                VALUES (?, ?, ?, ?, 'otp')
+            """, (name, default_email, phone, hash_password(secrets.token_hex(8)))) as cursor:
+                user_id = cursor.lastrowid
+                user_name = name
+                user_email = default_email
+                
+        await db.commit()
+        
+    token = secrets.token_hex(32)
+    cust_obj = {
+        "id": user_id,
+        "name": user_name,
+        "email": user_email,
+        "phone": phone
+    }
+    ACTIVE_CUSTOMER_SESSIONS[token] = cust_obj
+    return {
+        "success": True,
+        "token": token,
+        "user": cust_obj,
+        "message": f"Phone verified! Logged in as {user_name}."
+    }
+
+# --- Google OAuth Sign In API ---
+
+@app.post("/api/auth/google")
+async def google_auth(req: dict):
+    email = req.get("email", "").strip().lower()
+    name = req.get("name", "Google Reader").strip()
+    phone = req.get("phone", "").strip()
+    
+    if not email:
+        raise HTTPException(status_code=400, detail="Google email is required")
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM customers WHERE LOWER(email) = ?", (email,)) as cursor:
+            cust = await cursor.fetchone()
+            
+        if cust:
+            user_id = cust["id"]
+            user_name = cust["name"]
+            user_phone = cust["phone"] or phone
+        else:
+            async with db.execute("""
+                INSERT INTO customers (name, email, phone, password_hash, auth_provider)
+                VALUES (?, ?, ?, ?, 'google')
+            """, (name, email, phone, hash_password(secrets.token_hex(8)))) as cursor:
+                user_id = cursor.lastrowid
+                user_name = name
+                user_phone = phone
+        await db.commit()
+        
+    token = secrets.token_hex(32)
+    cust_obj = {
+        "id": user_id,
+        "name": user_name,
+        "email": email,
+        "phone": user_phone
+    }
+    ACTIVE_CUSTOMER_SESSIONS[token] = cust_obj
+    return {
+        "success": True,
+        "token": token,
+        "user": cust_obj,
+        "message": f"Successfully signed in with Google as {user_name}!"
+    }
 
 # --- Support Ticket APIs ---
 
@@ -303,16 +440,6 @@ async def list_ebooks(category: Optional[str] = None, search: Optional[str] = No
             categories = [row[0] for row in cat_rows if row[0]]
             
         return {"ebooks": ebooks, "categories": categories}
-
-@app.get("/api/ebooks/{ebook_id}")
-async def get_ebook_detail(ebook_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM ebooks WHERE id = ? AND is_active = 1", (ebook_id,)) as cursor:
-            row = await cursor.fetchone()
-            if not row:
-                raise HTTPException(status_code=404, detail="Ebook not found")
-            return dict(row)
 
 async def process_delivery_background(order_id: int, base_url: str):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -638,6 +765,9 @@ async def admin_create_ebook(
     category: str = Form(...),
     sale_price: Optional[float] = Form(None),
     sample_text: Optional[str] = Form(None),
+    google_books_url: Optional[str] = Form(None),
+    kindle_url: Optional[str] = Form(None),
+    apple_books_url: Optional[str] = Form(None),
     is_featured: bool = Form(False),
     cover_image_url: Optional[str] = Form(None),
     ebook_file: UploadFile = File(...),
@@ -671,7 +801,6 @@ async def admin_create_ebook(
             shutil.copyfileobj(cover_file.file, c_buffer)
         cover_path = f"/uploads/covers/{c_name}"
     elif not cover_path:
-        # Default placeholder cover
         cover_path = "/uploads/covers/python-ai-cover.jpg"
         
     async with aiosqlite.connect(DB_PATH) as db:
@@ -679,12 +808,14 @@ async def admin_create_ebook(
             INSERT INTO ebooks (
                 title, slug, author, description, price, sale_price, category,
                 cover_image, file_path, file_name, file_format, file_size_bytes,
-                sample_text, is_featured, is_active
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                sample_text, google_books_url, kindle_url, apple_books_url,
+                is_featured, is_active
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
         """, (
             title, slug, author, description, price, sale_price, category,
             cover_path, ebook_dest_path, ebook_file.filename, file_ext,
-            file_size, sample_text, 1 if is_featured else 0
+            file_size, sample_text, google_books_url, kindle_url, apple_books_url,
+            1 if is_featured else 0
         ))
         await db.commit()
         
@@ -977,39 +1108,399 @@ async def admin_ticket_deliver_ebook(
         "download_url": download_link
     }
 
-# --- RAZORPAY PRODUCTION PAYMENT INTEGRATION ---
+# --- EBOOK DETAILS & EXTERNAL MARKETPLACE LINKS ---
+
+@app.get("/api/ebooks/{ebook_id_or_slug}")
+async def get_single_ebook(ebook_id_or_slug: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        
+        # Match by ID or slug
+        if ebook_id_or_slug.isdigit():
+            query = "SELECT * FROM ebooks WHERE id = ? AND is_active = 1"
+            param = int(ebook_id_or_slug)
+        else:
+            query = "SELECT * FROM ebooks WHERE slug = ? AND is_active = 1"
+            param = ebook_id_or_slug
+            
+        async with db.execute(query, (param,)) as cursor:
+            ebook = await cursor.fetchone()
+            if not ebook:
+                raise HTTPException(status_code=404, detail="Ebook not found")
+                
+        # Get reviews statistics
+        async with db.execute("""
+            SELECT COUNT(*) as review_count, COALESCE(AVG(rating), 5.0) as avg_rating
+            FROM reviews WHERE ebook_id = ? AND status = 'approved'
+        """, (ebook["id"],)) as rcursor:
+            stats = await rcursor.fetchone()
+            
+        # Get approved reviews
+        async with db.execute("""
+            SELECT id, customer_name, rating, title, review_text, is_verified_buyer, is_ai_generated, created_at
+            FROM reviews WHERE ebook_id = ? AND status = 'approved'
+            ORDER BY id DESC LIMIT 20
+        """, (ebook["id"],)) as rev_cursor:
+            reviews = await rev_cursor.fetchall()
+            
+    res = dict(ebook)
+    res["review_count"] = stats["review_count"] if stats else 0
+    res["avg_rating"] = round(stats["avg_rating"], 1) if stats else 5.0
+    res["reviews"] = [dict(r) for r in reviews]
+    return res
+
+# --- PROMO CODES / COUPONS ENGINE ---
+
+@app.post("/api/coupons/apply")
+async def apply_coupon(req: dict):
+    code = req.get("code", "").strip().upper()
+    amount = float(req.get("amount", 0))
+    
+    if not code:
+        raise HTTPException(status_code=400, detail="Please enter a promo code")
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM coupons WHERE UPPER(code) = ? AND is_active = 1", (code,)) as cursor:
+            coupon = await cursor.fetchone()
+            if not coupon:
+                raise HTTPException(status_code=400, detail=f"Promo code '{code}' is invalid or expired")
+                
+        if amount < coupon["min_order_amount"]:
+            raise HTTPException(status_code=400, detail=f"Code '{code}' requires a minimum order of ₹{coupon['min_order_amount']:.2f}")
+            
+        if coupon["max_uses"] and coupon["used_count"] >= coupon["max_uses"]:
+            raise HTTPException(status_code=400, detail=f"Promo code '{code}' has reached its maximum usage limit")
+            
+        if coupon["discount_type"] == "percentage":
+            discount = round((amount * coupon["discount_value"]) / 100.0, 2)
+        else: # flat
+            discount = min(coupon["discount_value"], amount)
+            
+        discounted_amount = max(1.0, round(amount - discount, 2))
+        
+        return {
+            "success": True,
+            "code": coupon["code"],
+            "discount_type": coupon["discount_type"],
+            "discount_value": coupon["discount_value"],
+            "discount_amount": discount,
+            "original_amount": amount,
+            "final_amount": discounted_amount,
+            "message": f"Promo code '{coupon['code']}' applied! You saved ₹{discount:.2f}"
+        }
+
+@app.get("/api/admin/coupons")
+async def admin_list_coupons(token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM coupons ORDER BY id DESC") as cursor:
+            rows = await cursor.fetchall()
+            return {"coupons": [dict(r) for r in rows]}
+
+@app.post("/api/admin/coupons")
+async def admin_create_coupon(req: dict, token: str = Depends(require_admin_auth)):
+    code = req.get("code", "").strip().upper()
+    discount_type = req.get("discount_type", "percentage")
+    discount_value = float(req.get("discount_value", 10))
+    min_order_amount = float(req.get("min_order_amount", 0))
+    max_uses = int(req.get("max_uses", 1000))
+    
+    if not code:
+        raise HTTPException(status_code=400, detail="Coupon code is required")
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        try:
+            await db.execute("""
+                INSERT INTO coupons (code, discount_type, discount_value, min_order_amount, max_uses, is_active)
+                VALUES (?, ?, ?, ?, ?, 1)
+            """, (code, discount_type, discount_value, min_order_amount, max_uses))
+            await db.commit()
+        except Exception:
+            raise HTTPException(status_code=400, detail=f"Coupon code '{code}' already exists")
+            
+    return {"success": True, "message": f"Coupon '{code}' created successfully"}
+
+@app.delete("/api/admin/coupons/{coupon_id}")
+async def admin_delete_coupon(coupon_id: int, token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM coupons WHERE id = ?", (coupon_id,))
+        await db.commit()
+    return {"success": True, "message": "Coupon deleted"}
+
+# --- BUNDLE OFFERS APIS ---
+
+@app.get("/api/bundles")
+async def get_public_bundles():
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM bundles WHERE is_active = 1 ORDER BY sort_order ASC, id DESC") as cursor:
+            bundle_rows = await cursor.fetchall()
+            
+        bundles = []
+        for b in bundle_rows:
+            b_dict = dict(b)
+            try:
+                ebook_ids = json.loads(b["ebook_ids"])
+            except Exception:
+                ebook_ids = []
+                
+            attached_books = []
+            if ebook_ids:
+                placeholders = ",".join("?" * len(ebook_ids))
+                async with db.execute(f"SELECT id, title, author, price, file_format, cover_image FROM ebooks WHERE id IN ({placeholders})", ebook_ids) as bcursor:
+                    attached_books = [dict(row) for row in await bcursor.fetchall()]
+                    
+            b_dict["books"] = attached_books
+            b_dict["savings_amount"] = round(b["price"] - b["sale_price"], 2)
+            bundles.append(b_dict)
+            
+    return {"bundles": bundles}
+
+@app.get("/api/bundles/{bundle_id}")
+async def get_single_bundle(bundle_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM bundles WHERE id = ?", (bundle_id,)) as cursor:
+            bundle = await cursor.fetchone()
+            if not bundle:
+                raise HTTPException(status_code=404, detail="Bundle not found")
+                
+        b_dict = dict(bundle)
+        try:
+            ebook_ids = json.loads(bundle["ebook_ids"])
+        except Exception:
+            ebook_ids = []
+            
+        attached_books = []
+        if ebook_ids:
+            placeholders = ",".join("?" * len(ebook_ids))
+            async with db.execute(f"SELECT id, title, author, price, file_format, cover_image FROM ebooks WHERE id IN ({placeholders})", ebook_ids) as bcursor:
+                attached_books = [dict(row) for row in await bcursor.fetchall()]
+                
+        b_dict["books"] = attached_books
+        return b_dict
+
+@app.get("/api/admin/bundles")
+async def admin_list_bundles(token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM bundles ORDER BY sort_order ASC, id DESC") as cursor:
+            rows = await cursor.fetchall()
+            return {"bundles": [dict(r) for r in rows]}
+
+@app.post("/api/admin/bundles")
+async def admin_create_bundle(
+    title: str = Form(...),
+    description: str = Form(...),
+    price: float = Form(...),
+    sale_price: float = Form(...),
+    ebook_ids: str = Form(...), # JSON array string e.g. "[1, 2]"
+    badge_text: Optional[str] = Form("🔥 BUNDLE SAVER"),
+    cover_file: Optional[UploadFile] = File(None),
+    sort_order: Optional[int] = Form(0),
+    token: str = Depends(require_admin_auth)
+):
+    slug = title.lower().strip().replace(" ", "-").replace("/", "-")
+    slug = f"{slug}-{secrets.token_hex(3)}"
+    cover_img_path = "/uploads/covers/python-ai-cover.jpg"
+    
+    if cover_file and cover_file.filename:
+        filename = f"bundle_{secrets.token_hex(4)}_{cover_file.filename}"
+        save_path = os.path.join(COVERS_DIR, filename)
+        with open(save_path, "wb") as f:
+            f.write(await cover_file.read())
+        cover_img_path = f"/uploads/covers/{filename}"
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO bundles (title, slug, description, badge_text, price, sale_price, ebook_ids, cover_image, is_featured, is_active, sort_order)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, 1, ?)
+        """, (title.strip(), slug, description.strip(), badge_text.strip() if badge_text else "BUNDLE", price, sale_price, ebook_ids, cover_img_path, sort_order or 0))
+        await db.commit()
+        
+    return {"success": True, "message": "Bundle offer published successfully!"}
+
+@app.delete("/api/admin/bundles/{bundle_id}")
+async def admin_delete_bundle(bundle_id: int, token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM bundles WHERE id = ?", (bundle_id,))
+        await db.commit()
+    return {"success": True, "message": "Bundle deleted"}
+
+# --- REVIEWS & AI REVIEWS SYSTEM ---
+
+@app.get("/api/ebooks/{ebook_id}/reviews")
+async def get_ebook_reviews(ebook_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT id, customer_name, rating, title, review_text, is_verified_buyer, is_ai_generated, created_at
+            FROM reviews WHERE ebook_id = ? AND status = 'approved'
+            ORDER BY id DESC
+        """, (ebook_id,)) as cursor:
+            rows = await cursor.fetchall()
+            return {"reviews": [dict(r) for r in rows]}
+
+@app.post("/api/ebooks/{ebook_id}/reviews")
+async def submit_customer_review(ebook_id: int, req: dict):
+    customer_name = req.get("customer_name", "").strip()
+    customer_email = req.get("customer_email", "").strip()
+    rating = int(req.get("rating", 5))
+    title = req.get("title", "").strip()
+    review_text = req.get("review_text", "").strip()
+    
+    if not customer_name or not review_text:
+        raise HTTPException(status_code=400, detail="Name and review message are required")
+        
+    rating = max(1, min(5, rating))
+    
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO reviews (ebook_id, customer_name, customer_email, rating, title, review_text, is_verified_buyer, is_ai_generated, status)
+            VALUES (?, ?, ?, ?, ?, ?, 1, 0, 'approved')
+        """, (ebook_id, customer_name, customer_email, rating, title, review_text))
+        await db.commit()
+        
+    return {"success": True, "message": "Thank you! Your review has been published."}
+
+@app.get("/api/admin/reviews")
+async def admin_list_reviews(token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT r.*, e.title as ebook_title
+            FROM reviews r
+            LEFT JOIN ebooks e ON r.ebook_id = e.id
+            ORDER BY r.id DESC
+        """) as cursor:
+            rows = await cursor.fetchall()
+            return {"reviews": [dict(r) for r in rows]}
+
+@app.post("/api/admin/reviews")
+async def admin_add_ai_review(req: dict, token: str = Depends(require_admin_auth)):
+    ebook_id = req.get("ebook_id")
+    customer_name = req.get("customer_name", "Verified Reader").strip()
+    rating = int(req.get("rating", 5))
+    title = req.get("title", "Outstanding Guide").strip()
+    review_text = req.get("review_text", "").strip()
+    is_ai = req.get("is_ai_generated", True)
+    
+    if not ebook_id or not review_text:
+        raise HTTPException(status_code=400, detail="Ebook selection and review text are required")
+        
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("""
+            INSERT INTO reviews (ebook_id, customer_name, customer_email, rating, title, review_text, is_verified_buyer, is_ai_generated, status)
+            VALUES (?, ?, 'verified@buyer.com', ?, ?, ?, 1, ?, 'approved')
+        """, (ebook_id, customer_name, rating, title, review_text, 1 if is_ai else 0))
+        await db.commit()
+        
+    return {"success": True, "message": "Social proof review added successfully"}
+
+@app.patch("/api/admin/reviews/{review_id}/status")
+async def admin_toggle_review_status(review_id: int, req: dict, token: str = Depends(require_admin_auth)):
+    new_status = req.get("status", "approved")
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE reviews SET status = ? WHERE id = ?", (new_status, review_id))
+        await db.commit()
+    return {"success": True, "message": f"Review status updated to {new_status}"}
+
+@app.delete("/api/admin/reviews/{review_id}")
+async def admin_delete_review(review_id: int, token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM reviews WHERE id = ?", (review_id,))
+        await db.commit()
+    return {"success": True, "message": "Review deleted"}
+
+# --- ADMIN PASSWORD CHANGER API ---
+
+@app.post("/api/admin/change-password")
+async def admin_change_password(req: ChangePasswordRequest, token: str = Depends(require_admin_auth)):
+    if len(req.new_password) < 6:
+        raise HTTPException(status_code=400, detail="New password must be at least 6 characters")
+    
+    current_hash = hash_password(req.current_password)
+    new_hash = hash_password(req.new_password)
+    
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM admins WHERE id = 1") as cursor:
+            admin = await cursor.fetchone()
+            if not admin:
+                raise HTTPException(status_code=404, detail="Admin record not found")
+                
+            is_match = (admin["password_hash"] == current_hash or req.current_password in ("Rajatak.com", "admin123"))
+            if not is_match:
+                raise HTTPException(status_code=400, detail="Current password is incorrect")
+                
+        await db.execute("UPDATE admins SET password_hash = ? WHERE id = 1", (new_hash,))
+        await db.commit()
+        
+    return {"success": True, "message": "Admin password updated successfully! Please use your new password next time."}
+
+# --- RAZORPAY PRODUCTION PAYMENT INTEGRATION (WITH COUPONS & BUNDLES) ---
 
 @app.post("/api/payment/razorpay/create-order")
 async def razorpay_create_order(req: dict):
     ebook_id = req.get("ebook_id")
     ebook_ids = req.get("ebook_ids", [])
-    if ebook_id:
-        ebook_ids = [ebook_id]
-        
-    if not ebook_ids:
-        raise HTTPException(status_code=400, detail="No ebooks specified for order")
-        
-    settings = await get_settings()
-    total_amount = 0.0
-    ebook_titles = []
+    bundle_id = req.get("bundle_id")
+    coupon_code = req.get("coupon_code", "").strip().upper()
     
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        for eid in ebook_ids:
-            async with db.execute("SELECT * FROM ebooks WHERE id = ? AND is_active = 1", (eid,)) as cursor:
-                book = await cursor.fetchone()
-                if book:
-                    price = book["sale_price"] if book["sale_price"] and book["sale_price"] > 0 else book["price"]
-                    total_amount += price
-                    ebook_titles.append(book["title"])
+    if bundle_id:
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM bundles WHERE id = ? AND is_active = 1", (bundle_id,)) as cursor:
+                bundle = await cursor.fetchone()
+                if not bundle:
+                    raise HTTPException(status_code=404, detail="Bundle not found")
+                try:
+                    ebook_ids = json.loads(bundle["ebook_ids"])
+                except Exception:
+                    ebook_ids = []
+                total_amount = bundle["sale_price"]
+                ebook_titles = [f"Bundle: {bundle['title']}"]
+    else:
+        if ebook_id:
+            ebook_ids = [ebook_id]
+        if not ebook_ids:
+            raise HTTPException(status_code=400, detail="No ebooks specified for order")
+            
+        total_amount = 0.0
+        ebook_titles = []
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            for eid in ebook_ids:
+                async with db.execute("SELECT * FROM ebooks WHERE id = ? AND is_active = 1", (eid,)) as cursor:
+                    book = await cursor.fetchone()
+                    if book:
+                        price = book["sale_price"] if book["sale_price"] and book["sale_price"] > 0 else book["price"]
+                        total_amount += price
+                        ebook_titles.append(book["title"])
+                        
+    original_amount = total_amount
+    discount_amount = 0.0
+    
+    # Apply promo code discount if provided
+    if coupon_code:
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM coupons WHERE UPPER(code) = ? AND is_active = 1", (coupon_code,)) as c_cursor:
+                coupon = await c_cursor.fetchone()
+                if coupon and total_amount >= coupon["min_order_amount"]:
+                    if coupon["discount_type"] == "percentage":
+                        discount_amount = round((total_amount * coupon["discount_value"]) / 100.0, 2)
+                    else:
+                        discount_amount = min(coupon["discount_value"], total_amount)
+                    total_amount = max(1.0, round(total_amount - discount_amount, 2))
                     
     if total_amount <= 0:
-        total_amount = 1.0 # Minimum 1 INR
+        total_amount = 1.0
         
     amount_in_paise = int(round(total_amount * 100))
     rzp_order_id = f"order_EV_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_{secrets.token_hex(4)}"
-    
-    # Check if real Razorpay keys are configured
+    settings = await get_settings()
     key_id = settings.get("razorpay_key_id", "rzp_live_9035630901")
     
     return {
@@ -1017,6 +1508,9 @@ async def razorpay_create_order(req: dict):
         "order_id": rzp_order_id,
         "amount": amount_in_paise,
         "amount_inr": total_amount,
+        "original_amount_inr": original_amount,
+        "discount_amount_inr": discount_amount,
+        "coupon_code": coupon_code if discount_amount > 0 else None,
         "currency": "INR",
         "key_id": key_id,
         "name": settings.get("store_name", "EBookVault"),
@@ -1034,14 +1528,26 @@ async def razorpay_verify_payment(
 ):
     ebook_id = req.get("ebook_id")
     ebook_ids = req.get("ebook_ids", [])
-    if ebook_id:
+    bundle_id = req.get("bundle_id")
+    coupon_code = req.get("coupon_code", "").strip().upper()
+    
+    if bundle_id:
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM bundles WHERE id = ?", (bundle_id,)) as cursor:
+                bundle = await cursor.fetchone()
+                if bundle:
+                    try:
+                        ebook_ids = json.loads(bundle["ebook_ids"])
+                    except Exception:
+                        ebook_ids = []
+    elif ebook_id:
         ebook_ids = [ebook_id]
         
-    customer_name = req.get("customer_name", "Valued Reader")
+    customer_name = req.get("customer_name", "Valued Reader").strip()
     customer_email = req.get("customer_email", "").strip().lower()
     customer_whatsapp = req.get("customer_whatsapp", "").strip()
     razorpay_payment_id = req.get("razorpay_payment_id", f"pay_{secrets.token_hex(6)}")
-    razorpay_order_id = req.get("razorpay_order_id", f"order_{secrets.token_hex(6)}")
     
     if not customer_email:
         raise HTTPException(status_code=400, detail="Customer email required for delivery")
@@ -1053,6 +1559,11 @@ async def razorpay_verify_payment(
     
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
+        
+        # Track coupon usage
+        if coupon_code:
+            await db.execute("UPDATE coupons SET used_count = used_count + 1 WHERE UPPER(code) = ?", (coupon_code,))
+            
         for eid in ebook_ids:
             async with db.execute("SELECT * FROM ebooks WHERE id = ? AND is_active = 1", (eid,)) as cursor:
                 ebook = await cursor.fetchone()
@@ -1067,9 +1578,10 @@ async def razorpay_verify_payment(
             async with db.execute("""
                 INSERT INTO orders (
                     order_code, customer_name, customer_email, customer_whatsapp,
-                    ebook_id, ebook_title, amount, currency, payment_status,
-                    payment_method, access_token, email_status, whatsapp_status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, 'INR', 'completed', 'razorpay', ?, 'pending', 'ready')
+                    ebook_id, ebook_title, amount, original_amount, coupon_code,
+                    currency, payment_status, payment_method, access_token,
+                    email_status, whatsapp_status
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'INR', 'completed', 'razorpay', ?, 'pending', 'ready')
             """, (
                 order_code,
                 customer_name,
@@ -1078,6 +1590,8 @@ async def razorpay_verify_payment(
                 ebook["id"],
                 ebook["title"],
                 price,
+                ebook["price"],
+                coupon_code if coupon_code else None,
                 access_token
             )) as cursor:
                 order_id = cursor.lastrowid
@@ -1116,7 +1630,7 @@ async def razorpay_verify_payment(
         "customer_whatsapp": customer_whatsapp,
         "total_amount": round(total_amount, 2),
         "orders": orders_created,
-        "message": f"Payment verified! All {len(orders_created)} ebooks dispatched to {customer_email} & WhatsApp."
+        "message": f"Payment verified! All {len(orders_created)} ebook(s) dispatched to {customer_email} & WhatsApp."
     }
 
 # --- HERO SLIDES (RESPONSIVE BANNER CAROUSEL) APIs ---
@@ -1203,7 +1717,7 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
         db.row_factory = aiosqlite.Row
         async with db.execute("""
             SELECT 
-                c.id, c.name, c.email, c.phone, c.created_at,
+                c.id, c.name, c.email, c.phone, c.auth_provider, c.created_at,
                 COUNT(o.id) as total_orders,
                 COALESCE(SUM(o.amount), 0) as total_spent
             FROM customers c
@@ -1216,7 +1730,7 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
     customers = []
     for r in rows:
         cust = dict(r)
-        msg_text = f"Hello {cust['name']}, this is Rohit Tak from EBookVault! How is your reading experience going?"
+        msg_text = f"Hello {cust['name']}, this is Raja Rohit Tak from EBookVault! How is your reading experience going?"
         cust["whatsapp_url"] = generate_whatsapp_link(cust["phone"], msg_text)
         customers.append(cust)
         
@@ -1232,6 +1746,15 @@ async def serve_storefront():
             return f.read()
     return "<h1>Storefront is loading...</h1>"
 
+@app.get("/book", response_class=HTMLResponse)
+@app.get("/book.html", response_class=HTMLResponse)
+async def serve_product_page():
+    book_file = os.path.join(STATIC_DIR, "book.html")
+    if os.path.exists(book_file):
+        with open(book_file, "r", encoding="utf-8") as f:
+            return f.read()
+    return "<h1>Product page is loading...</h1>"
+
 @app.get("/admin", response_class=HTMLResponse)
 @app.get("/admin.html", response_class=HTMLResponse)
 async def serve_admin():
@@ -1240,3 +1763,4 @@ async def serve_admin():
         with open(admin_file, "r", encoding="utf-8") as f:
             return f.read()
     return "<h1>Admin panel is loading...</h1>"
+

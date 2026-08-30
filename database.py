@@ -33,11 +33,66 @@ CREATE TABLE IF NOT EXISTS ebooks (
     file_size_bytes INTEGER DEFAULT 0,
     sample_text TEXT,
     sample_file_path TEXT,
+    google_books_url TEXT,
+    kindle_url TEXT,
+    apple_books_url TEXT,
     is_featured BOOLEAN DEFAULT 0,
     is_active BOOLEAN DEFAULT 1,
     downloads_count INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS bundles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    slug TEXT UNIQUE NOT NULL,
+    description TEXT NOT NULL,
+    badge_text TEXT DEFAULT '🔥 BUNDLE SAVER',
+    price REAL NOT NULL,
+    sale_price REAL NOT NULL,
+    ebook_ids TEXT NOT NULL, -- JSON array string e.g. "[1, 2]"
+    cover_image TEXT,
+    is_featured BOOLEAN DEFAULT 1,
+    is_active BOOLEAN DEFAULT 1,
+    sort_order INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS coupons (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT UNIQUE NOT NULL,
+    discount_type TEXT NOT NULL DEFAULT 'percentage', -- 'percentage' or 'flat'
+    discount_value REAL NOT NULL,
+    min_order_amount REAL DEFAULT 0,
+    max_uses INTEGER DEFAULT 1000,
+    used_count INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS reviews (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ebook_id INTEGER NOT NULL,
+    customer_name TEXT NOT NULL,
+    customer_email TEXT,
+    rating INTEGER NOT NULL DEFAULT 5,
+    title TEXT,
+    review_text TEXT NOT NULL,
+    is_verified_buyer BOOLEAN DEFAULT 1,
+    is_ai_generated BOOLEAN DEFAULT 0,
+    status TEXT DEFAULT 'approved', -- 'approved', 'pending', 'hidden'
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(ebook_id) REFERENCES ebooks(id)
+);
+
+CREATE TABLE IF NOT EXISTS otp_verifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    phone TEXT NOT NULL,
+    otp_code TEXT NOT NULL,
+    expires_at DATETIME NOT NULL,
+    is_used BOOLEAN DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -49,9 +104,11 @@ CREATE TABLE IF NOT EXISTS orders (
     ebook_id INTEGER NOT NULL,
     ebook_title TEXT NOT NULL,
     amount REAL NOT NULL,
-    currency TEXT DEFAULT 'USD',
+    original_amount REAL,
+    coupon_code TEXT,
+    currency TEXT DEFAULT 'INR',
     payment_status TEXT DEFAULT 'completed',
-    payment_method TEXT DEFAULT 'instant_demo',
+    payment_method TEXT DEFAULT 'razorpay',
     access_token TEXT UNIQUE NOT NULL,
     token_expires_at DATETIME,
     email_status TEXT DEFAULT 'pending',
@@ -68,7 +125,8 @@ CREATE TABLE IF NOT EXISTS customers (
     name TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     phone TEXT,
-    password_hash TEXT NOT NULL,
+    password_hash TEXT,
+    auth_provider TEXT DEFAULT 'local', -- 'local', 'otp', 'google'
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -118,7 +176,7 @@ DEFAULT_SETTINGS = {
     "store_currency": "₹",
     "currency_code": "INR",
     "support_email": "rohittak903@gmail.com",
-    "support_whatsapp": "+919876543210",
+    "support_whatsapp": "+919035630901",
     "email_sender_name": "Rohit Tak (EBookVault)",
     "email_from_address": "rohittak903@gmail.com",
     "smtp_enabled": "false",
@@ -156,6 +214,32 @@ async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
         await db.executescript(CREATE_TABLES_SQL)
         
+        # Migrations for existing columns in ebooks
+        try:
+            await db.execute("ALTER TABLE ebooks ADD COLUMN google_books_url TEXT")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE ebooks ADD COLUMN kindle_url TEXT")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE ebooks ADD COLUMN apple_books_url TEXT")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE orders ADD COLUMN original_amount REAL")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE orders ADD COLUMN coupon_code TEXT")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE customers ADD COLUMN auth_provider TEXT DEFAULT 'local'")
+        except Exception:
+            pass
+
         # Seed default settings if missing
         for key, val in DEFAULT_SETTINGS.items():
             await db.execute(
@@ -163,12 +247,112 @@ async def init_db():
                 (key, val)
             )
             
-        # Seed default admin user (admin / admin123)
-        default_admin_hash = hash_password("admin123")
+        # Seed & Upsert Admin User (Username: RajaRohitTak / Password: Rajatak.com)
+        admin_pass_hash = hash_password("Rajatak.com")
         await db.execute(
-            "INSERT OR IGNORE INTO admins (id, username, password_hash) VALUES (1, ?, ?)",
-            ("admin", default_admin_hash)
+            "INSERT INTO admins (id, username, password_hash) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET username = excluded.username, password_hash = excluded.password_hash",
+            ("RajaRohitTak", admin_pass_hash)
         )
+
+        # Seed starter ebooks if empty or few
+        async with db.execute("SELECT COUNT(*) FROM ebooks") as cursor:
+            ebook_count = (await cursor.fetchone())[0]
+            if ebook_count < 2:
+                # Ensure uploads directory structure
+                os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "ebooks"), exist_ok=True)
+                os.makedirs(os.path.join(os.path.dirname(__file__), "uploads", "covers"), exist_ok=True)
+                
+                # Create dummy sample ebook file if not present
+                sample_pdf_path = os.path.join(os.path.dirname(__file__), "uploads", "ebooks", "mastering-python-ai.pdf")
+                if not os.path.exists(sample_pdf_path):
+                    with open(sample_pdf_path, "wb") as f:
+                        f.write(b"%PDF-1.4 sample ebook content for EBookVault by Raja Rohit Tak")
+                        
+                sample_docx_path = os.path.join(os.path.dirname(__file__), "uploads", "ebooks", "solopreneur-blueprint.docx")
+                if not os.path.exists(sample_docx_path):
+                    with open(sample_docx_path, "wb") as f:
+                        f.write(b"PK sample docx content for EBookVault by Raja Rohit Tak")
+                        
+                await db.execute("""
+                    INSERT OR IGNORE INTO ebooks (
+                        id, title, slug, author, description, price, sale_price, category,
+                        cover_image, file_path, file_name, file_format, file_size_bytes,
+                        sample_text, google_books_url, kindle_url, apple_books_url,
+                        is_featured, is_active, downloads_count
+                    ) VALUES 
+                    (
+                        1, 
+                        'Mastering Python & AI Automation: Build 20+ Real-World Agents',
+                        'mastering-python-ai-automation',
+                        'Raja Rohit Tak',
+                        'The comprehensive industry handbook for building production-grade LLM workflows, autonomous AI agents, multi-modal pipelines, and workflow automation. Includes complete Python code templates, Jupyter notebooks, and editable MS Word DOCX templates.',
+                        399.0, 199.0, 'Technology',
+                        '/uploads/covers/python-ai-cover.jpg',
+                        ?, 'mastering-python-ai.pdf', 'pdf', 1048576,
+                        'Chapter 1: The AI Revolution & Autonomous Agent Architectures\nChapter 2: Function Calling & Tool Augmentation\nChapter 3: Memory Systems & Vector Embeddings\nChapter 4: Multi-Agent Collaboration Frameworks',
+                        'https://play.google.com/store/books/details?id=sample_python_ai',
+                        'https://www.amazon.in/dp/B0SAMPLEAI',
+                        'https://books.apple.com/us/book/sample-python-ai/id123456789',
+                        1, 1, 342
+                    ),
+                    (
+                        2,
+                        'The Solopreneur Blueprint 2026: 0 to ₹10L/Month in Digital Products',
+                        'solopreneur-blueprint-2026',
+                        'Raja Rohit Tak',
+                        'A tactical, zero-fluff playbook on turning your expertise into high-margin digital products, ebooks, and automated micro-SaaS systems. Covers niche selection, high-converting copy frameworks, Razorpay checkout funnels, and organic traffic growth.',
+                        499.0, 199.0, 'Business & Finance',
+                        '/uploads/covers/solopreneur-cover.jpg',
+                        ?, 'solopreneur-blueprint.docx', 'docx', 840000,
+                        'Section 1: Finding Your Unfair Advantage & High-Intent Niche\nSection 2: Creating Your Flagship Digital Asset in 7 Days\nSection 3: Designing Irresistible Bundle Offers & Value Stacks\nSection 4: Automated WhatsApp & Email Retention Systems',
+                        'https://play.google.com/store/books/details?id=sample_solopreneur',
+                        'https://www.amazon.in/dp/B0SAMPLESOLO',
+                        'https://books.apple.com/us/book/sample-solopreneur/id987654321',
+                        1, 1, 518
+                    )
+                """, (sample_pdf_path, sample_docx_path))
+
+        # Seed sample coupons if empty
+        async with db.execute("SELECT COUNT(*) FROM coupons") as cursor:
+            coupon_count = (await cursor.fetchone())[0]
+            if coupon_count == 0:
+                await db.execute("""
+                    INSERT INTO coupons (code, discount_type, discount_value, min_order_amount, max_uses, is_active)
+                    VALUES 
+                    ('ROHIT20', 'percentage', 20.0, 0, 1000, 1),
+                    ('WELCOME50', 'flat', 50.0, 150, 1000, 1),
+                    ('FLAT100', 'flat', 100.0, 250, 1000, 1),
+                    ('VIP10', 'percentage', 10.0, 0, 500, 1)
+                """)
+
+        # Seed sample bundles if empty
+        async with db.execute("SELECT COUNT(*) FROM bundles") as cursor:
+            bundle_count = (await cursor.fetchone())[0]
+            if bundle_count == 0:
+                async with db.execute("SELECT id, title FROM ebooks ORDER BY id ASC LIMIT 2") as book_cursor:
+                    books = await book_cursor.fetchall()
+                    if len(books) >= 2:
+                        eids_1 = json.dumps([books[0][0], books[1][0]])
+                        await db.execute("""
+                            INSERT INTO bundles (title, slug, description, badge_text, price, sale_price, ebook_ids, cover_image, is_featured, is_active, sort_order)
+                            VALUES (?, 'ai-solopreneur-super-bundle', 'Get both the Python AI Automation Guide and Solopreneur Blueprint at a massive 45% discount! Includes all PDF and Word docs with lifetime updates.', '⚡ 45% OFF MEGA PACK', 498.0, 269.0, ?, '/uploads/covers/python-ai-cover.jpg', 1, 1, 1)
+                        """, ("AI & Solopreneur Ultimate Master Bundle (2-in-1)", eids_1))
+
+        # Seed sample reviews if empty
+        async with db.execute("SELECT COUNT(*) FROM reviews") as cursor:
+            review_count = (await cursor.fetchone())[0]
+            if review_count == 0:
+                async with db.execute("SELECT id FROM ebooks ORDER BY id ASC LIMIT 2") as book_cursor:
+                    sample_books = await book_cursor.fetchall()
+                    for bk in sample_books:
+                        bkid = bk[0]
+                        await db.execute("""
+                            INSERT INTO reviews (ebook_id, customer_name, customer_email, rating, title, review_text, is_verified_buyer, is_ai_generated, status)
+                            VALUES 
+                            (?, 'Vikramaditya S.', 'vikram.s@example.com', 5, 'Exceptional Quality & Clear Steps', 'Delivered to my WhatsApp within 5 seconds of paying via GPay. The PDF and Word templates saved me weeks of work.', 1, 0, 'approved'),
+                            (?, 'Ananya Sharma', 'ananya.sh@example.com', 5, 'Highly Recommended!', 'Extremely practical frameworks. I downloaded both PDF and DOCX to study on iPad and laptop.', 1, 1, 'approved'),
+                            (?, 'Rohan Mehta', 'rohan.m@example.com', 5, 'Worth Every Rupee', 'The best digital guide I have purchased. The instant email and WhatsApp delivery is super smooth.', 1, 1, 'approved')
+                        """, (bkid, bkid, bkid))
 
         # Seed sample hero slides if empty
         async with db.execute("SELECT COUNT(*) FROM hero_slides") as cursor:

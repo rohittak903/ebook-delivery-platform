@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - EBookVault Digital Delivery</title>
+    <title>Admin Dashboard - Raja Rohit Tak</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -29,56 +29,56 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/custom.css">
 </head>
-<body class="bg-slate-100 text-slate-800 min-h-screen flex antialiased selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex antialiased selection:bg-brand-500 selection:text-white">
 
     <!-- ================= 1. ADMIN LOGIN VIEW ================= -->
-    <div id="loginView" class="fixed inset-0 z-50 bg-slate-900 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-100 animate-fade-in">
+    <div id="loginView" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-800 animate-fade-in">
             <div class="text-center mb-6">
                 <div class="w-12 h-12 rounded-2xl bg-brand-600 text-white flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
                     <i data-lucide="shield-check" class="w-6 h-6"></i>
                 </div>
-                <h2 class="text-2xl font-extrabold text-slate-900">Admin Control Center</h2>
-                <p class="text-xs text-slate-500 mt-1">Manage ebooks, hero slides, orders, and customer CRM</p>
+                <h2 class="text-2xl font-extrabold text-white">Raja Rohit Tak Admin</h2>
+                <p class="text-xs text-slate-400 mt-1">Ebook platform management & store controls</p>
             </div>
 
             <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Username</label>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">Admin Username</label>
                     <input 
                         type="text" 
                         id="adminUsername" 
                         required 
-                        value="admin" 
-                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                        value="RajaRohitTak" 
+                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1.5">Password</label>
+                    <label class="block text-xs font-bold text-slate-300 mb-1.5">Admin Password</label>
                     <input 
                         type="password" 
                         id="adminPassword" 
                         required 
-                        value="admin123" 
-                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                        value="Rajatak.com" 
+                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                 </div>
-                <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-[11px] text-amber-800 flex items-start gap-2">
-                    <i data-lucide="info" class="w-4 h-4 flex-shrink-0 text-amber-600 mt-0.5"></i>
-                    <span>Default credentials: <strong>admin / admin123</strong>. Configurable in Settings.</span>
+                <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-[11px] text-brand-300 flex items-start gap-2">
+                    <i data-lucide="key" class="w-4 h-4 flex-shrink-0 text-brand-400 mt-0.5"></i>
+                    <span>Default Admin Credentials: <strong>RajaRohitTak / Rajatak.com</strong> (Changeable in Settings).</span>
                 </div>
                 <button 
                     type="submit" 
                     id="loginSubmitBtn"
-                    class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2"
+                    class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2 text-xs"
                 >
                     <i data-lucide="log-in" class="w-4 h-4"></i>
                     <span>Sign In to Dashboard</span>
                 </button>
             </form>
             
-            <div class="mt-6 pt-4 border-t border-slate-100 text-center">
-                <a href="/" class="text-xs text-slate-400 hover:text-brand-600 inline-flex items-center gap-1 font-medium">
+            <div class="mt-6 pt-4 border-t border-slate-800 text-center">
+                <a href="/" class="text-xs text-slate-400 hover:text-brand-400 inline-flex items-center gap-1 font-medium">
                     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
                     <span>Back to Storefront</span>
                 </a>
@@ -90,7 +90,7 @@
     <div id="dashboardView" class="flex-1 flex min-h-screen overflow-hidden hidden">
         
         <!-- Sidebar -->
-        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between flex-shrink-0">
+        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between flex-shrink-0 border-r border-slate-800">
             <div>
                 <!-- Brand -->
                 <div class="p-6 flex items-center gap-3 border-b border-slate-800">
@@ -99,12 +99,12 @@
                     </div>
                     <div>
                         <h2 class="font-extrabold text-white text-base leading-none">EBookVault</h2>
-                        <span class="text-[10px] text-brand-400 font-bold uppercase tracking-wider">Rohit Tak Admin</span>
+                        <span class="text-[10px] text-brand-400 font-bold uppercase tracking-wider">Raja Rohit Tak</span>
                     </div>
                 </div>
 
                 <!-- Navigation Tabs -->
-                <nav class="p-4 space-y-1.5 text-sm font-semibold">
+                <nav class="p-4 space-y-1 text-xs font-semibold">
                     <button onclick="switchTab('overview')" id="tab-overview" class="admin-tab-btn active-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-brand-600 text-white transition">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                         <span>Overview & Stats</span>
@@ -112,6 +112,18 @@
                     <button onclick="switchTab('ebooks')" id="tab-ebooks" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
                         <i data-lucide="book-marked" class="w-4 h-4"></i>
                         <span>Ebooks Manager</span>
+                    </button>
+                    <button onclick="switchTab('bundles')" id="tab-bundles" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
+                        <i data-lucide="package" class="w-4 h-4 text-amber-400"></i>
+                        <span>Bundle Offers</span>
+                    </button>
+                    <button onclick="switchTab('coupons')" id="tab-coupons" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
+                        <i data-lucide="tag" class="w-4 h-4 text-purple-400"></i>
+                        <span>Promo Codes</span>
+                    </button>
+                    <button onclick="switchTab('reviews')" id="tab-reviews" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
+                        <i data-lucide="star" class="w-4 h-4 text-amber-400"></i>
+                        <span>Reviews & AI Social Proof</span>
                     </button>
                     <button onclick="switchTab('slides')" id="tab-slides" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
                         <i data-lucide="image" class="w-4 h-4"></i>
@@ -134,7 +146,7 @@
                     </button>
                     <button onclick="switchTab('settings')" id="tab-settings" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
                         <i data-lucide="settings" class="w-4 h-4"></i>
-                        <span>Delivery & Payments</span>
+                        <span>Settings & Password</span>
                     </button>
                 </nav>
             </div>
@@ -153,23 +165,23 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="flex-1 flex flex-col min-w-0 bg-slate-50 overflow-y-auto">
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-950 overflow-y-auto">
             
             <!-- Top Bar -->
-            <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between sticky top-0 z-30 shadow-sm">
+            <header class="bg-slate-900 border-b border-slate-800 px-8 py-4 flex items-center justify-between sticky top-0 z-30">
                 <div>
-                    <h1 id="pageTitle" class="text-xl font-extrabold text-slate-900">Dashboard Overview</h1>
-                    <p class="text-xs text-slate-500">Live sales, Razorpay payments, and customer management</p>
+                    <h1 id="pageTitle" class="text-xl font-extrabold text-white">Dashboard Overview</h1>
+                    <p class="text-xs text-slate-400">Manage ebooks, bundle packs, promo codes, and payments</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="refreshCurrentTab()" class="p-2 text-slate-500 hover:text-brand-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition" title="Refresh">
+                    <button onclick="refreshCurrentTab()" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition" title="Refresh">
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
-                    <div class="flex items-center gap-2 pl-3 border-l border-slate-200">
-                        <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 font-bold text-xs flex items-center justify-center">
+                    <div class="flex items-center gap-2 pl-3 border-l border-slate-800">
+                        <div class="w-8 h-8 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">
                             RT
                         </div>
-                        <span class="text-xs font-bold text-slate-700">Rohit Tak</span>
+                        <span class="text-xs font-bold text-white">Raja Rohit Tak</span>
                     </div>
                 </div>
             </header>
@@ -180,86 +192,51 @@
                 <!-- 1. OVERVIEW TAB -->
                 <section id="panel-overview" class="tab-panel space-y-8">
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
                                 <span class="text-xs font-bold text-slate-400 uppercase">Total Revenue</span>
-                                <div id="statRevenue" class="text-3xl font-extrabold text-slate-900 mt-1">₹0.00</div>
-                                <span class="text-[11px] font-semibold text-emerald-600 flex items-center gap-1 mt-1">
+                                <div id="statRevenue" class="text-3xl font-extrabold text-white mt-1">₹0.00</div>
+                                <span class="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 mt-1">
                                     <i data-lucide="trending-up" class="w-3 h-3"></i> Canara Bank Settled
                                 </span>
                             </div>
-                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-xl">
+                            <div class="w-12 h-12 rounded-2xl bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold text-xl border border-emerald-800">
                                 ₹
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
                                 <span class="text-xs font-bold text-slate-400 uppercase">Total Orders</span>
-                                <div id="statOrders" class="text-3xl font-extrabold text-slate-900 mt-1">0</div>
-                                <span class="text-[11px] font-semibold text-brand-600 flex items-center gap-1 mt-1">
+                                <div id="statOrders" class="text-3xl font-extrabold text-white mt-1">0</div>
+                                <span class="text-[11px] font-semibold text-brand-400 flex items-center gap-1 mt-1">
                                     <i data-lucide="zap" class="w-3 h-3"></i> Auto-dispatched
                                 </span>
                             </div>
-                            <div class="w-12 h-12 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-2xl bg-brand-950 text-brand-400 flex items-center justify-center border border-brand-800">
                                 <i data-lucide="shopping-cart" class="w-6 h-6"></i>
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
                                 <span class="text-xs font-bold text-slate-400 uppercase">Active Ebooks</span>
-                                <div id="statEbooks" class="text-3xl font-extrabold text-slate-900 mt-1">0</div>
-                                <span class="text-[11px] font-semibold text-slate-500 mt-1 block">PDF & Word DOCX</span>
+                                <div id="statEbooks" class="text-3xl font-extrabold text-white mt-1">0</div>
+                                <span class="text-[11px] font-semibold text-slate-400 mt-1 block">PDF & Word DOCX</span>
                             </div>
-                            <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-2xl bg-indigo-950 text-indigo-400 flex items-center justify-center border border-indigo-800">
                                 <i data-lucide="book-open" class="w-6 h-6"></i>
                             </div>
                         </div>
 
-                        <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-bold text-slate-400 uppercase">Settlement Bank</span>
-                                <div class="text-xl font-extrabold text-slate-900 mt-1">Canara Bank</div>
-                                <span class="text-[10px] font-mono text-emerald-600 font-bold block">110076462071</span>
+                                <span class="text-xs font-bold text-slate-400 uppercase">Settlement Account</span>
+                                <div class="text-base font-extrabold text-white mt-1">Canara Bank</div>
+                                <span class="text-[10px] font-mono text-emerald-400 font-bold block">110076462071</span>
                             </div>
-                            <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center">
+                            <div class="w-12 h-12 rounded-2xl bg-teal-950 text-teal-400 flex items-center justify-center border border-teal-800">
                                 <i data-lucide="landmark" class="w-6 h-6"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-bold text-base text-slate-900">Top Selling Ebooks</h3>
-                                <button onclick="switchTab('ebooks')" class="text-xs text-brand-600 font-bold hover:underline">Manage All</button>
-                            </div>
-                            <div id="topEbooksList" class="space-y-3">
-                                <p class="text-xs text-slate-400 py-4 text-center">Loading sales breakdown...</p>
-                            </div>
-                        </div>
-
-                        <div class="bg-gradient-to-br from-slate-900 to-indigo-950 text-white p-6 rounded-3xl shadow-sm flex flex-col justify-between">
-                            <div>
-                                <div class="w-10 h-10 rounded-xl bg-brand-500/20 text-brand-300 flex items-center justify-center mb-3">
-                                    <i data-lucide="credit-card" class="w-5 h-5"></i>
-                                </div>
-                                <h3 class="font-extrabold text-lg">Razorpay & Bank Ready</h3>
-                                <p class="text-xs text-slate-300 mt-1 font-mono">ROHIT TAK • CNRB0002614</p>
-                                <p class="text-xs text-slate-400 mt-2 leading-relaxed">
-                                    Customers pay via Razorpay Cards, UPI, or NetBanking. Ebooks are delivered to email and WhatsApp automatically.
-                                </p>
-                            </div>
-                            <div class="mt-6 space-y-2">
-                                <button onclick="openAddEbookModal()" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
-                                    <i data-lucide="plus-circle" class="w-4 h-4"></i>
-                                    <span>Upload New Ebook (PDF/DOCX)</span>
-                                </button>
-                                <button onclick="switchTab('customers')" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-2">
-                                    <i data-lucide="users" class="w-4 h-4 text-emerald-400"></i>
-                                    <span>View Registered Customers</span>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -269,282 +246,348 @@
                 <section id="panel-ebooks" class="tab-panel hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Ebook Catalog & Files</h2>
-                            <p class="text-xs text-slate-500">Upload PDF or MS Word documents and configure pricing in ₹</p>
+                            <h2 class="text-lg font-bold text-white">Ebook Catalog & External Links</h2>
+                            <p class="text-xs text-slate-400">Configure prices in ₹, upload PDF/Word files, and add Google Books & Amazon Kindle links</p>
                         </div>
-                        <button onclick="openAddEbookModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <button onclick="openAddEbookModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                             <span>Add New Ebook</span>
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200">
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
                                         <th class="py-3.5 px-6">Ebook</th>
                                         <th class="py-3.5 px-4">Category</th>
-                                        <th class="py-3.5 px-4">Format</th>
                                         <th class="py-3.5 px-4">Price (₹)</th>
+                                        <th class="py-3.5 px-4">External Links</th>
                                         <th class="py-3.5 px-4">Downloads</th>
+                                        <th class="py-3.5 px-6 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminEbooksTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="6" class="py-8 text-center text-slate-500">Loading catalog...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. BUNDLE OFFERS MANAGER TAB -->
+                <section id="panel-bundles" class="tab-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Special Bundle Deals & Packs</h2>
+                            <p class="text-xs text-slate-400">Create multi-book packages at special bundled prices</p>
+                        </div>
+                        <button onclick="openAddBundleModal()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Create New Bundle</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
+                                        <th class="py-3.5 px-6">Bundle Name</th>
+                                        <th class="py-3.5 px-4">Badge</th>
+                                        <th class="py-3.5 px-4">Included Books</th>
+                                        <th class="py-3.5 px-4">Regular (₹)</th>
+                                        <th class="py-3.5 px-4">Bundle Price (₹)</th>
+                                        <th class="py-3.5 px-6 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminBundlesTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="6" class="py-8 text-center text-slate-500">Loading bundles...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. PROMO CODES / COUPONS TAB -->
+                <section id="panel-coupons" class="tab-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Promo Codes & Coupons</h2>
+                            <p class="text-xs text-slate-400">Create percentage (%) or flat (₹) discount codes for customers</p>
+                        </div>
+                        <button onclick="openAddCouponModal()" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Add Promo Code</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
+                                        <th class="py-3.5 px-6">Coupon Code</th>
+                                        <th class="py-3.5 px-4">Discount</th>
+                                        <th class="py-3.5 px-4">Min Order</th>
+                                        <th class="py-3.5 px-4">Used Count</th>
                                         <th class="py-3.5 px-4">Status</th>
                                         <th class="py-3.5 px-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="adminEbooksTableBody" class="divide-y divide-slate-100 text-sm">
-                                    <tr>
-                                        <td colspan="7" class="py-8 text-center text-slate-400">Loading catalog...</td>
-                                    </tr>
+                                <tbody id="adminCouponsTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="6" class="py-8 text-center text-slate-500">Loading coupons...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- 3. HERO SLIDES MANAGER TAB (Desktop vs Mobile Banners) -->
-                <section id="panel-slides" class="tab-panel hidden space-y-6">
+                <!-- 5. REVIEWS & AI SOCIAL PROOF TAB -->
+                <section id="panel-reviews" class="tab-panel hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Hero Slider Banners</h2>
-                            <p class="text-xs text-slate-500">Add and customize responsive banners with separate Desktop & Mobile images</p>
+                            <h2 class="text-lg font-bold text-white">Customer Reviews & AI Social Proof</h2>
+                            <p class="text-xs text-slate-400">Moderate customer ratings and add AI spotlight reviews</p>
                         </div>
-                        <button onclick="openAddSlideModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
-                            <i data-lucide="plus" class="w-4 h-4"></i>
-                            <span>Add New Hero Slide</span>
+                        <button onclick="openAddAiReviewModal()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span>Add AI Spotlight Review</span>
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200">
-                                        <th class="py-3.5 px-6">Desktop Banner</th>
-                                        <th class="py-3.5 px-4">Mobile Banner</th>
-                                        <th class="py-3.5 px-4">Headline & Subtitle</th>
-                                        <th class="py-3.5 px-4">Badge / Button</th>
-                                        <th class="py-3.5 px-4">Order</th>
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
+                                        <th class="py-3.5 px-6">Ebook</th>
+                                        <th class="py-3.5 px-4">Reviewer</th>
+                                        <th class="py-3.5 px-4">Rating</th>
+                                        <th class="py-3.5 px-4">Review Text</th>
+                                        <th class="py-3.5 px-4">Type</th>
                                         <th class="py-3.5 px-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="adminSlidesTableBody" class="divide-y divide-slate-100 text-sm">
-                                    <tr>
-                                        <td colspan="6" class="py-8 text-center text-slate-400">Loading hero slides...</td>
-                                    </tr>
+                                <tbody id="adminReviewsTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="6" class="py-8 text-center text-slate-500">Loading reviews...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- 4. CUSTOMERS DIRECTORY CRM TAB -->
+                <!-- 6. HERO SLIDES MANAGER TAB -->
+                <section id="panel-slides" class="tab-panel hidden space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-lg font-bold text-white">Hero Slider Banners</h2>
+                            <p class="text-xs text-slate-400">Add banners with distinct Desktop & Mobile visuals</p>
+                        </div>
+                        <button onclick="openAddSlideModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                            <i data-lucide="plus" class="w-4 h-4"></i>
+                            <span>Add Hero Slide</span>
+                        </button>
+                    </div>
+
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
+                                        <th class="py-3.5 px-6">Desktop Visual</th>
+                                        <th class="py-3.5 px-4">Mobile Visual</th>
+                                        <th class="py-3.5 px-4">Headline</th>
+                                        <th class="py-3.5 px-4">Badge / CTA</th>
+                                        <th class="py-3.5 px-6 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="adminSlidesTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="5" class="py-8 text-center text-slate-500">Loading hero slides...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 7. CUSTOMERS CRM TAB -->
                 <section id="panel-customers" class="tab-panel hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Registered Customers Database</h2>
-                            <p class="text-xs text-slate-500">All registered buyers with total orders, lifetime spend, and WhatsApp links</p>
+                            <h2 class="text-lg font-bold text-white">Registered Customers Database</h2>
+                            <p class="text-xs text-slate-400">Buyers registered via Phone OTP, Google, or Email</p>
                         </div>
-                        <button onclick="loadAdminCustomers()" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-1.5">
+                        <button onclick="loadAdminCustomers()" class="px-3.5 py-2 text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition flex items-center gap-1.5">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                             <span>Refresh Customers</span>
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200">
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
                                         <th class="py-3.5 px-6">Customer Name</th>
-                                        <th class="py-3.5 px-4">Email Address</th>
-                                        <th class="py-3.5 px-4">WhatsApp Phone</th>
-                                        <th class="py-3.5 px-4">Total Orders</th>
-                                        <th class="py-3.5 px-4">Lifetime Spend (₹)</th>
-                                        <th class="py-3.5 px-4">Joined Date</th>
-                                        <th class="py-3.5 px-6 text-right">Contact</th>
+                                        <th class="py-3.5 px-4">Email / Phone</th>
+                                        <th class="py-3.5 px-4">Auth Type</th>
+                                        <th class="py-3.5 px-4">Orders</th>
+                                        <th class="py-3.5 px-4">Spend (₹)</th>
+                                        <th class="py-3.5 px-6 text-right">WhatsApp Contact</th>
                                     </tr>
                                 </thead>
-                                <tbody id="adminCustomersTableBody" class="divide-y divide-slate-100 text-sm">
-                                    <tr>
-                                        <td colspan="7" class="py-8 text-center text-slate-400">Loading customer CRM...</td>
-                                    </tr>
+                                <tbody id="adminCustomersTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="6" class="py-8 text-center text-slate-500">Loading customer CRM...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- 5. ORDERS & DELIVERY TAB -->
+                <!-- 8. ORDERS TAB -->
                 <section id="panel-orders" class="tab-panel hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Customer Orders & Delivery Logs</h2>
-                            <p class="text-xs text-slate-500">Track real-time multi-channel delivery, resend emails, or message buyers</p>
+                            <h2 class="text-lg font-bold text-white">Customer Orders & Delivery Logs</h2>
+                            <p class="text-xs text-slate-400">Track multi-channel delivery and coupon redemptions</p>
                         </div>
-                        <button onclick="loadAdminOrders()" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-1.5">
+                        <button onclick="loadAdminOrders()" class="px-3.5 py-2 text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition flex items-center gap-1.5">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                             <span>Refresh Logs</span>
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200">
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
                                         <th class="py-3.5 px-6">Order ID / Date</th>
-                                        <th class="py-3.5 px-4">Customer Details</th>
-                                        <th class="py-3.5 px-4">Purchased Item</th>
-                                        <th class="py-3.5 px-4">Amount</th>
-                                        <th class="py-3.5 px-4">Email Status</th>
-                                        <th class="py-3.5 px-4">WhatsApp Status</th>
-                                        <th class="py-3.5 px-6 text-right">Delivery Actions</th>
+                                        <th class="py-3.5 px-4">Customer</th>
+                                        <th class="py-3.5 px-4">Item Purchased</th>
+                                        <th class="py-3.5 px-4">Paid (₹)</th>
+                                        <th class="py-3.5 px-4">Coupon</th>
+                                        <th class="py-3.5 px-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="adminOrdersTableBody" class="divide-y divide-slate-100 text-sm">
-                                    <tr>
-                                        <td colspan="7" class="py-8 text-center text-slate-400">Loading orders...</td>
-                                    </tr>
+                                <tbody id="adminOrdersTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="6" class="py-8 text-center text-slate-500">Loading orders...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- 6. SUPPORT TICKETS TAB -->
+                <!-- 9. SUPPORT TICKETS TAB -->
                 <section id="panel-tickets" class="tab-panel hidden space-y-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <h2 class="text-lg font-bold text-slate-900">Customer Support & Missing Books Requests</h2>
-                            <p class="text-xs text-slate-500">Review payment issues, verify UTR, and deliver ebooks with 1 click</p>
+                            <h2 class="text-lg font-bold text-white">Customer Support Requests</h2>
+                            <p class="text-xs text-slate-400">Review missing ebook requests and deliver with 1 click</p>
                         </div>
-                        <button onclick="loadAdminTickets()" class="px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-1.5">
+                        <button onclick="loadAdminTickets()" class="px-3.5 py-2 text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-800 rounded-xl hover:bg-slate-800 transition flex items-center gap-1.5">
                             <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                             <span>Refresh Tickets</span>
                         </button>
                     </div>
 
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-900 rounded-3xl border border-slate-800 shadow-sm overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
-                                    <tr class="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-200">
-                                        <th class="py-3.5 px-6">Ticket ID / Date</th>
-                                        <th class="py-3.5 px-4">Customer Details</th>
-                                        <th class="py-3.5 px-4">Order / UTR Ref</th>
-                                        <th class="py-3.5 px-4">Message / Problem</th>
+                                    <tr class="bg-slate-950 text-[11px] font-bold text-slate-400 uppercase border-b border-slate-800">
+                                        <th class="py-3.5 px-6">Ticket ID</th>
+                                        <th class="py-3.5 px-4">Customer</th>
+                                        <th class="py-3.5 px-4">Message</th>
                                         <th class="py-3.5 px-4">Status</th>
                                         <th class="py-3.5 px-6 text-right">Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody id="adminTicketsTableBody" class="divide-y divide-slate-100 text-sm">
-                                    <tr>
-                                        <td colspan="6" class="py-8 text-center text-slate-400">Loading support tickets...</td>
-                                    </tr>
+                                <tbody id="adminTicketsTableBody" class="divide-y divide-slate-800 text-xs">
+                                    <tr><td colspan="5" class="py-8 text-center text-slate-500">Loading tickets...</td></tr>
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </section>
 
-                <!-- 7. SETTINGS & INTEGRATIONS TAB -->
+                <!-- 10. SETTINGS & PASSWORD CHANGER TAB -->
                 <section id="panel-settings" class="tab-panel hidden space-y-8 max-w-4xl">
-                    <div>
-                        <h2 class="text-lg font-bold text-slate-900">Delivery & Payment Gateway Settings</h2>
-                        <p class="text-xs text-slate-500">Configure Razorpay API keys, Canara Bank details, and automated Email/WhatsApp preferences</p>
+                    
+                    <!-- Admin Password Change Card -->
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="lock" class="w-5 h-5 text-brand-400"></i>
+                                <h3 class="font-bold text-sm text-white">Change Admin Password</h3>
+                            </div>
+                            <span class="text-xs text-slate-400">Logged in as <strong>RajaRohitTak</strong></span>
+                        </div>
+
+                        <form onsubmit="handleAdminPasswordChange(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Current Password *</label>
+                                <input type="password" id="adminCurrentPass" required placeholder="Rajatak.com" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-300 mb-1">New Password *</label>
+                                <input type="password" id="adminNewPass" required placeholder="Minimum 6 characters" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                            </div>
+                            <div class="flex items-end">
+                                <button type="submit" id="changePassBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition">
+                                    Update Password
+                                </button>
+                            </div>
+                        </form>
                     </div>
 
-                    <!-- Razorpay API Gateway Keys Form -->
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <!-- Razorpay API Gateway Keys -->
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="credit-card" class="w-5 h-5 text-brand-600"></i>
-                                <h3 class="font-bold text-sm text-slate-900">Razorpay Payment Gateway API</h3>
+                                <i data-lucide="credit-card" class="w-5 h-5 text-emerald-400"></i>
+                                <h3 class="font-bold text-sm text-white">Razorpay Payment Gateway API</h3>
                             </div>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-50 text-brand-700 border border-brand-200">
-                                Cards & UPI Live
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                Live Cards & UPI
                             </span>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Razorpay Key ID</label>
-                                <input type="text" id="setting_razorpay_key_id" placeholder="rzp_live_..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono">
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Razorpay Key ID</label>
+                                <input type="text" id="setting_razorpay_key_id" placeholder="rzp_live_..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Razorpay Key Secret</label>
-                                <input type="password" id="setting_razorpay_key_secret" placeholder="••••••••" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono">
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Razorpay Key Secret</label>
+                                <input type="password" id="setting_razorpay_key_secret" placeholder="••••••••" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Merchant Bank Account Settlement Details -->
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <!-- Canara Bank Settlement Details -->
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800">
                             <div class="flex items-center gap-2">
-                                <i data-lucide="landmark" class="w-5 h-5 text-emerald-600"></i>
-                                <h3 class="font-bold text-sm text-slate-900">Merchant Bank Settlement Details</h3>
+                                <i data-lucide="landmark" class="w-5 h-5 text-teal-400"></i>
+                                <h3 class="font-bold text-sm text-white">Canara Bank Settlement Information</h3>
                             </div>
-                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                Verified Settlement
-                            </span>
+                            <span class="text-[10px] text-emerald-400 font-bold">Verified Account</span>
                         </div>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Bank Account Number</label>
-                                <input type="text" id="setting_bank_account_no" value="110076462071" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold">
+                                <label class="block text-xs font-bold text-slate-300 mb-1">Bank Account Number</label>
+                                <input type="text" id="setting_bank_account_no" value="110076462071" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white font-bold">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">IFSC Code</label>
-                                <input type="text" id="setting_bank_ifsc" value="CNRB0002614" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Bank Name</label>
-                                <input type="text" id="setting_bank_name" value="Canara Bank" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Account Holder Name</label>
-                                <input type="text" id="setting_bank_holder_name" value="ROHIT TAK" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold">
+                                <label class="block text-xs font-bold text-slate-300 mb-1">IFSC Code</label>
+                                <input type="text" id="setting_bank_ifsc" value="CNRB0002614" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white font-bold">
                             </div>
                         </div>
                     </div>
 
-                    <!-- Email SMTP Settings -->
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
-                            <div class="flex items-center gap-2">
-                                <i data-lucide="mail" class="w-5 h-5 text-brand-600"></i>
-                                <h3 class="font-bold text-sm text-slate-900">Email Delivery (SMTP)</h3>
-                            </div>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="setting_smtp_enabled" class="rounded text-brand-600 focus:ring-brand-500 w-4 h-4">
-                                <span class="text-xs font-bold text-slate-700">Enable Live SMTP</span>
-                            </label>
-                        </div>
-
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">SMTP Host</label>
-                                <input type="text" id="setting_smtp_host" placeholder="smtp.gmail.com" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">SMTP Port</label>
-                                <input type="number" id="setting_smtp_port" placeholder="587" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">SMTP Username / Email</label>
-                                <input type="text" id="setting_smtp_user" placeholder="rohittak903@gmail.com" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 mb-1">Gmail App Password (16 characters)</label>
-                                <input type="password" id="setting_smtp_password" placeholder="••••••••" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Save Settings Button -->
-                    <div class="flex justify-end gap-3">
-                        <button onclick="saveAllSettings()" class="px-8 py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center gap-2">
+                    <div class="flex justify-end">
+                        <button onclick="saveAllSettings()" class="px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
                             <i data-lucide="save" class="w-4 h-4"></i>
                             <span>Save All Settings</span>
                         </button>
@@ -554,128 +597,209 @@
         </main>
     </div>
 
-    <!-- ================= ADD / EDIT EBOOK MODAL ================= -->
-    <div id="addEbookModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in border border-slate-100">
-            <div class="p-6 bg-slate-900 text-white flex items-center justify-between">
+    <!-- ================= ADD EBOOK MODAL (WITH GOOGLE & KINDLE LINKS) ================= -->
+    <div id="addEbookModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="p-6 bg-slate-950 text-white flex items-center justify-between border-b border-slate-800">
                 <div>
-                    <h3 class="text-lg font-bold">Add New Ebook</h3>
-                    <p class="text-xs text-slate-400">Upload PDF or MS Word DOCX file with details</p>
+                    <h3 class="text-base font-bold">Add New Ebook</h3>
+                    <p class="text-xs text-slate-400">Upload PDF or MS Word file with external marketplace links</p>
                 </div>
-                <button onclick="closeModal('addEbookModal')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+                <button onclick="closeModal('addEbookModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <form id="addEbookForm" onsubmit="handleAddEbookSubmit(event)" class="p-6 space-y-4">
+            <form onsubmit="handleAddEbookSubmit(event)" class="p-6 space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Ebook Title *</label>
-                        <input type="text" id="ebookTitleInput" required placeholder="e.g. Advanced AI Playbook" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Ebook Title *</label>
+                        <input type="text" id="ebookTitleInput" required placeholder="e.g. Mastering Python AI" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Author Name *</label>
-                        <input type="text" id="ebookAuthorInput" required placeholder="e.g. Dr. Alex Morgan" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Author Name *</label>
+                        <input type="text" id="ebookAuthorInput" required placeholder="e.g. Dr. Alex Morgan" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Category *</label>
-                        <input type="text" id="ebookCategoryInput" required placeholder="Technology, Business..." class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Category *</label>
+                        <input type="text" id="ebookCategoryInput" required placeholder="Technology, Business..." class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Regular Price (₹) *</label>
-                        <input type="number" step="0.01" id="ebookPriceInput" required placeholder="299" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Regular Price (₹) *</label>
+                        <input type="number" step="0.01" id="ebookPriceInput" required placeholder="299" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Sale Price (₹)</label>
-                        <input type="number" step="0.01" id="ebookSalePriceInput" placeholder="199 (optional)" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Sale Price (₹)</label>
+                        <input type="number" step="0.01" id="ebookSalePriceInput" placeholder="199 (optional)" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                    </div>
+                </div>
+
+                <!-- External Links -->
+                <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-3">
+                    <span class="text-xs font-bold text-brand-400 block uppercase tracking-wider">External Marketplace Redirect Links:</span>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Google Play Books URL</label>
+                        <input type="url" id="ebookGoogleBooksInput" placeholder="https://play.google.com/store/books/details/..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Amazon Kindle URL</label>
+                        <input type="url" id="ebookKindleInput" placeholder="https://amazon.in/dp/..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Apple Books URL</label>
+                        <input type="url" id="ebookAppleBooksInput" placeholder="https://books.apple.com/..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Description *</label>
-                    <textarea id="ebookDescInput" required rows="3" placeholder="Brief summary of what readers will learn..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white"></textarea>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Description *</label>
+                    <textarea id="ebookDescInput" required rows="3" placeholder="Summary of what readers will learn..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white"></textarea>
                 </div>
 
-                <div class="p-4 bg-brand-50/50 rounded-2xl border-2 border-dashed border-brand-200">
-                    <label class="block text-xs font-bold text-brand-900 mb-1">
-                        Ebook File * (.pdf, .docx, .doc, .epub)
-                    </label>
-                    <input type="file" id="ebookFileInput" required accept=".pdf,.docx,.doc,.epub,.mobi,.txt,.zip" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white hover:file:bg-brand-700">
+                <div class="p-4 bg-brand-950/40 rounded-2xl border border-brand-800">
+                    <label class="block text-xs font-bold text-brand-300 mb-1">Ebook File * (.pdf, .docx, .doc)</label>
+                    <input type="file" id="ebookFileInput" required accept=".pdf,.docx,.doc,.epub" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white">
                 </div>
 
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                    <label class="block text-xs font-bold text-slate-700 mb-1">
-                        Cover Image (Optional)
-                    </label>
-                    <input type="file" id="coverFileInput" accept="image/*" class="w-full text-xs text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white">
+                <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Cover Image (Optional)</label>
+                    <input type="file" id="coverFileInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white">
                 </div>
 
-                <button 
-                    type="submit" 
-                    id="saveEbookBtn"
-                    class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2"
-                >
-                    <i data-lucide="upload-cloud" class="w-5 h-5"></i>
+                <button type="submit" id="saveEbookBtn" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+                    <i data-lucide="upload-cloud" class="w-4 h-4"></i>
                     <span>Upload & Publish Ebook</span>
                 </button>
             </form>
         </div>
     </div>
 
-    <!-- ================= ADD HERO SLIDE MODAL ================= -->
-    <div id="addSlideModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in border border-slate-100">
-            <div class="p-6 bg-slate-900 text-white flex items-center justify-between">
-                <div>
-                    <h3 class="text-lg font-bold">Add Hero Slider Banner</h3>
-                    <p class="text-xs text-slate-400">Configure separate Desktop and Mobile visuals</p>
-                </div>
-                <button onclick="closeModal('addSlideModal')" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+    <!-- ================= ADD BUNDLE MODAL ================= -->
+    <div id="addBundleModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-white">Create Bundle Deal</h3>
+                <button onclick="closeModal('addBundleModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
                     <i data-lucide="x" class="w-4 h-4"></i>
                 </button>
             </div>
 
-            <form id="addSlideForm" onsubmit="handleAddSlideSubmit(event)" class="p-6 space-y-4">
+            <form onsubmit="handleAddBundleSubmit(event)" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Main Headline *</label>
-                    <input type="text" id="slideTitleInput" required placeholder="e.g. Master In-Demand Skills Today" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Bundle Title *</label>
+                    <input type="text" id="bundleTitleInput" required placeholder="e.g. AI & Freelancer Master Bundle (2-in-1)" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Regular Price (₹) *</label>
+                        <input type="number" step="0.01" id="bundlePriceInput" required placeholder="598" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Bundle Sale Price (₹) *</label>
+                        <input type="number" step="0.01" id="bundleSalePriceInput" required placeholder="299" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                    </div>
                 </div>
                 <div>
-                    <label class="block text-xs font-bold text-slate-700 mb-1">Subtitle / Description *</label>
-                    <textarea id="slideSubtitleInput" required rows="2" placeholder="Brief enticing subtext for readers..." class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white"></textarea>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Badge Text</label>
+                    <input type="text" id="bundleBadgeInput" placeholder="🔥 50% OFF MEGA PACK" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Badge Text</label>
-                        <input type="text" id="slideBadgeInput" placeholder="e.g. 🔥 Best Seller Spotlight" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 mb-1">Button Text</label>
-                        <input type="text" id="slideCtaTextInput" placeholder="Explore Best Sellers" class="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:bg-white">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Select Ebooks to Include in Bundle *</label>
+                    <div id="bundleEbooksCheckboxList" class="max-h-40 overflow-y-auto space-y-2 p-3 bg-slate-950 rounded-xl border border-slate-800 text-xs">
+                        <!-- Populated dynamically -->
                     </div>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Description *</label>
+                    <textarea id="bundleDescInput" required rows="2" placeholder="Brief enticing bundle summary..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white"></textarea>
+                </div>
+                <button type="submit" id="saveBundleBtn" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Publish Bundle Offer
+                </button>
+            </form>
+        </div>
+    </div>
 
-                <div class="p-4 bg-brand-50/50 rounded-2xl border border-brand-200 space-y-3">
+    <!-- ================= ADD PROMO CODE MODAL ================= -->
+    <div id="addCouponModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-white">Create Promo Code</h3>
+                <button onclick="closeModal('addCouponModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleAddCouponSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Promo Code (Uppercase) *</label>
+                    <input type="text" id="couponCodeInput" required placeholder="e.g. ROHIT20, SAVE50" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono uppercase text-white">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-brand-900 mb-1">Desktop Banner Image (Wide)</label>
-                        <input type="file" id="slideDesktopFileInput" accept="image/*" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Type</label>
+                        <select id="couponTypeInput" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                            <option value="percentage">Percentage (%) Off</option>
+                            <option value="flat">Flat Rupee (₹) Off</option>
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-brand-900 mb-1">Mobile Banner Image (Square / Compact)</label>
-                        <input type="file" id="slideMobileFileInput" accept="image/*" class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white">
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Discount Value *</label>
+                        <input type="number" step="0.1" id="couponValueInput" required placeholder="20 or 50" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                     </div>
                 </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Minimum Order Amount (₹)</label>
+                    <input type="number" id="couponMinOrderInput" value="0" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                </div>
+                <button type="submit" id="saveCouponBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Create Promo Code
+                </button>
+            </form>
+        </div>
+    </div>
 
-                <button 
-                    type="submit" 
-                    id="saveSlideBtn"
-                    class="w-full py-3.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2"
-                >
-                    <i data-lucide="upload" class="w-4 h-4"></i>
-                    <span>Publish Hero Banner</span>
+    <!-- ================= ADD AI REVIEW MODAL ================= -->
+    <div id="addAiReviewModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-white">Add AI Spotlight Review</h3>
+                <button onclick="closeModal('addAiReviewModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleAddAiReviewSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Select Ebook *</label>
+                    <select id="reviewEbookSelect" required class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Reviewer Name *</label>
+                    <input type="text" id="aiReviewerName" required placeholder="e.g. Vikramaditya S." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Rating (1 to 5 Stars)</label>
+                    <select id="aiReviewRating" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                        <option value="5">★★★★★ (5 Stars)</option>
+                        <option value="4">★★★★☆ (4 Stars)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Headline</label>
+                    <input type="text" id="aiReviewHeadline" placeholder="e.g. Outstanding practical guide" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Review Text *</label>
+                    <textarea id="aiReviewText" required rows="3" placeholder="Social proof review text..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white"></textarea>
+                </div>
+                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    Publish AI Review
                 </button>
             </form>
         </div>

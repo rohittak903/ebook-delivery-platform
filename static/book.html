@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ebook Details - EBookVault Digital Delivery</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Razorpay Standard Checkout SDK -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link rel="stylesheet" href="/static/css/custom.css">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Announcement Bar -->
+    <div class="bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+        <span>🎉 Special Offer: Use coupon code <strong class="underline font-mono">ROHIT20</strong> for 20% OFF! Instant delivery to Email & WhatsApp.</span>
+    </div>
+
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-40 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 py-3.5 flex items-center justify-between gap-4">
+            
+            <a href="/" class="flex items-center gap-3 group">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20 group-hover:scale-105 transition-transform">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight text-white leading-none">EBookVault</h1>
+                    <p class="text-[11px] font-medium text-slate-400 mt-0.5">By Raja Rohit Tak • Instant Delivery</p>
+                </div>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-6 text-sm font-semibold text-slate-300">
+                <a href="/#bundles" class="hover:text-brand-400 transition flex items-center gap-1"><span class="text-rose-400">🎁</span> Bundle Deals</a>
+                <a href="/#bestsellers" class="hover:text-brand-400 transition">Best Sellers</a>
+                <a href="/#catalog" class="hover:text-brand-400 transition">Full Catalog</a>
+                <a href="/#reviews" class="hover:text-brand-400 transition">Reader Reviews</a>
+            </nav>
+
+            <div class="flex items-center gap-3">
+                <div id="authNavContainer">
+                    <button onclick="openUnifiedAuthModal()" class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-900 bg-white hover:bg-slate-200 rounded-xl transition shadow-sm">
+                        <i data-lucide="user" class="w-3.5 h-3.5"></i>
+                        <span>Sign In</span>
+                    </button>
+                </div>
+                <a href="/" class="px-3.5 py-2 text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition border border-slate-700 flex items-center gap-1.5">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
+                    <span>Store</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Product Container -->
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 w-full">
+        
+        <!-- Breadcrumbs -->
+        <nav class="flex items-center gap-2 text-xs text-slate-400 mb-8 font-medium">
+            <a href="/" class="hover:text-white transition">Home</a>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600"></i>
+            <a href="/#catalog" class="hover:text-white transition">Catalog</a>
+            <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-600"></i>
+            <span id="breadcrumbTitle" class="text-slate-200 truncate">Loading Book...</span>
+        </nav>
+
+        <!-- Product Hero Box -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-2xl">
+            
+            <!-- Left: Book Visual Mockup -->
+            <div class="lg:col-span-5 flex flex-col items-center">
+                <div class="relative w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-950 aspect-[3/4] group">
+                    <img id="productCover" src="/uploads/covers/python-ai-cover.jpg" alt="Book Cover" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                    <div class="absolute top-3 left-3 flex items-center gap-2">
+                        <span id="productFormatBadge" class="px-3 py-1 rounded-lg text-xs font-extrabold uppercase shadow-sm bg-brand-600 text-white">PDF + DOCX</span>
+                        <span id="productSaleBadge" class="px-2.5 py-1 rounded-lg text-xs font-extrabold uppercase shadow-sm bg-rose-600 text-white hidden">SALE</span>
+                    </div>
+                </div>
+
+                <div class="mt-6 w-full max-w-sm flex items-center justify-between p-3.5 bg-slate-950/80 rounded-2xl border border-slate-800 text-xs text-slate-300">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                        <span>100% Verified Delivery</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="download" class="w-4 h-4 text-brand-400"></i>
+                        <span id="productDownloadsCount">1.2k+ Downloads</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Details & Purchase Widget -->
+            <div class="lg:col-span-7 flex flex-col justify-between space-y-6">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <span id="productCategory" class="px-3 py-1 rounded-full text-xs font-bold bg-brand-500/20 text-brand-300 border border-brand-500/30">Technology</span>
+                        <div class="flex items-center gap-1 text-amber-400 text-xs font-bold bg-slate-950 px-2.5 py-1 rounded-full border border-slate-800">
+                            <span>★</span>
+                            <span id="productRatingNum">4.9</span>
+                            <span class="text-slate-400 font-normal" id="productReviewCountText">(180+ reviews)</span>
+                        </div>
+                    </div>
+
+                    <h1 id="productTitle" class="text-2xl sm:text-4xl font-extrabold text-white tracking-tight leading-tight">
+                        Loading Ebook...
+                    </h1>
+                    <p class="text-sm font-semibold text-brand-400 mt-2">By <span id="productAuthor">Author</span></p>
+
+                    <!-- Price Card -->
+                    <div class="my-6 p-5 bg-slate-950 rounded-2xl border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs text-slate-400 uppercase font-bold tracking-wider block">Official Direct Price</span>
+                            <div class="flex items-baseline gap-3 mt-1">
+                                <span id="productFinalPrice" class="text-3xl sm:text-4xl font-extrabold text-white">₹199</span>
+                                <span id="productOrigPrice" class="text-lg text-slate-500 line-through">₹399</span>
+                                <span id="productDiscountPill" class="text-xs font-bold text-emerald-400 bg-emerald-950/60 px-2.5 py-1 rounded-lg border border-emerald-800">50% OFF</span>
+                            </div>
+                        </div>
+                        <div class="text-xs text-emerald-400 flex items-center gap-1.5 font-semibold bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-900">
+                            <i data-lucide="zap" class="w-4 h-4"></i>
+                            <span>Instant Automated Delivery</span>
+                        </div>
+                    </div>
+
+                    <!-- Promo Code / Coupon Box -->
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                        <label class="block text-xs font-bold text-slate-300 flex items-center justify-between">
+                            <span class="flex items-center gap-1.5">
+                                <i data-lucide="tag" class="w-3.5 h-3.5 text-brand-400"></i>
+                                <span>Have a Promo Code?</span>
+                            </span>
+                            <span class="text-[11px] text-brand-400 font-normal">Try: <strong class="font-mono">ROHIT20</strong> or <strong class="font-mono">WELCOME50</strong></span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input 
+                                type="text" 
+                                id="promoCodeInput" 
+                                placeholder="Enter coupon code (e.g. ROHIT20)" 
+                                class="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs font-mono uppercase text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                            >
+                            <button 
+                                onclick="handleApplyProductCoupon()" 
+                                id="applyCouponBtn"
+                                class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl transition border border-slate-700"
+                            >
+                                Apply
+                            </button>
+                        </div>
+                        <div id="couponStatusMessage" class="text-xs hidden"></div>
+                    </div>
+
+                    <!-- Primary Buy Now Button -->
+                    <div class="mt-6 flex flex-col sm:flex-row gap-3">
+                        <button 
+                            onclick="handleProductDirectBuy()" 
+                            id="directBuyBtn"
+                            class="flex-1 py-4 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-extrabold text-sm rounded-2xl shadow-xl shadow-brand-600/30 transition flex items-center justify-center gap-2"
+                        >
+                            <i data-lucide="zap" class="w-5 h-5"></i>
+                            <span>Buy Instant Digital Copy Now</span>
+                        </button>
+                    </div>
+
+                    <!-- External Marketplace Links Section ("Also Available On:") -->
+                    <div id="externalMarketplacesContainer" class="mt-6 pt-6 border-t border-slate-800">
+                        <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-3">Also Available On External Marketplaces:</span>
+                        <div class="flex flex-wrap gap-3">
+                            <a 
+                                id="googleBooksLink" 
+                                href="#" 
+                                target="_blank" 
+                                class="hidden px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 transition flex items-center gap-2"
+                            >
+                                <i data-lucide="play" class="w-4 h-4 text-emerald-400"></i>
+                                <span>Google Play Books</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </a>
+
+                            <a 
+                                id="kindleBooksLink" 
+                                href="#" 
+                                target="_blank" 
+                                class="hidden px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 transition flex items-center gap-2"
+                            >
+                                <i data-lucide="book" class="w-4 h-4 text-amber-400"></i>
+                                <span>Amazon Kindle / Paperback</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </a>
+
+                            <a 
+                                id="appleBooksLink" 
+                                href="#" 
+                                target="_blank" 
+                                class="hidden px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 transition flex items-center gap-2"
+                            >
+                                <i data-lucide="apple" class="w-4 h-4 text-slate-300"></i>
+                                <span>Apple Books</span>
+                                <i data-lucide="external-link" class="w-3.5 h-3.5 text-slate-400"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Description & Sample Chapter Tabs -->
+        <div class="mt-12 bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl space-y-6">
+            <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                <i data-lucide="file-text" class="w-5 h-5 text-brand-400"></i>
+                <span>About This Ebook & What You'll Learn</span>
+            </h3>
+            <p id="productDescription" class="text-slate-300 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                Loading description...
+            </p>
+
+            <div class="p-6 bg-slate-950 rounded-2xl border border-slate-800 mt-6">
+                <h4 class="text-xs font-bold text-brand-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <i data-lucide="bookmark" class="w-4 h-4"></i>
+                    <span>Sample Preview Excerpt</span>
+                </h4>
+                <p id="productSampleText" class="text-xs font-mono text-slate-400 leading-relaxed whitespace-pre-line max-h-48 overflow-y-auto">
+                    Loading sample text...
+                </p>
+            </div>
+        </div>
+
+        <!-- Customer & AI Reviews Section -->
+        <div class="mt-12 bg-slate-900 rounded-3xl p-6 sm:p-10 border border-slate-800 shadow-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-slate-800">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="message-square" class="w-5 h-5 text-amber-400"></i>
+                        <span>Reader Reviews & Verified Ratings</span>
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-1">Real feedback from readers who purchased this guide</p>
+                </div>
+                <button onclick="openLeaveReviewModal()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700 transition flex items-center gap-1.5 self-start sm:self-auto">
+                    <i data-lucide="star" class="w-3.5 h-3.5 text-amber-400"></i>
+                    <span>Write a Review</span>
+                </button>
+            </div>
+
+            <!-- Reviews List Grid -->
+            <div id="reviewsListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="col-span-full text-center py-8 text-slate-500 text-sm">Loading reviews...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Leave Review Modal -->
+    <div id="leaveReviewModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-white">Write a Review</h3>
+                <button onclick="closeModal('leaveReviewModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleReviewSubmit(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Your Rating *</label>
+                    <div class="flex items-center gap-2 text-2xl text-amber-400 cursor-pointer" id="starSelectorContainer">
+                        <span onclick="setReviewRating(1)" id="star-1">★</span>
+                        <span onclick="setReviewRating(2)" id="star-2">★</span>
+                        <span onclick="setReviewRating(3)" id="star-3">★</span>
+                        <span onclick="setReviewRating(4)" id="star-4">★</span>
+                        <span onclick="setReviewRating(5)" id="star-5">★</span>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Your Full Name *</label>
+                    <input type="text" id="reviewAuthorName" required placeholder="e.g. Aman Sharma" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Review Headline</label>
+                    <input type="text" id="reviewHeadline" placeholder="e.g. Incredibly actionable and clear!" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Review Message *</label>
+                    <textarea id="reviewMessage" required rows="3" placeholder="Share your experience reading this ebook..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                </div>
+                <button type="submit" id="submitReviewBtn" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg transition">
+                    Publish Review
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Purchase Success Modal -->
+    <div id="orderSuccessModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-800 text-center p-8">
+            <div class="w-16 h-16 bg-emerald-950 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-emerald-800">
+                <i data-lucide="check" class="w-8 h-8 stroke-[3]"></i>
+            </div>
+            <h3 class="text-2xl font-extrabold text-white">Payment Confirmed!</h3>
+            <p id="successCustomerGreeting" class="text-sm text-slate-400 mt-1">Thank you for your purchase!</p>
+
+            <div id="successOrdersListContainer" class="bg-slate-950 rounded-2xl p-4 my-6 border border-slate-800 text-left space-y-3">
+                <!-- Injected dynamically -->
+            </div>
+
+            <div class="space-y-3">
+                <a id="successDirectDownloadBtn" href="#" target="_blank" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-5 h-5"></i>
+                    <span>Download Ebook Now</span>
+                </a>
+                <a id="successWhatsAppBtn" href="#" target="_blank" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <i data-lucide="message-circle" class="w-5 h-5"></i>
+                    <span>Open in WhatsApp</span>
+                </a>
+            </div>
+            <button onclick="closeModal('orderSuccessModal')" class="mt-5 text-xs text-slate-500 hover:text-slate-300">
+                Done & Return
+            </button>
+        </div>
+    </div>
+
+    <!-- Unified Auth Modal (OTP / Email / Google) -->
+    <div id="unifiedAuthModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-800 animate-fade-in">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-lg text-white">Sign In to Continue</h3>
+                <button onclick="closeModal('unifiedAuthModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                <!-- OTP Phone Form -->
+                <form id="otpPhoneForm" onsubmit="handleSendOtp(event)" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">WhatsApp / Phone Number</label>
+                        <input type="tel" id="otpPhoneInput" required placeholder="+91 9876543210" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <button type="submit" id="sendOtpBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+                        <span>Send 6-Digit OTP</span>
+                    </button>
+                </form>
+
+                <form id="otpVerifyForm" onsubmit="handleVerifyOtp(event)" class="space-y-3 hidden">
+                    <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-xs text-brand-300" id="otpSentNotice">
+                        OTP sent! Enter code below.
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">Enter 6-Digit OTP</label>
+                        <input type="text" id="otpCodeInput" maxlength="6" required placeholder="123456" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-center font-mono text-base tracking-widest text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    </div>
+                    <button type="submit" id="verifyOtpBtn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition">
+                        Verify OTP & Continue
+                    </button>
+                </form>
+
+                <div class="flex items-center my-3">
+                    <div class="flex-1 border-t border-slate-800"></div>
+                    <span class="px-2 text-[10px] font-bold text-slate-500 uppercase">or Google</span>
+                    <div class="flex-1 border-t border-slate-800"></div>
+                </div>
+
+                <button onclick="handleGoogleSignInDemo()" class="w-full py-2.5 bg-white hover:bg-slate-100 text-slate-900 font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/><path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"/><path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.97 0 12s.45 3.82 1.25 5.42l4.03-3.15z"/><path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.93 6.72-4.93z"/></svg>
+                    <span>Continue with Google</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product JS -->
+    <script src="/static/js/book.js"></script>
+</body>
+</html>

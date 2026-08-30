@@ -1,37 +1,23 @@
-// Admin Dashboard Client Application
+// Admin Dashboard Logic - Raja Rohit Tak
 
 let adminToken = localStorage.getItem('ebookvault_admin_token') || '';
-let currentAdminTab = 'overview';
-let cachedSettings = {};
-let allAdminEbooksList = [];
+let currentTab = 'overview';
+let cachedEbooks = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
     if (adminToken) {
-        const isValid = await verifyAuth();
+        const isValid = await verifyAdminSession();
         if (isValid) {
             showDashboard();
-        } else {
-            showLogin();
+            return;
         }
-    } else {
-        showLogin();
     }
+    showLogin();
 });
 
-function showLogin() {
-    document.getElementById('loginView').classList.remove('hidden');
-    document.getElementById('dashboardView').classList.add('hidden');
-    lucide.createIcons();
-}
+// --- Auth Handling ---
 
-function showDashboard() {
-    document.getElementById('loginView').classList.add('hidden');
-    document.getElementById('dashboardView').classList.remove('hidden');
-    switchTab('overview');
-    checkOpenTicketsCount();
-}
-
-async function verifyAuth() {
+async function verifyAdminSession() {
     try {
         const res = await fetch('/api/admin/check-auth', {
             headers: { 'Authorization': `Bearer ${adminToken}` }
@@ -42,34 +28,45 @@ async function verifyAuth() {
     }
 }
 
+function showLogin() {
+    document.getElementById('loginView').classList.remove('hidden');
+    document.getElementById('dashboardView').classList.add('hidden');
+}
+
+function showDashboard() {
+    document.getElementById('loginView').classList.add('hidden');
+    document.getElementById('dashboardView').classList.remove('hidden');
+    lucide.createIcons();
+    switchTab('overview');
+}
+
 async function handleAdminLogin(e) {
     e.preventDefault();
     const btn = document.getElementById('loginSubmitBtn');
     btn.disabled = true;
-    btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Verifying...`;
+    btn.innerText = 'Verifying...';
 
     const username = document.getElementById('adminUsername').value.trim();
     const password = document.getElementById('adminPassword').value.trim();
 
     try {
-        const res = await fetch('/api/admin/login', {
+        const res = await fetch('/api/auth/unified-login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify({ username_or_email: username, password: password })
         });
 
         const data = await res.json();
-        if (!res.ok) {
-            alert(data.detail || 'Login failed. Invalid username or password.');
-            return;
+        if (res.ok && data.role === 'admin') {
+            adminToken = data.token;
+            localStorage.setItem('ebookvault_admin_token', adminToken);
+            showDashboard();
+        } else {
+            alert(data.detail || 'Invalid admin credentials');
         }
-
-        adminToken = data.token;
-        localStorage.setItem('ebookvault_admin_token', adminToken);
-        showDashboard();
     } catch (err) {
         console.error('Login error', err);
-        alert('Network error. Please make sure the server is running.');
+        alert('Network connection error');
     } finally {
         btn.disabled = false;
         btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
@@ -78,246 +75,515 @@ async function handleAdminLogin(e) {
 }
 
 function adminLogout() {
-    localStorage.removeItem('ebookvault_admin_token');
     adminToken = '';
+    localStorage.removeItem('ebookvault_admin_token');
     showLogin();
 }
 
+// --- Navigation Tabs ---
+
 function switchTab(tabId) {
-    currentAdminTab = tabId;
+    currentTab = tabId;
     
-    // Update sidebar styling
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.classList.remove('bg-brand-600', 'text-white');
         btn.classList.add('hover:bg-slate-800', 'text-slate-300');
     });
-
+    
     const activeBtn = document.getElementById(`tab-${tabId}`);
     if (activeBtn) {
-        activeBtn.classList.add('bg-brand-600', 'text-white');
         activeBtn.classList.remove('hover:bg-slate-800', 'text-slate-300');
+        activeBtn.classList.add('bg-brand-600', 'text-white');
     }
 
-    // Hide all panels
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
+    const activePanel = document.getElementById(`panel-${tabId}`);
+    if (activePanel) activePanel.classList.remove('hidden');
 
-    // Show selected panel
-    const targetPanel = document.getElementById(`panel-${tabId}`);
-    if (targetPanel) {
-        targetPanel.classList.remove('hidden');
-    }
-
-    // Update title
     const titles = {
         'overview': 'Dashboard Overview',
-        'ebooks': 'Ebooks Catalog & Files',
-        'slides': 'Hero Slider Banners Manager',
-        'customers': 'Registered Customers Directory',
+        'ebooks': 'Ebooks Catalog & External Links',
+        'bundles': 'Special Bundle Deals Manager',
+        'coupons': 'Promo Codes & Discounts',
+        'reviews': 'Customer & AI Reviews Manager',
+        'slides': 'Hero Slider Banners',
+        'customers': 'Registered Customers CRM',
         'orders': 'Orders & Delivery Logs',
-        'tickets': 'Customer Support & Missing Books Requests',
-        'settings': 'Delivery & Payment Gateway Settings'
+        'tickets': 'Support Ticket Desk',
+        'settings': 'Settings & Admin Password'
     };
-    document.getElementById('pageTitle').innerText = titles[tabId] || 'Admin Dashboard';
+    document.getElementById('pageTitle').innerText = titles[tabId] || 'Admin';
 
-    // Load data for specific tab
-    if (tabId === 'overview') loadOverviewStats();
-    if (tabId === 'ebooks') loadAdminEbooks();
-    if (tabId === 'slides') loadAdminSlides();
-    if (tabId === 'customers') loadAdminCustomers();
-    if (tabId === 'orders') loadAdminOrders();
-    if (tabId === 'tickets') loadAdminTickets();
-    if (tabId === 'settings') loadAdminSettings();
-
-    lucide.createIcons();
+    refreshCurrentTab();
 }
 
 function refreshCurrentTab() {
-    switchTab(currentAdminTab);
+    if (currentTab === 'overview') loadAdminStats();
+    else if (currentTab === 'ebooks') loadAdminEbooks();
+    else if (currentTab === 'bundles') loadAdminBundles();
+    else if (currentTab === 'coupons') loadAdminCoupons();
+    else if (currentTab === 'reviews') loadAdminReviews();
+    else if (currentTab === 'slides') loadAdminSlides();
+    else if (currentTab === 'customers') loadAdminCustomers();
+    else if (currentTab === 'orders') loadAdminOrders();
+    else if (currentTab === 'tickets') loadAdminTickets();
+    else if (currentTab === 'settings') loadAdminSettings();
+    lucide.createIcons();
 }
 
-// 1. OVERVIEW & ANALYTICS
-async function loadOverviewStats() {
+// --- Overview Stats ---
+
+async function loadAdminStats() {
     try {
-        const res = await fetch('/api/admin/analytics', {
+        const res = await fetch('/api/admin/orders', {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
+        const orders = data.orders || [];
 
-        const curr = cachedSettings.store_currency || '₹';
-        document.getElementById('statRevenue').innerText = `${curr}${(data.total_revenue || 0).toFixed(2)}`;
-        document.getElementById('statOrders').innerText = data.total_orders || 0;
-        document.getElementById('statEbooks').innerText = data.total_ebooks || 0;
+        const totalRevenue = orders.reduce((acc, o) => acc + (o.amount || 0), 0);
+        document.getElementById('statRevenue').innerText = `₹${totalRevenue.toFixed(2)}`;
+        document.getElementById('statOrders').innerText = orders.length;
 
-        const topList = document.getElementById('topEbooksList');
-        if (!data.top_ebooks || data.top_ebooks.length === 0) {
-            topList.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">No ebook sales recorded yet.</p>`;
-        } else {
-            topList.innerHTML = data.top_ebooks.map((item, idx) => `
-                <div class="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-100">
-                    <div class="flex items-center gap-3">
-                        <span class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center">${idx + 1}</span>
-                        <div>
-                            <div class="font-bold text-xs text-slate-800 line-clamp-1">${item.ebook_title}</div>
-                            <div class="text-[10px] text-slate-400">${item.sales_count} copies sold</div>
-                        </div>
-                    </div>
-                    <span class="font-extrabold text-xs text-brand-700">${curr}${(item.revenue || 0).toFixed(2)}</span>
-                </div>
-            `).join('');
-        }
-
-        lucide.createIcons();
-    } catch (err) {
-        console.error('Analytics load error', err);
+        const ebRes = await fetch('/api/admin/ebooks', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const ebData = await ebRes.json();
+        cachedEbooks = ebData.ebooks || [];
+        document.getElementById('statEbooks').innerText = cachedEbooks.length;
+    } catch (e) {
+        console.error('Stats load error', e);
     }
 }
 
-// 2. EBOOKS MANAGER
+// --- Ebooks Management ---
+
 async function loadAdminEbooks() {
     const tbody = document.getElementById('adminEbooksTableBody');
-    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Loading catalog...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading catalog...</td></tr>`;
 
     try {
         const res = await fetch('/api/admin/ebooks', {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
-        const ebooks = data.ebooks || [];
-        allAdminEbooksList = ebooks;
+        cachedEbooks = data.ebooks || [];
 
-        if (ebooks.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500">No ebooks found. Click 'Add New Ebook' to upload your first PDF or Word document.</td></tr>`;
+        if (cachedEbooks.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No ebooks uploaded yet.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = ebooks.map(b => {
-            const format = (b.file_format || 'pdf').toUpperCase();
-            let badgeClass = 'badge-pdf';
-            if (format.includes('DOC')) badgeClass = 'badge-docx';
-
-            const sizeKB = (b.file_size_bytes / 1024).toFixed(1);
-
-            return `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-4 px-6">
-                        <div class="flex items-center gap-3">
-                            <img src="${b.cover_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-10 h-14 object-cover rounded-lg border border-slate-200 shadow-sm flex-shrink-0">
-                            <div>
-                                <div class="font-bold text-slate-900 text-sm">${b.title}</div>
-                                <div class="text-xs text-slate-500">By ${b.author}</div>
-                                <div class="text-[10px] text-slate-400 mt-0.5">${sizeKB} KB</div>
-                            </div>
+        tbody.innerHTML = cachedEbooks.map(b => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6">
+                    <div class="flex items-center gap-3">
+                        <img src="${b.cover_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-10 h-14 object-cover rounded-lg border border-slate-800">
+                        <div>
+                            <div class="font-bold text-white">${b.title}</div>
+                            <div class="text-[11px] text-slate-400">By ${b.author}</div>
                         </div>
-                    </td>
-                    <td class="py-4 px-4 text-xs font-semibold text-slate-600">${b.category}</td>
-                    <td class="py-4 px-4">
-                        <span class="px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase ${badgeClass}">${format}</span>
-                    </td>
-                    <td class="py-4 px-4 font-bold text-slate-800 text-xs">
-                        ₹${b.price.toFixed(2)}
-                        ${b.sale_price ? `<span class="text-[10px] text-emerald-600 block">Sale: ₹${b.sale_price.toFixed(2)}</span>` : ''}
-                    </td>
-                    <td class="py-4 px-4 text-xs font-semibold text-slate-600">${b.downloads_count || 0}</td>
-                    <td class="py-4 px-4">
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${b.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'}">
-                            ${b.is_active ? 'Active' : 'Draft'}
-                        </span>
-                    </td>
-                    <td class="py-4 px-6 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            <button onclick="handleDeleteEbook(${b.id}, '${b.title}')" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition" title="Delete">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        lucide.createIcons();
-    } catch (err) {
-        console.error('Ebooks load error', err);
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-500">Failed to load ebooks.</td></tr>`;
+                    </div>
+                </td>
+                <td class="py-3 px-4 text-slate-300 font-medium">${b.category || 'General'}</td>
+                <td class="py-3 px-4 font-bold text-emerald-400">₹${(b.sale_price || b.price).toFixed(2)}</td>
+                <td class="py-3 px-4">
+                    <div class="flex items-center gap-1.5 text-[11px]">
+                        ${b.google_books_url ? `<span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800" title="${b.google_books_url}">Google</span>` : ''}
+                        ${b.kindle_url ? `<span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800" title="${b.kindle_url}">Kindle</span>` : ''}
+                        ${b.apple_books_url ? `<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300" title="${b.apple_books_url}">Apple</span>` : ''}
+                        ${(!b.google_books_url && !b.kindle_url && !b.apple_books_url) ? `<span class="text-slate-500 italic">None</span>` : ''}
+                    </div>
+                </td>
+                <td class="py-3 px-4 font-mono text-slate-400">${b.downloads_count || 0}</td>
+                <td class="py-3 px-6 text-right">
+                    <button onclick="deleteAdminEbook(${b.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Ebooks load error', e);
     }
 }
 
 function openAddEbookModal() {
-    document.getElementById('addEbookForm').reset();
-    document.getElementById('addEbookModal').classList.remove('hidden');
-    lucide.createIcons();
+    openModal('addEbookModal');
 }
 
 async function handleAddEbookSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('saveEbookBtn');
     btn.disabled = true;
-    btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Uploading Ebook & Files...`;
+    btn.innerText = 'Uploading...';
 
-    const form = new FormData();
-    form.append('title', document.getElementById('ebookTitleInput').value.trim());
-    form.append('author', document.getElementById('ebookAuthorInput').value.trim());
-    form.append('category', document.getElementById('ebookCategoryInput').value.trim());
-    form.append('price', document.getElementById('ebookPriceInput').value);
+    const formData = new FormData();
+    formData.append('title', document.getElementById('ebookTitleInput').value.trim());
+    formData.append('author', document.getElementById('ebookAuthorInput').value.trim());
+    formData.append('category', document.getElementById('ebookCategoryInput').value.trim());
+    formData.append('price', document.getElementById('ebookPriceInput').value);
     
     const salePrice = document.getElementById('ebookSalePriceInput').value;
-    if (salePrice) form.append('sale_price', salePrice);
-    
-    form.append('description', document.getElementById('ebookDescInput').value.trim());
+    if (salePrice) formData.append('sale_price', salePrice);
+
+    const gUrl = document.getElementById('ebookGoogleBooksInput').value.trim();
+    if (gUrl) formData.append('google_books_url', gUrl);
+
+    const kUrl = document.getElementById('ebookKindleInput').value.trim();
+    if (kUrl) formData.append('kindle_url', kUrl);
+
+    const aUrl = document.getElementById('ebookAppleBooksInput').value.trim();
+    if (aUrl) formData.append('apple_books_url', aUrl);
+
+    formData.append('description', document.getElementById('ebookDescInput').value.trim());
 
     const ebookFile = document.getElementById('ebookFileInput').files[0];
-    if (ebookFile) form.append('ebook_file', ebookFile);
+    if (ebookFile) formData.append('ebook_file', ebookFile);
 
     const coverFile = document.getElementById('coverFileInput').files[0];
-    if (coverFile) form.append('cover_file', coverFile);
+    if (coverFile) formData.append('cover_file', coverFile);
 
     try {
         const res = await fetch('/api/admin/ebooks', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${adminToken}` },
-            body: form
+            body: formData
         });
 
         const data = await res.json();
-        if (!res.ok) {
-            alert(data.detail || 'Failed to upload ebook.');
-            return;
+        if (res.ok) {
+            alert('Ebook uploaded successfully!');
+            closeModal('addEbookModal');
+            loadAdminEbooks();
+        } else {
+            alert(data.detail || 'Upload failed');
         }
-
-        alert('Ebook uploaded and published successfully!');
-        closeModal('addEbookModal');
-        loadAdminEbooks();
     } catch (err) {
         console.error('Upload error', err);
-        alert('Network error during upload.');
     } finally {
         btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="upload-cloud" class="w-5 h-5 mr-2"></i><span>Upload & Publish Ebook</span>`;
-        lucide.createIcons();
+        btn.innerText = 'Upload & Publish Ebook';
     }
 }
 
-async function handleDeleteEbook(id, title) {
-    if (!confirm(`Are you sure you want to delete "${title}"?`)) return;
-
+async function deleteAdminEbook(id) {
+    if (!confirm('Are you sure you want to delete this ebook?')) return;
     try {
         const res = await fetch(`/api/admin/ebooks/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
-        if (res.ok) {
-            loadAdminEbooks();
-        } else {
-            alert('Failed to delete ebook.');
-        }
-    } catch (err) {
-        console.error('Delete error', err);
+        if (res.ok) loadAdminEbooks();
+    } catch (e) {
+        console.error('Delete ebook error', e);
     }
 }
 
-// 3. HERO SLIDES MANAGER
+// --- Bundle Offers Management ---
+
+async function loadAdminBundles() {
+    const tbody = document.getElementById('adminBundlesTableBody');
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading bundles...</td></tr>`;
+
+    try {
+        const res = await fetch('/api/admin/bundles', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        const bundles = data.bundles || [];
+
+        if (bundles.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No bundles created yet.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = bundles.map(b => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6 font-bold text-white">${b.title}</td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 text-[10px] font-extrabold border border-amber-800">${b.badge_text || 'BUNDLE'}</span></td>
+                <td class="py-3 px-4 font-mono text-slate-400 text-xs">${b.ebook_ids}</td>
+                <td class="py-3 px-4 text-slate-400 line-through">₹${b.price.toFixed(2)}</td>
+                <td class="py-3 px-4 font-bold text-emerald-400">₹${b.sale_price.toFixed(2)}</td>
+                <td class="py-3 px-6 text-right">
+                    <button onclick="deleteAdminBundle(${b.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Bundles load error', e);
+    }
+}
+
+async function openAddBundleModal() {
+    // Ensure ebooks are loaded for checkbox list
+    if (cachedEbooks.length === 0) {
+        const res = await fetch('/api/admin/ebooks', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+        const data = await res.json();
+        cachedEbooks = data.ebooks || [];
+    }
+
+    const list = document.getElementById('bundleEbooksCheckboxList');
+    list.innerHTML = cachedEbooks.map(eb => `
+        <label class="flex items-center gap-2 cursor-pointer p-1.5 hover:bg-slate-900 rounded-lg">
+            <input type="checkbox" name="bundleEbookCheck" value="${eb.id}" class="rounded border-slate-700 bg-slate-900 text-brand-600 focus:ring-brand-500">
+            <span class="text-white font-medium truncate">${eb.title} (₹${eb.sale_price || eb.price})</span>
+        </label>
+    `).join('');
+
+    openModal('addBundleModal');
+}
+
+async function handleAddBundleSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveBundleBtn');
+    btn.disabled = true;
+
+    const checked = Array.from(document.querySelectorAll('input[name="bundleEbookCheck"]:checked')).map(cb => parseInt(cb.value));
+    if (checked.length < 2) {
+        alert('Please select at least 2 ebooks to form a bundle deal.');
+        btn.disabled = false;
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', document.getElementById('bundleTitleInput').value.trim());
+    formData.append('price', document.getElementById('bundlePriceInput').value);
+    formData.append('sale_price', document.getElementById('bundleSalePriceInput').value);
+    formData.append('badge_text', document.getElementById('bundleBadgeInput').value.trim());
+    formData.append('ebook_ids', JSON.stringify(checked));
+    formData.append('description', document.getElementById('bundleDescInput').value.trim());
+
+    try {
+        const res = await fetch('/api/admin/bundles', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            body: formData
+        });
+        if (res.ok) {
+            alert('Bundle offer published!');
+            closeModal('addBundleModal');
+            loadAdminBundles();
+        } else {
+            alert('Failed to create bundle.');
+        }
+    } catch (e) {
+        console.error('Bundle submit error', e);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function deleteAdminBundle(id) {
+    if (!confirm('Delete this bundle offer?')) return;
+    try {
+        const res = await fetch(`/api/admin/bundles/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (res.ok) loadAdminBundles();
+    } catch (e) {
+        console.error('Bundle delete error', e);
+    }
+}
+
+// --- Promo Codes / Coupons Management ---
+
+async function loadAdminCoupons() {
+    const tbody = document.getElementById('adminCouponsTableBody');
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading coupons...</td></tr>`;
+
+    try {
+        const res = await fetch('/api/admin/coupons', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        const coupons = data.coupons || [];
+
+        if (coupons.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No promo codes created yet.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = coupons.map(c => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6 font-mono font-bold text-brand-300">${c.code}</td>
+                <td class="py-3 px-4 font-bold text-white">${c.discount_type === 'percentage' ? `${c.discount_value}% OFF` : `₹${c.discount_value} OFF`}</td>
+                <td class="py-3 px-4 text-slate-400">₹${c.min_order_amount.toFixed(2)}</td>
+                <td class="py-3 px-4 font-mono text-slate-300">${c.used_count || 0}</td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 text-[10px] font-bold border border-emerald-800">ACTIVE</span></td>
+                <td class="py-3 px-6 text-right">
+                    <button onclick="deleteAdminCoupon(${c.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Coupons load error', e);
+    }
+}
+
+function openAddCouponModal() {
+    openModal('addCouponModal');
+}
+
+async function handleAddCouponSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveCouponBtn');
+    btn.disabled = true;
+
+    const payload = {
+        code: document.getElementById('couponCodeInput').value.trim().toUpperCase(),
+        discount_type: document.getElementById('couponTypeInput').value,
+        discount_value: parseFloat(document.getElementById('couponValueInput').value),
+        min_order_amount: parseFloat(document.getElementById('couponMinOrderInput').value || 0)
+    };
+
+    try {
+        const res = await fetch('/api/admin/coupons', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(`Coupon '${payload.code}' created!`);
+            closeModal('addCouponModal');
+            loadAdminCoupons();
+        } else {
+            alert(data.detail || 'Failed to create coupon.');
+        }
+    } catch (e) {
+        console.error('Coupon create error', e);
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+async function deleteAdminCoupon(id) {
+    if (!confirm('Delete this promo code?')) return;
+    try {
+        const res = await fetch(`/api/admin/coupons/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (res.ok) loadAdminCoupons();
+    } catch (e) {
+        console.error('Coupon delete error', e);
+    }
+}
+
+// --- Customer & AI Reviews Management ---
+
+async function loadAdminReviews() {
+    const tbody = document.getElementById('adminReviewsTableBody');
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading reviews...</td></tr>`;
+
+    try {
+        const res = await fetch('/api/admin/reviews', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        const reviews = data.reviews || [];
+
+        if (reviews.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No reviews submitted yet.</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = reviews.map(r => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6 font-bold text-white max-w-xs truncate">${r.ebook_title || `Ebook #${r.ebook_id}`}</td>
+                <td class="py-3 px-4 font-medium text-slate-300">${r.customer_name}</td>
+                <td class="py-3 px-4 text-amber-400 font-bold">${'★'.repeat(r.rating || 5)}</td>
+                <td class="py-3 px-4 text-slate-400 max-w-sm truncate italic">"${r.review_text}"</td>
+                <td class="py-3 px-4">
+                    ${r.is_ai_generated ? 
+                        `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800">AI Review</span>` : 
+                        `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Verified Buyer</span>`
+                    }
+                </td>
+                <td class="py-3 px-6 text-right">
+                    <button onclick="deleteAdminReview(${r.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Reviews load error', e);
+    }
+}
+
+async function openAddAiReviewModal() {
+    if (cachedEbooks.length === 0) {
+        const res = await fetch('/api/admin/ebooks', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+        const data = await res.json();
+        cachedEbooks = data.ebooks || [];
+    }
+
+    const select = document.getElementById('reviewEbookSelect');
+    select.innerHTML = cachedEbooks.map(eb => `<option value="${eb.id}">${eb.title}</option>`).join('');
+
+    openModal('addAiReviewModal');
+}
+
+async function handleAddAiReviewSubmit(e) {
+    e.preventDefault();
+    const payload = {
+        ebook_id: parseInt(document.getElementById('reviewEbookSelect').value),
+        customer_name: document.getElementById('aiReviewerName').value.trim(),
+        rating: parseInt(document.getElementById('aiReviewRating').value),
+        title: document.getElementById('aiReviewHeadline').value.trim(),
+        review_text: document.getElementById('aiReviewText').value.trim(),
+        is_ai_generated: true
+    };
+
+    try {
+        const res = await fetch('/api/admin/reviews', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+            alert('AI review added!');
+            closeModal('addAiReviewModal');
+            loadAdminReviews();
+        } else {
+            alert('Failed to add review.');
+        }
+    } catch (err) {
+        console.error('AI review error', err);
+    }
+}
+
+async function deleteAdminReview(id) {
+    if (!confirm('Delete this review?')) return;
+    try {
+        const res = await fetch(`/api/admin/reviews/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (res.ok) loadAdminReviews();
+    } catch (e) {
+        console.error('Delete review error', e);
+    }
+}
+
+// --- Hero Slides Management ---
+
 async function loadAdminSlides() {
     const tbody = document.getElementById('adminSlidesTableBody');
-    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400">Loading hero slides...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">Loading hero slides...</td></tr>`;
 
     try {
         const res = await fetch('/api/admin/hero-slides', {
@@ -327,113 +593,55 @@ async function loadAdminSlides() {
         const slides = data.slides || [];
 
         if (slides.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No hero slides added yet. Click 'Add New Hero Slide' to create your first banner.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">No slides configured.</td></tr>`;
             return;
         }
 
         tbody.innerHTML = slides.map(s => `
-            <tr class="hover:bg-slate-50/80 transition">
-                <td class="py-4 px-6">
-                    <img src="${s.desktop_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-20 h-12 object-cover rounded-lg border shadow-sm">
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6">
+                    <img src="${s.desktop_image}" class="w-16 h-10 object-cover rounded-lg border border-slate-800">
                 </td>
-                <td class="py-4 px-4">
-                    <img src="${s.mobile_image || s.desktop_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-12 h-12 object-cover rounded-lg border shadow-sm">
+                <td class="py-3 px-4">
+                    <img src="${s.mobile_image || s.desktop_image}" class="w-10 h-10 object-cover rounded-lg border border-slate-800">
                 </td>
-                <td class="py-4 px-4 max-w-xs">
-                    <div class="font-bold text-xs text-slate-900 line-clamp-1">${s.title}</div>
-                    <div class="text-[11px] text-slate-500 line-clamp-1">${s.subtitle}</div>
+                <td class="py-3 px-4">
+                    <div class="font-bold text-white">${s.title}</div>
+                    <div class="text-[11px] text-slate-400 line-clamp-1">${s.subtitle}</div>
                 </td>
-                <td class="py-4 px-4">
-                    <span class="text-xs font-bold text-brand-700 block">${s.badge_text || 'None'}</span>
-                    <span class="text-[10px] text-slate-500 font-semibold">${s.cta_text || 'Button'}</span>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-0.5 rounded bg-brand-950 text-brand-300 text-[10px] font-bold border border-brand-800">${s.cta_text || 'CTA'}</span>
                 </td>
-                <td class="py-4 px-4 text-xs font-bold text-slate-600">${s.sort_order || 0}</td>
-                <td class="py-4 px-6 text-right">
-                    <button onclick="handleDeleteSlide(${s.id})" class="p-2 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition" title="Delete Slide">
+                <td class="py-3 px-6 text-right">
+                    <button onclick="deleteAdminSlide(${s.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </td>
             </tr>
         `).join('');
-
-        lucide.createIcons();
-    } catch (err) {
-        console.error('Slides load error', err);
-        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-red-500">Failed to load hero slides.</td></tr>`;
+    } catch (e) {
+        console.error('Slides load error', e);
     }
 }
 
-function openAddSlideModal() {
-    document.getElementById('addSlideForm').reset();
-    document.getElementById('addSlideModal').classList.remove('hidden');
-    lucide.createIcons();
-}
-
-async function handleAddSlideSubmit(e) {
-    e.preventDefault();
-    const btn = document.getElementById('saveSlideBtn');
-    btn.disabled = true;
-    btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Uploading Banners...`;
-
-    const form = new FormData();
-    form.append('title', document.getElementById('slideTitleInput').value.trim());
-    form.append('subtitle', document.getElementById('slideSubtitleInput').value.trim());
-    form.append('badge_text', document.getElementById('slideBadgeInput').value.trim());
-    form.append('cta_text', document.getElementById('slideCtaTextInput').value.trim());
-
-    const deskFile = document.getElementById('slideDesktopFileInput').files[0];
-    if (deskFile) form.append('desktop_image_file', deskFile);
-
-    const mobFile = document.getElementById('slideMobileFileInput').files[0];
-    if (mobFile) form.append('mobile_image_file', mobFile);
-
-    try {
-        const res = await fetch('/api/admin/hero-slides', {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${adminToken}` },
-            body: form
-        });
-
-        const data = await res.json();
-        if (!res.ok) {
-            alert(data.detail || 'Failed to add hero slide.');
-            return;
-        }
-
-        alert('Hero banner published successfully!');
-        closeModal('addSlideModal');
-        loadAdminSlides();
-    } catch (err) {
-        console.error('Slide upload error', err);
-        alert('Network error during banner upload.');
-    } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="upload" class="w-4 h-4 mr-2"></i><span>Publish Hero Banner</span>`;
-        lucide.createIcons();
-    }
-}
-
-async function handleDeleteSlide(id) {
-    if (!confirm('Are you sure you want to delete this hero slide banner?')) return;
+async function deleteAdminSlide(id) {
+    if (!confirm('Delete this banner slide?')) return;
     try {
         const res = await fetch(`/api/admin/hero-slides/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
-        if (res.ok) {
-            loadAdminSlides();
-        } else {
-            alert('Failed to delete slide.');
-        }
-    } catch (err) {
-        console.error('Delete slide error', err);
+        if (res.ok) loadAdminSlides();
+    } catch (e) {
+        console.error('Delete slide error', e);
     }
 }
 
-// 4. CUSTOMERS CRM DIRECTORY
+// --- Customer CRM ---
+
 async function loadAdminCustomers() {
     const tbody = document.getElementById('adminCustomersTableBody');
-    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Loading customer CRM...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading customers...</td></tr>`;
 
     try {
         const res = await fetch('/api/admin/customers', {
@@ -443,47 +651,36 @@ async function loadAdminCustomers() {
         const customers = data.customers || [];
 
         if (customers.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500">No registered customers yet. Customers will appear here as soon as they sign up or purchase.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No registered customers yet.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = customers.map(c => {
-            const dateStr = new Date(c.created_at).toLocaleDateString();
-
-            return `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-4 px-6 font-bold text-xs text-slate-900">
-                        <div class="flex items-center gap-2">
-                            <span class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold text-[11px] flex items-center justify-center">${c.name.substring(0,2).toUpperCase()}</span>
-                            <span>${c.name}</span>
-                        </div>
-                    </td>
-                    <td class="py-4 px-4 text-xs text-slate-600">${c.email}</td>
-                    <td class="py-4 px-4 text-xs font-mono text-emerald-700 font-semibold">${c.phone || 'N/A'}</td>
-                    <td class="py-4 px-4 text-xs font-bold text-slate-800">${c.total_orders || 0}</td>
-                    <td class="py-4 px-4 text-xs font-extrabold text-brand-700">₹${(c.total_spent || 0).toFixed(2)}</td>
-                    <td class="py-4 px-4 text-xs text-slate-500">${dateStr}</td>
-                    <td class="py-4 px-6 text-right">
-                        <a href="${c.whatsapp_url}" target="_blank" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition inline-flex items-center gap-1">
-                            <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+        tbody.innerHTML = customers.map(c => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6 font-bold text-white">${c.name}</td>
+                <td class="py-3 px-4 text-slate-300">${c.email}<br><span class="text-[11px] text-slate-500">${c.phone || 'No phone'}</span></td>
+                <td class="py-3 px-4"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-300 uppercase">${c.auth_provider || 'Email'}</span></td>
+                <td class="py-3 px-4 font-mono font-bold text-white">${c.total_orders || 0}</td>
+                <td class="py-3 px-4 font-bold text-emerald-400">₹${(c.total_spent || 0).toFixed(2)}</td>
+                <td class="py-3 px-6 text-right">
+                    ${c.whatsapp_url ? `
+                        <a href="${c.whatsapp_url}" target="_blank" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1">
                             <span>WhatsApp</span>
                         </a>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        lucide.createIcons();
-    } catch (err) {
-        console.error('Customers load error', err);
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-500">Failed to load customer CRM.</td></tr>`;
+                    ` : `<span class="text-slate-500 italic">None</span>`}
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Customers load error', e);
     }
 }
 
-// 5. ORDERS & DELIVERY LOGS
+// --- Orders & Logs ---
+
 async function loadAdminOrders() {
     const tbody = document.getElementById('adminOrdersTableBody');
-    tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-400">Loading orders...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading orders...</td></tr>`;
 
     try {
         const res = await fetch('/api/admin/orders', {
@@ -493,229 +690,185 @@ async function loadAdminOrders() {
         const orders = data.orders || [];
 
         if (orders.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-slate-500">No customer orders placed yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No orders recorded yet.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = orders.map(o => {
-            const dateStr = new Date(o.created_at).toLocaleString();
-            const emailSent = o.email_status === 'sent';
-
-            return `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-4 px-6">
-                        <div class="font-mono font-bold text-xs text-brand-700">${o.order_code}</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">${dateStr}</div>
-                    </td>
-                    <td class="py-4 px-4">
-                        <div class="font-bold text-xs text-slate-900">${o.customer_name}</div>
-                        <div class="text-[11px] text-slate-500">${o.customer_email}</div>
-                        <div class="text-[11px] font-mono text-emerald-600">${o.customer_whatsapp}</div>
-                    </td>
-                    <td class="py-4 px-4 font-semibold text-xs text-slate-800 max-w-xs truncate">${o.ebook_title}</td>
-                    <td class="py-4 px-4 font-bold text-xs text-slate-900">₹${o.amount.toFixed(2)}</td>
-                    <td class="py-4 px-4">
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                            <i data-lucide="check" class="w-3 h-3"></i>
-                            <span>DELIVERED</span>
-                        </span>
-                    </td>
-                    <td class="py-4 px-4">
-                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-50 text-green-700 border border-green-200">
-                            <i data-lucide="message-circle" class="w-3 h-3"></i>
-                            <span>READY</span>
-                        </span>
-                    </td>
-                    <td class="py-4 px-6 text-right">
-                        <div class="flex items-center justify-end gap-1.5">
-                            <button onclick="handleResendEmail(${o.id})" class="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition" title="Resend Email">
-                                <i data-lucide="mail" class="w-3.5 h-3.5 inline mr-1"></i> Resend
-                            </button>
-                            <a href="${o.whatsapp_url}" target="_blank" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition" title="Open WhatsApp Chat">
-                                <i data-lucide="message-circle" class="w-3.5 h-3.5 inline mr-1"></i> WhatsApp
-                            </a>
-                        </div>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        lucide.createIcons();
-    } catch (err) {
-        console.error('Orders load error', err);
-        tbody.innerHTML = `<tr><td colspan="7" class="py-8 text-center text-red-500">Failed to load orders.</td></tr>`;
+        tbody.innerHTML = orders.map(o => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6">
+                    <div class="font-mono font-bold text-brand-300">${o.order_code}</div>
+                    <div class="text-[10px] text-slate-500">${new Date(o.created_at).toLocaleString()}</div>
+                </td>
+                <td class="py-3 px-4">
+                    <div class="font-bold text-white">${o.customer_name}</div>
+                    <div class="text-[11px] text-slate-400">${o.customer_email}</div>
+                </td>
+                <td class="py-3 px-4 text-slate-200 font-medium">${o.ebook_title}</td>
+                <td class="py-3 px-4 font-bold text-emerald-400">₹${o.amount.toFixed(2)}</td>
+                <td class="py-3 px-4 font-mono text-xs text-purple-300">${o.coupon_code || '-'}</td>
+                <td class="py-3 px-6 text-right">
+                    <a href="/api/download/${o.access_token}" target="_blank" class="px-2.5 py-1 bg-brand-600 text-white rounded text-[11px] font-bold">Download</a>
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Orders load error', e);
     }
 }
 
-async function handleResendEmail(orderId) {
-    try {
-        const res = await fetch(`/api/admin/orders/${orderId}/resend-email`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${adminToken}` }
-        });
-        const data = await res.json();
-        alert(data.message || 'Email delivery triggered.');
-        loadAdminOrders();
-    } catch (err) {
-        console.error('Resend email error', err);
-        alert('Failed to trigger email resend.');
-    }
-}
+// --- Support Tickets Desk ---
 
-// 6. SUPPORT TICKETS
 async function loadAdminTickets() {
     const tbody = document.getElementById('adminTicketsTableBody');
-    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-400">Loading support tickets...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">Loading tickets...</td></tr>`;
 
     try {
-        const res = await fetch('/api/admin/support-tickets', {
+        const res = await fetch('/api/admin/support/tickets', {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
         const tickets = data.tickets || [];
 
-        const openCount = tickets.filter(t => t.status === 'open').length;
-        const badge = document.getElementById('ticketBadge');
-        if (openCount > 0) {
-            badge.innerText = openCount;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
-        }
-
         if (tickets.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No support tickets submitted yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">No support tickets.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = tickets.map(t => {
-            const dateStr = new Date(t.created_at).toLocaleString();
-            const isOpen = t.status === 'open';
-
-            return `
-                <tr class="hover:bg-slate-50/80 transition">
-                    <td class="py-4 px-6">
-                        <div class="font-mono font-bold text-xs text-brand-700">#TICKET-${t.id}</div>
-                        <div class="text-[10px] text-slate-400 mt-0.5">${dateStr}</div>
-                    </td>
-                    <td class="py-4 px-4">
-                        <div class="font-bold text-xs text-slate-900">${t.customer_name}</div>
-                        <div class="text-[11px] text-slate-500">${t.customer_email}</div>
-                        <div class="text-[11px] font-mono text-emerald-600">${t.customer_phone}</div>
-                    </td>
-                    <td class="py-4 px-4">
-                        <div class="text-xs font-mono font-bold text-slate-800">${t.order_code || 'N/A'}</div>
-                        <div class="text-[11px] text-slate-500 font-mono">UTR: ${t.transaction_ref || 'None'}</div>
-                    </td>
-                    <td class="py-4 px-4 text-xs text-slate-700 max-w-xs">
-                        <p class="line-clamp-2">${t.message}</p>
-                    </td>
-                    <td class="py-4 px-4">
-                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold ${isOpen ? 'bg-rose-50 text-rose-700 border border-rose-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}">
-                            ${t.status.toUpperCase()}
-                        </span>
-                    </td>
-                    <td class="py-4 px-6 text-right">
-                        <a href="${t.whatsapp_reply_url}" target="_blank" class="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition" title="Open WhatsApp Chat">
-                            <i data-lucide="message-circle" class="w-3.5 h-3.5 inline mr-1"></i> WhatsApp
-                        </a>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        lucide.createIcons();
-    } catch (err) {
-        console.error('Tickets load error', err);
-        tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-red-500">Failed to load support tickets.</td></tr>`;
+        tbody.innerHTML = tickets.map(t => `
+            <tr class="hover:bg-slate-900/60 transition">
+                <td class="py-3 px-6 font-mono font-bold text-rose-300">#TICK-${t.id}</td>
+                <td class="py-3 px-4">
+                    <div class="font-bold text-white">${t.customer_name}</div>
+                    <div class="text-[11px] text-slate-400">${t.customer_email} • ${t.customer_phone}</div>
+                </td>
+                <td class="py-3 px-4 text-slate-300 text-xs">${t.message}</td>
+                <td class="py-3 px-4">
+                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'resolved' ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}">
+                        ${t.status.toUpperCase()}
+                    </span>
+                </td>
+                <td class="py-3 px-6 text-right">
+                    ${t.status !== 'resolved' ? `
+                        <button onclick="resolveAdminTicket(${t.id})" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold">Deliver & Resolve</button>
+                    ` : `<span class="text-slate-500 text-xs font-semibold">Resolved</span>`}
+                </td>
+            </tr>
+        `).join('');
+    } catch (e) {
+        console.error('Tickets load error', e);
     }
 }
 
-async function checkOpenTicketsCount() {
-    try {
-        const res = await fetch('/api/admin/support-tickets', {
-            headers: { 'Authorization': `Bearer ${adminToken}` }
-        });
+async function resolveAdminTicket(ticketId) {
+    if (cachedEbooks.length === 0) {
+        const res = await fetch('/api/admin/ebooks', { headers: { 'Authorization': `Bearer ${adminToken}` } });
         const data = await res.json();
-        const openCount = (data.tickets || []).filter(t => t.status === 'open').length;
-        const badge = document.getElementById('ticketBadge');
-        if (openCount > 0) {
-            badge.innerText = openCount;
-            badge.classList.remove('hidden');
-        } else {
-            badge.classList.add('hidden');
+        cachedEbooks = data.ebooks || [];
+    }
+    const ebookId = cachedEbooks.length > 0 ? cachedEbooks[0].id : 1;
+
+    try {
+        const res = await fetch(`/api/admin/support/resolve-and-deliver/${ticketId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ebook_id: ebookId })
+        });
+        if (res.ok) {
+            alert('Ticket resolved and ebook dispatched to customer!');
+            loadAdminTickets();
         }
-    } catch {}
+    } catch (e) {
+        console.error('Resolve error', e);
+    }
 }
 
-// 7. SETTINGS & INTEGRATIONS
+// --- Settings & Admin Password Change ---
+
 async function loadAdminSettings() {
     try {
-        const res = await fetch('/api/admin/settings', {
-            headers: { 'Authorization': `Bearer ${adminToken}` }
+        const res = await fetch('/api/store-info');
+        const data = await res.json();
+        if (data.bank_account_no) document.getElementById('setting_bank_account_no').value = data.bank_account_no;
+        if (data.bank_ifsc) document.getElementById('setting_bank_ifsc').value = data.bank_ifsc;
+    } catch (e) {
+        console.error('Settings load error', e);
+    }
+}
+
+async function handleAdminPasswordChange(e) {
+    e.preventDefault();
+    const btn = document.getElementById('changePassBtn');
+    btn.disabled = true;
+    btn.innerText = 'Updating...';
+
+    const cur = document.getElementById('adminCurrentPass').value.trim();
+    const neu = document.getElementById('adminNewPass').value.trim();
+
+    try {
+        const res = await fetch('/api/admin/change-password', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ current_password: cur, new_password: neu })
         });
         const data = await res.json();
-        cachedSettings = data.settings || {};
-
-        document.getElementById('setting_razorpay_key_id').value = cachedSettings.razorpay_key_id || 'rzp_live_9035630901';
-        document.getElementById('setting_razorpay_key_secret').value = cachedSettings.razorpay_key_secret || '';
-
-        document.getElementById('setting_bank_account_no').value = cachedSettings.bank_account_no || '110076462071';
-        document.getElementById('setting_bank_ifsc').value = cachedSettings.bank_ifsc || 'CNRB0002614';
-        document.getElementById('setting_bank_name').value = cachedSettings.bank_name || 'Canara Bank';
-        document.getElementById('setting_bank_holder_name').value = cachedSettings.bank_holder_name || 'ROHIT TAK';
-
-        const smtpEnabled = (cachedSettings.smtp_enabled === 'true' || cachedSettings.smtp_enabled === '1');
-        document.getElementById('setting_smtp_enabled').checked = smtpEnabled;
-        document.getElementById('setting_smtp_host').value = cachedSettings.smtp_host || 'smtp.gmail.com';
-        document.getElementById('setting_smtp_port').value = cachedSettings.smtp_port || '587';
-        document.getElementById('setting_smtp_user').value = cachedSettings.smtp_user || 'rohittak903@gmail.com';
-        document.getElementById('setting_smtp_password').value = cachedSettings.smtp_password || '';
+        if (res.ok) {
+            alert('Admin password updated successfully! Please remember your new password.');
+            document.getElementById('adminCurrentPass').value = '';
+            document.getElementById('adminNewPass').value = '';
+        } else {
+            alert(data.detail || 'Password change failed.');
+        }
     } catch (err) {
-        console.error('Settings load error', err);
+        console.error('Password change error', err);
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Update Password';
     }
 }
 
 async function saveAllSettings() {
     const payload = {
-        razorpay_key_id: document.getElementById('setting_razorpay_key_id')?.value.trim() || 'rzp_live_9035630901',
-        razorpay_key_secret: document.getElementById('setting_razorpay_key_secret')?.value.trim() || '',
-
-        bank_account_no: document.getElementById('setting_bank_account_no')?.value.trim() || '110076462071',
-        bank_ifsc: document.getElementById('setting_bank_ifsc')?.value.trim() || 'CNRB0002614',
-        bank_name: document.getElementById('setting_bank_name')?.value.trim() || 'Canara Bank',
-        bank_holder_name: document.getElementById('setting_bank_holder_name')?.value.trim() || 'ROHIT TAK',
-        
-        smtp_enabled: document.getElementById('setting_smtp_enabled').checked ? 'true' : 'false',
-        smtp_host: document.getElementById('setting_smtp_host').value.trim(),
-        smtp_port: document.getElementById('setting_smtp_port').value.trim(),
-        smtp_user: document.getElementById('setting_smtp_user').value.trim(),
-        smtp_password: document.getElementById('setting_smtp_password').value.trim()
+        settings: {
+            bank_account_no: document.getElementById('setting_bank_account_no').value.trim(),
+            bank_ifsc: document.getElementById('setting_bank_ifsc').value.trim(),
+            razorpay_key_id: document.getElementById('setting_razorpay_key_id').value.trim()
+        }
     };
 
     try {
         const res = await fetch('/api/admin/settings', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${adminToken}`
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ settings: payload })
+            body: JSON.stringify(payload)
         });
-
-        const data = await res.json();
         if (res.ok) {
-            alert('Settings saved successfully!');
+            alert('Store settings saved successfully!');
         } else {
-            alert(data.detail || 'Failed to save settings.');
+            alert('Failed to save settings');
         }
-    } catch (err) {
-        console.error('Settings save error', err);
-        alert('Network error while saving settings.');
+    } catch (e) {
+        console.error('Settings save error', e);
     }
 }
 
-// Modal helper
+function openModal(id) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.classList.remove('hidden');
+        lucide.createIcons();
+    }
+}
+
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
