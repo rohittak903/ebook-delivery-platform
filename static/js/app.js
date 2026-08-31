@@ -39,9 +39,63 @@ async function loadStoreInfo() {
             if (c.includes('100') || c.length > 3) c = '₹';
             storeCurrency = c;
         }
+
+        // 1. Dynamic Top Announcement Bar
+        const annBar = document.getElementById('topAnnouncementBar');
+        if (annBar) {
+            if (data.announcement_enabled === false) {
+                annBar.classList.add('hidden');
+            } else {
+                annBar.classList.remove('hidden');
+                const annText = document.getElementById('announcementTextContent');
+                if (annText && data.announcement_text) {
+                    const coupon = data.announcement_coupon || 'ROHIT20';
+                    const link = data.announcement_link || '/#catalog';
+                    annText.innerHTML = `
+                        <a href="${link}" class="hover:underline flex items-center gap-1.5 flex-wrap justify-center">
+                            <span>${data.announcement_text}</span>
+                            ${coupon ? `<strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded text-[11px]">${coupon}</strong>` : ''}
+                        </a>
+                    `;
+                }
+            }
+        }
+
+        // 2. Dynamic Social Media Accounts Section
+        updateSocialLinksUI(data);
+
     } catch (e) {
         console.error('Store info error', e);
     }
+}
+
+function updateSocialLinksUI(data) {
+    const ig = document.getElementById('socialLinkInstagram');
+    if (ig) {
+        if (data.social_instagram) { ig.href = data.social_instagram; ig.classList.remove('hidden'); }
+        else { ig.classList.add('hidden'); }
+    }
+    const yt = document.getElementById('socialLinkYoutube');
+    if (yt) {
+        if (data.social_youtube) { yt.href = data.social_youtube; yt.classList.remove('hidden'); }
+        else { yt.classList.add('hidden'); }
+    }
+    const tw = document.getElementById('socialLinkTwitter');
+    if (tw) {
+        if (data.social_twitter) { tw.href = data.social_twitter; tw.classList.remove('hidden'); }
+        else { tw.classList.add('hidden'); }
+    }
+    const li = document.getElementById('socialLinkLinkedin');
+    if (li) {
+        if (data.social_linkedin) { li.href = data.social_linkedin; li.classList.remove('hidden'); }
+        else { li.classList.add('hidden'); }
+    }
+    const wa = document.getElementById('socialLinkWhatsapp');
+    if (wa) {
+        if (data.social_whatsapp) { wa.href = data.social_whatsapp; wa.classList.remove('hidden'); }
+        else { wa.classList.add('hidden'); }
+    }
+    lucide.createIcons();
 }
 
 async function loadHeroSlides() {
@@ -64,44 +118,58 @@ function renderHeroSlider() {
     if (!track || heroSlides.length === 0) return;
 
     const slide = heroSlides[currentSlideIndex];
+    const isExternalLink = (slide.cta_url || '').startsWith('http');
 
     track.innerHTML = `
-        <div class="flex flex-col lg:flex-row items-center justify-between gap-8 animate-fade-in">
-            <div class="flex-1 max-w-2xl text-center lg:text-left">
+        <div class="w-full h-full flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-10 p-6 sm:p-10 lg:p-12 animate-fade-in">
+            
+            <!-- Left: Hero Headline & Customizable CTA Button -->
+            <div class="flex-1 max-w-2xl text-center lg:text-left flex flex-col justify-center items-center lg:items-start z-10">
                 ${slide.badge_text ? `
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-200 text-xs font-extrabold uppercase tracking-wider mb-4 border border-slate-700">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/90 text-slate-200 text-xs font-extrabold uppercase tracking-wider mb-4 border border-slate-700 shadow-sm">
                         <span>${slide.badge_text}</span>
                     </div>
                 ` : ''}
-                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight text-white">
+                <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
                     ${slide.title}
                 </h1>
-                <p class="mt-4 text-slate-300 text-sm sm:text-base leading-relaxed max-w-xl">
+                <p class="mt-3 sm:mt-4 text-slate-300 text-xs sm:text-base leading-relaxed max-w-xl">
                     ${slide.subtitle}
                 </p>
-                <div class="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4">
+                <div class="mt-6 sm:mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4">
                     <a 
-                        href="${slide.cta_url || '#bundles'}" 
-                        class="px-6 py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg transition flex items-center gap-2"
+                        href="${slide.cta_url || '/#catalog'}" 
+                        ${isExternalLink ? 'target="_blank" rel="noopener noreferrer"' : ''}
+                        class="px-7 py-3.5 sm:py-4 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs sm:text-sm rounded-2xl shadow-xl transition flex items-center gap-2.5 active:scale-95"
                     >
-                        <span>${slide.cta_text || 'Explore Offers'}</span>
+                        <span>${slide.cta_text || 'Explore Best Sellers'}</span>
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
                     </a>
                 </div>
             </div>
 
-            <!-- Responsive Banner Image -->
-            <div class="w-full lg:w-96 flex-shrink-0 flex items-center justify-center">
-                <div class="relative w-full max-w-xs sm:max-w-sm rounded-2xl overflow-hidden shadow-2xl border border-slate-700 bg-slate-800">
-                    <img src="${slide.desktop_image || '/uploads/covers/python-ai-cover.jpg'}" alt="${slide.title}" class="hidden sm:block w-full h-64 sm:h-72 object-cover">
-                    <img src="${slide.mobile_image || slide.desktop_image || '/uploads/covers/python-ai-cover.jpg'}" alt="${slide.title}" class="block sm:hidden w-full h-56 object-cover">
+            <!-- Right: Responsive Banner Visuals (Desktop 1400x520px, Mobile 375x600px) -->
+            <div class="w-full lg:w-[460px] xl:w-[540px] flex-shrink-0 flex items-center justify-center">
+                <div class="relative w-full max-w-xs sm:max-w-md lg:max-w-none rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 bg-slate-900">
+                    <!-- Desktop Banner (1400x520 aspect) -->
+                    <img 
+                        src="${slide.desktop_image || '/uploads/covers/python-ai-cover.jpg'}" 
+                        alt="${slide.title}" 
+                        class="hidden sm:block w-full h-64 sm:h-72 lg:h-80 object-cover hover:scale-105 transition-transform duration-500"
+                    >
+                    <!-- Mobile Banner (375x600 aspect) -->
+                    <img 
+                        src="${slide.mobile_image || slide.desktop_image || '/uploads/covers/python-ai-cover.jpg'}" 
+                        alt="${slide.title}" 
+                        class="block sm:hidden w-full h-60 object-cover"
+                    >
                 </div>
             </div>
         </div>
     `;
 
     dotsContainer.innerHTML = heroSlides.map((_, i) => `
-        <button onclick="goToHeroSlide(${i})" class="w-2.5 h-2.5 rounded-full transition ${i === currentSlideIndex ? 'bg-white w-6' : 'bg-slate-700 hover:bg-slate-600'}"></button>
+        <button onclick="goToHeroSlide(${i})" class="w-2.5 h-2.5 rounded-full transition ${i === currentSlideIndex ? 'bg-white w-6' : 'bg-slate-700 hover:bg-slate-600'}" title="Slide ${i + 1}"></button>
     `).join('');
 
     lucide.createIcons();

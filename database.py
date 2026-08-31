@@ -226,11 +226,22 @@ DEFAULT_SETTINGS = {
     "upi_id": "9035630901@superyes",
     "upi_name": "ROHIT TAK",
     "upi_qr_image": "/uploads/qr/rohit_upi_qr.jpg",
+    "announcement_enabled": "true",
+    "announcement_text": "🎉 Welcome to QELVORIA: Use coupon code ROHIT20 for 20% OFF! Instant delivery.",
+    "announcement_coupon": "ROHIT20",
+    "announcement_link": "/#catalog",
+    "social_instagram": "https://instagram.com",
+    "social_youtube": "https://youtube.com",
+    "social_twitter": "https://x.com",
+    "social_linkedin": "https://linkedin.com",
+    "social_facebook": "",
+    "social_telegram": "",
+    "social_whatsapp": "https://wa.me/919035630901",
     "whatsapp_mode": "direct_link",
     "whatsapp_api_url": "https://graph.facebook.com/v18.0/YOUR_PHONE_NUMBER_ID/messages",
     "whatsapp_api_token": "",
     "whatsapp_template": "Hello {customer_name}! 🎉\n\nThank you for purchasing *{ebook_title}* from *QELVORIA*!\n\n📥 You can download your ebook instantly here:\n{download_link}\n\n🧾 Order ID: {order_code}\n\nThank you for choosing QELVORIA by Raja Rohit Tak! Enjoy reading!",
-    "email_template": "<h2>Thank you for purchasing from QELVORIA!</h2><p>Dear {customer_name},</p><p>Thank you for purchasing <strong>{ebook_title}</strong> from QELVORIA. Your digital copy is ready for instant download and is attached to this email.</p><p><a href=\"{download_link}\" style=\"background:#4f46e5;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:bold;\">📥 Download {ebook_title}</a></p><p><strong>Order ID:</strong> {order_code}</p><p>Best regards,<br/><strong>Raja Rohit Tak</strong><br/>QELVORIA Publishing</p>"
+    "email_template": "<h2>Thank you for purchasing from QELVORIA!</h2><p>Dear {customer_name},</p><p>Thank you for purchasing <strong>{ebook_title}</strong> from QELVORIA. Your digital copy is ready for instant download and is attached to this email.</p><p><a href=\"{download_link}\" style=\"background:#0f172a;color:white;padding:12px 24px;text-decoration:none;border-radius:8px;display:inline-block;font-weight:bold;\">📥 Download {ebook_title}</a></p><p><strong>Order ID:</strong> {order_code}</p><p>Best regards,<br/><strong>Raja Rohit Tak</strong><br/>QELVORIA Publishing</p>"
 }
 
 def hash_password(password: str) -> str:

@@ -17,10 +17,55 @@ let pendingAction = null;
 document.addEventListener('DOMContentLoaded', async () => {
     updateAuthNavbar();
     updateCartBadge();
+    await loadStoreInfo();
     const urlParams = new URLSearchParams(window.location.search);
     const ebookParam = urlParams.get('id') || urlParams.get('slug') || '1';
     await loadEbookDetails(ebookParam);
 });
+
+async function loadStoreInfo() {
+    try {
+        const res = await fetch('/api/store-info');
+        const data = await res.json();
+
+        // 1. Dynamic Announcement Bar
+        const annBar = document.getElementById('topAnnouncementBar');
+        if (annBar) {
+            if (data.announcement_enabled === false) {
+                annBar.classList.add('hidden');
+            } else {
+                annBar.classList.remove('hidden');
+                const annText = document.getElementById('announcementTextContent');
+                if (annText && data.announcement_text) {
+                    const coupon = data.announcement_coupon || 'ROHIT20';
+                    const link = data.announcement_link || '/#catalog';
+                    annText.innerHTML = `
+                        <a href="${link}" class="hover:underline flex items-center gap-1.5 flex-wrap justify-center">
+                            <span>${data.announcement_text}</span>
+                            ${coupon ? `<strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded text-[11px]">${coupon}</strong>` : ''}
+                        </a>
+                    `;
+                }
+            }
+        }
+
+        // 2. Dynamic Social Links
+        const ig = document.getElementById('socialLinkInstagram');
+        if (ig && data.social_instagram) ig.href = data.social_instagram;
+        const yt = document.getElementById('socialLinkYoutube');
+        if (yt && data.social_youtube) yt.href = data.social_youtube;
+        const tw = document.getElementById('socialLinkTwitter');
+        if (tw && data.social_twitter) tw.href = data.social_twitter;
+        const li = document.getElementById('socialLinkLinkedin');
+        if (li && data.social_linkedin) li.href = data.social_linkedin;
+        const wa = document.getElementById('socialLinkWhatsapp');
+        if (wa && data.social_whatsapp) wa.href = data.social_whatsapp;
+
+        lucide.createIcons();
+    } catch (e) {
+        console.error('Store info error on book page', e);
+    }
+}
 
 async function loadEbookDetails(param) {
     try {

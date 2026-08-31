@@ -508,7 +508,18 @@ async def get_store_info():
         "bank_holder_name": settings.get("bank_holder_name", "ROHIT TAK"),
         "upi_id": settings.get("upi_id", "9035630901@superyes"),
         "upi_name": settings.get("upi_name", "ROHIT TAK"),
-        "upi_qr_image": settings.get("upi_qr_image", "/uploads/qr/rohit_upi_qr.jpg")
+        "upi_qr_image": settings.get("upi_qr_image", "/uploads/qr/rohit_upi_qr.jpg"),
+        "announcement_enabled": settings.get("announcement_enabled", "true") == "true",
+        "announcement_text": settings.get("announcement_text", "🎉 Welcome to QELVORIA: Use coupon code ROHIT20 for 20% OFF! Instant delivery."),
+        "announcement_coupon": settings.get("announcement_coupon", "ROHIT20"),
+        "announcement_link": settings.get("announcement_link", "/#catalog"),
+        "social_instagram": settings.get("social_instagram", "https://instagram.com"),
+        "social_youtube": settings.get("social_youtube", "https://youtube.com"),
+        "social_twitter": settings.get("social_twitter", "https://x.com"),
+        "social_linkedin": settings.get("social_linkedin", "https://linkedin.com"),
+        "social_facebook": settings.get("social_facebook", ""),
+        "social_telegram": settings.get("social_telegram", ""),
+        "social_whatsapp": settings.get("social_whatsapp", "https://wa.me/919035630901")
     }
 
 @app.get("/api/ebooks")
@@ -2141,6 +2152,16 @@ async def admin_get_hero_slides(token: str = Depends(require_admin_auth)):
             rows = await cursor.fetchall()
             return {"slides": [dict(r) for r in rows]}
 
+@app.get("/api/admin/hero-slides/{slide_id}")
+async def admin_get_single_hero_slide(slide_id: int, token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM hero_slides WHERE id = ?", (slide_id,)) as cursor:
+            row = await cursor.fetchone()
+            if not row:
+                raise HTTPException(status_code=404, detail="Hero slide not found")
+            return {"slide": dict(row)}
+
 @app.post("/api/admin/hero-slides")
 async def admin_add_hero_slide(
     title: str = Form(...),
@@ -2150,11 +2171,13 @@ async def admin_add_hero_slide(
     cta_url: Optional[str] = Form("#bestsellers"),
     desktop_image_file: Optional[UploadFile] = File(None),
     mobile_image_file: Optional[UploadFile] = File(None),
+    desktop_image_url: Optional[str] = Form(""),
+    mobile_image_url: Optional[str] = Form(""),
     sort_order: Optional[int] = Form(0),
     token: str = Depends(require_admin_auth)
 ):
-    desktop_img_path = "/uploads/covers/python-ai-cover.jpg"
-    mobile_img_path = "/uploads/covers/python-ai-cover.jpg"
+    desktop_img_path = desktop_image_url.strip() if desktop_image_url else "/uploads/covers/python-ai-cover.jpg"
+    mobile_img_path = mobile_image_url.strip() if mobile_image_url else desktop_img_path
     
     if desktop_image_file and desktop_image_file.filename:
         filename = f"slide_desk_{secrets.token_hex(4)}_{desktop_image_file.filename}"
@@ -2169,7 +2192,7 @@ async def admin_add_hero_slide(
         with open(save_path, "wb") as f:
             f.write(await mobile_image_file.read())
         mobile_img_path = f"/uploads/covers/{filename}"
-    elif desktop_image_file:
+    elif desktop_image_file and not mobile_image_url:
         mobile_img_path = desktop_img_path
         
     async with aiosqlite.connect(DB_PATH) as db:
@@ -2190,14 +2213,79 @@ async def admin_add_hero_slide(
         ))
         await db.commit()
         
-    return {"success": True, "message": "Hero slide added successfully"}
+    return {"success": True, "message": "Hero banner slide added successfully"}
+
+@app.put("/api/admin/hero-slides/{slide_id}")
+async def admin_update_hero_slide(
+    slide_id: int,
+    title: str = Form(...),
+    subtitle: str = Form(...),
+    badge_text: Optional[str] = Form(""),
+    cta_text: Optional[str] = Form("Explore Best Sellers"),
+    cta_url: Optional[str] = Form("#bestsellers"),
+    desktop_image_file: Optional[UploadFile] = File(None),
+    mobile_image_file: Optional[UploadFile] = File(None),
+    desktop_image_url: Optional[str] = Form(""),
+    mobile_image_url: Optional[str] = Form(""),
+    sort_order: Optional[int] = Form(0),
+    token: str = Depends(require_admin_auth)
+):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM hero_slides WHERE id = ?", (slide_id,)) as cursor:
+            existing = await cursor.fetchone()
+            if not existing:
+                raise HTTPException(status_code=404, detail="Hero slide not found")
+                
+        desktop_img_path = existing["desktop_image"]
+        mobile_img_path = existing["mobile_image"]
+        
+        if desktop_image_url and desktop_image_url.strip():
+            desktop_img_path = desktop_image_url.strip()
+            
+        if mobile_image_url and mobile_image_url.strip():
+            mobile_img_path = mobile_image_url.strip()
+            
+        if desktop_image_file and desktop_image_file.filename:
+            filename = f"slide_desk_{secrets.token_hex(4)}_{desktop_image_file.filename}"
+            save_path = os.path.join(COVERS_DIR, filename)
+            with open(save_path, "wb") as f:
+                f.write(await desktop_image_file.read())
+            desktop_img_path = f"/uploads/covers/{filename}"
+            
+        if mobile_image_file and mobile_image_file.filename:
+            filename = f"slide_mob_{secrets.token_hex(4)}_{mobile_image_file.filename}"
+            save_path = os.path.join(COVERS_DIR, filename)
+            with open(save_path, "wb") as f:
+                f.write(await mobile_image_file.read())
+            mobile_img_path = f"/uploads/covers/{filename}"
+            
+        await db.execute("""
+            UPDATE hero_slides SET
+                title = ?, subtitle = ?, badge_text = ?, cta_text = ?, cta_url = ?,
+                desktop_image = ?, mobile_image = ?, sort_order = ?
+            WHERE id = ?
+        """, (
+            title.strip(),
+            subtitle.strip(),
+            badge_text.strip() if badge_text else "",
+            cta_text.strip() if cta_text else "Explore Collection",
+            cta_url.strip() if cta_url else "#bestsellers",
+            desktop_img_path,
+            mobile_img_path,
+            sort_order or 0,
+            slide_id
+        ))
+        await db.commit()
+        
+    return {"success": True, "message": "Hero banner slide updated successfully"}
 
 @app.delete("/api/admin/hero-slides/{slide_id}")
 async def admin_delete_hero_slide(slide_id: int, token: str = Depends(require_admin_auth)):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM hero_slides WHERE id = ?", (slide_id,))
         await db.commit()
-    return {"success": True, "message": "Slide deleted"}
+    return {"success": True, "message": "Hero banner slide deleted"}
 
 # --- CUSTOMER DIRECTORY & CRM API ---
 

@@ -42,10 +42,10 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-white selection:text-black">
 
-    <!-- Top Announcement Bar (Monochrome Luxury Theme) -->
-    <div class="bg-slate-900 border-b border-slate-800 text-slate-200 text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
+    <!-- Top Announcement Bar (Monochrome Luxury Theme - Dynamic) -->
+    <div id="topAnnouncementBar" class="bg-slate-900 border-b border-slate-800 text-slate-200 text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>🎉 Special Offer: Use coupon code <strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
+        <span id="announcementTextContent">🎉 Special Offer: Use coupon code <strong id="announcementCouponBadge" class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
     </div>
 
     <!-- Navigation Header -->
@@ -297,10 +297,43 @@
             <div id="reviewsListGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <p class="col-span-full text-center py-8 text-slate-500 text-sm">Loading reviews...</p>
             </div>
+        <!-- ================= SOCIAL MEDIA CONNECT SECTION ================= -->
+        <div id="socialConnectSection" class="mt-12 py-10 px-6 bg-slate-900/80 rounded-3xl border border-slate-800 text-center space-y-5">
+            <div>
+                <span class="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 bg-slate-950 border border-slate-800 px-3 py-1 rounded-full">
+                    Official Social Media & Community
+                </span>
+                <h3 class="text-lg sm:text-xl font-black text-white mt-3">
+                    Connect With Raja Rohit Tak & QELVORIA
+                </h3>
+            </div>
+
+            <div id="socialLinksContainer" class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                <a id="socialLinkInstagram" href="https://instagram.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                    <i data-lucide="instagram" class="w-4 h-4 text-pink-400"></i>
+                    <span>Instagram</span>
+                </a>
+                <a id="socialLinkYoutube" href="https://youtube.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                    <i data-lucide="youtube" class="w-4 h-4 text-rose-400"></i>
+                    <span>YouTube</span>
+                </a>
+                <a id="socialLinkTwitter" href="https://x.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                    <i data-lucide="twitter" class="w-4 h-4 text-slate-300"></i>
+                    <span>X (Twitter)</span>
+                </a>
+                <a id="socialLinkLinkedin" href="https://linkedin.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                    <i data-lucide="linkedin" class="w-4 h-4 text-blue-400"></i>
+                    <span>LinkedIn</span>
+                </a>
+                <a id="socialLinkWhatsapp" href="https://wa.me/919035630901" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                    <i data-lucide="message-circle" class="w-4 h-4 text-emerald-400"></i>
+                    <span>WhatsApp</span>
+                </a>
+            </div>
         </div>
 
         <!-- ================= WE ACCEPT ALL PAYMENT METHODS (PERMANENT AT LAST) ================= -->
-        <div class="mt-12 bg-slate-900/95 rounded-3xl border border-slate-800 py-6 px-4 sm:px-8 shadow-inner">
+        <div class="mt-8 bg-slate-900/95 rounded-3xl border border-slate-800 py-6 px-4 sm:px-8 shadow-inner">
             <div class="flex flex-col md:flex-row items-center justify-between gap-4">
                 
                 <!-- Left: We Accept & Brand Badges -->

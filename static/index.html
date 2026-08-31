@@ -42,10 +42,10 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-white selection:text-black pb-16 sm:pb-0">
 
-    <!-- Top Announcement Bar (Monochrome Luxury Theme) -->
-    <div class="bg-slate-900 border-b border-slate-800 text-slate-200 text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
+    <!-- Top Announcement Bar (Monochrome Luxury Theme - Dynamic) -->
+    <div id="topAnnouncementBar" class="bg-slate-900 border-b border-slate-800 text-slate-200 text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
         <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span>🎉 Welcome to <strong>QELVORIA</strong>: Use coupon code <strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
+        <span id="announcementTextContent">🎉 Welcome to <strong>QELVORIA</strong>: Use coupon code <strong id="announcementCouponBadge" class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
     </div>
 
     <!-- Navigation Header -->
@@ -109,12 +109,12 @@
     <!-- Main Content Container -->
     <main class="flex-1 w-full">
 
-        <!-- ================= 1. RESPONSIVE HERO SLIDER SECTION ================= -->
-        <section class="relative overflow-hidden bg-slate-950 py-8 sm:py-14 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
-            <div class="max-w-7xl mx-auto relative z-10">
+        <!-- ================= 1. RESPONSIVE HERO SLIDER SECTION (1400x520 Desktop, 375x600 Mobile) ================= -->
+        <section class="relative overflow-hidden bg-slate-950 py-6 sm:py-10 px-4 sm:px-6 lg:px-8 border-b border-slate-800/80">
+            <div class="max-w-[1400px] mx-auto relative z-10">
                 
                 <!-- Dynamic Hero Slider Container -->
-                <div id="heroSliderTrack" class="relative overflow-hidden rounded-3xl min-h-[340px] sm:min-h-[400px] bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 sm:p-12 border border-slate-800 shadow-2xl flex flex-col justify-center">
+                <div id="heroSliderTrack" class="relative overflow-hidden rounded-3xl w-full min-h-[560px] sm:min-h-[520px] lg:h-[520px] bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-2xl flex flex-col justify-center">
                     <!-- Slides injected via JavaScript -->
                 </div>
 
@@ -124,10 +124,10 @@
                         <!-- Dots injected dynamically -->
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="prevHeroSlide()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition">
+                        <button onclick="prevHeroSlide()" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition" title="Previous Banner">
                             <i data-lucide="chevron-left" class="w-4 h-4"></i>
                         </button>
-                        <button onclick="nextHeroSlide()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition">
+                        <button onclick="nextHeroSlide()" class="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white transition" title="Next Banner">
                             <i data-lucide="chevron-right" class="w-4 h-4"></i>
                         </button>
                     </div>
@@ -355,6 +355,47 @@
                             We accept Google Pay, PhonePe, Paytm, FamPay, UPI, Credit/Debit Cards, and NetBanking. You can apply promo codes like <strong>ROHIT20</strong> or <strong>WELCOME50</strong> at checkout for additional discounts!
                         </div>
                     </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= SOCIAL MEDIA CONNECT SECTION ================= -->
+        <section id="socialConnectSection" class="py-12 bg-slate-950 border-t border-slate-800">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
+                <div>
+                    <span class="text-[11px] font-extrabold uppercase tracking-widest text-slate-400 bg-slate-900 border border-slate-800 px-3 py-1 rounded-full">
+                        Official Social Media & Community
+                    </span>
+                    <h3 class="text-xl sm:text-2xl font-black text-white mt-3">
+                        Connect With Raja Rohit Tak & QELVORIA
+                    </h3>
+                    <p class="text-xs text-slate-400 max-w-xl mx-auto mt-1.5 leading-relaxed">
+                        Follow our official channels for real-time publishing updates, new release alerts, source code repositories, and direct creator community access.
+                    </p>
+                </div>
+
+                <div id="socialLinksContainer" class="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+                    <!-- Populated dynamically via JS from Admin Settings -->
+                    <a id="socialLinkInstagram" href="https://instagram.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                        <i data-lucide="instagram" class="w-4 h-4 text-pink-400"></i>
+                        <span>Instagram</span>
+                    </a>
+                    <a id="socialLinkYoutube" href="https://youtube.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                        <i data-lucide="youtube" class="w-4 h-4 text-rose-400"></i>
+                        <span>YouTube</span>
+                    </a>
+                    <a id="socialLinkTwitter" href="https://x.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                        <i data-lucide="twitter" class="w-4 h-4 text-slate-300"></i>
+                        <span>X (Twitter)</span>
+                    </a>
+                    <a id="socialLinkLinkedin" href="https://linkedin.com" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                        <i data-lucide="linkedin" class="w-4 h-4 text-blue-400"></i>
+                        <span>LinkedIn</span>
+                    </a>
+                    <a id="socialLinkWhatsapp" href="https://wa.me/919035630901" target="_blank" class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm">
+                        <i data-lucide="message-circle" class="w-4 h-4 text-emerald-400"></i>
+                        <span>WhatsApp Support</span>
+                    </a>
                 </div>
             </div>
         </section>

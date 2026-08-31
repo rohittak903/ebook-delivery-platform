@@ -701,6 +701,8 @@ async function deleteAdminReview(id) {
 
 // --- Hero Slides Management ---
 
+let cachedSlides = [];
+
 async function loadAdminSlides() {
     const tbody = document.getElementById('adminSlidesTableBody');
     tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">Loading hero slides...</td></tr>`;
@@ -710,48 +712,158 @@ async function loadAdminSlides() {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
-        const slides = data.slides || [];
+        cachedSlides = data.slides || [];
 
-        if (slides.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">No slides configured.</td></tr>`;
+        if (cachedSlides.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">No banner slides configured. Click "Add Hero Slide" above to create one.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = slides.map(s => `
+        tbody.innerHTML = cachedSlides.map(s => `
             <tr class="hover:bg-slate-900/60 transition">
                 <td class="py-3 px-6">
-                    <img src="${s.desktop_image}" class="w-16 h-10 object-cover rounded-lg border border-slate-800">
+                    <div class="space-y-1">
+                        <img src="${s.desktop_image}" class="w-24 h-12 object-cover rounded-lg border border-slate-800 shadow-sm" alt="${s.title}">
+                        <span class="text-[9px] text-slate-500 font-mono block">1400×520px</span>
+                    </div>
                 </td>
                 <td class="py-3 px-4">
-                    <img src="${s.mobile_image || s.desktop_image}" class="w-10 h-10 object-cover rounded-lg border border-slate-800">
+                    <div class="space-y-1">
+                        <img src="${s.mobile_image || s.desktop_image}" class="w-10 h-14 object-cover rounded-lg border border-slate-800 shadow-sm" alt="${s.title}">
+                        <span class="text-[9px] text-slate-500 font-mono block">375×600px</span>
+                    </div>
                 </td>
                 <td class="py-3 px-4">
-                    <div class="font-bold text-white">${s.title}</div>
-                    <div class="text-[11px] text-slate-400 line-clamp-1">${s.subtitle}</div>
+                    ${s.badge_text ? `<span class="px-2 py-0.5 rounded text-[9px] font-bold bg-slate-800 text-slate-200 border border-slate-700 mb-1 inline-block">${s.badge_text}</span>` : ''}
+                    <div class="font-bold text-white leading-snug">${s.title}</div>
+                    <div class="text-[11px] text-slate-400 line-clamp-1 mt-0.5">${s.subtitle}</div>
                 </td>
                 <td class="py-3 px-4">
-                    <span class="px-2 py-0.5 rounded bg-brand-950 text-brand-300 text-[10px] font-bold border border-brand-800">${s.cta_text || 'CTA'}</span>
+                    <div class="space-y-1">
+                        <span class="px-2 py-1 rounded bg-white text-slate-950 text-[11px] font-extrabold inline-flex items-center gap-1 shadow-sm">
+                            <i data-lucide="mouse-pointer" class="w-3 h-3"></i>
+                            ${s.cta_text || 'CTA'}
+                        </span>
+                        <div class="font-mono text-[10px] text-slate-400 truncate max-w-[140px]" title="${s.cta_url}">
+                            ${s.cta_url || '#'}
+                        </div>
+                    </div>
                 </td>
                 <td class="py-3 px-6 text-right">
-                    <button onclick="deleteAdminSlide(${s.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <div class="flex items-center justify-end gap-1.5">
+                        <button onclick="openEditSlideModal(${s.id})" class="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1 border border-slate-700" title="Edit / Replace">
+                            <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                            <span>Replace</span>
+                        </button>
+                        <button onclick="deleteAdminSlide(${s.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('');
+        lucide.createIcons();
     } catch (e) {
         console.error('Slides load error', e);
     }
 }
 
+function openAddSlideModal() {
+    document.getElementById('slideForm').reset();
+    document.getElementById('slideId').value = '';
+    document.getElementById('slideModalTitle').innerText = 'Add Hero Banner Slide';
+    document.getElementById('saveSlideBtnText').innerText = 'Save & Publish Banner';
+    document.getElementById('slideCtaText').value = 'Explore Best Sellers';
+    document.getElementById('slideCtaUrl').value = '/#catalog';
+    document.getElementById('slideSortOrder').value = '0';
+    openModal('slideModal');
+}
+
+function openEditSlideModal(slideId) {
+    const slide = cachedSlides.find(s => s.id === slideId);
+    if (!slide) return;
+
+    document.getElementById('slideForm').reset();
+    document.getElementById('slideId').value = slide.id;
+    document.getElementById('slideModalTitle').innerText = 'Replace / Edit Hero Banner';
+    document.getElementById('saveSlideBtnText').innerText = 'Update & Replace Banner';
+    document.getElementById('slideTitle').value = slide.title || '';
+    document.getElementById('slideSubtitle').value = slide.subtitle || '';
+    document.getElementById('slideBadgeText').value = slide.badge_text || '';
+    document.getElementById('slideCtaText').value = slide.cta_text || 'Explore Collection';
+    document.getElementById('slideCtaUrl').value = slide.cta_url || '/#catalog';
+    document.getElementById('slideDesktopUrl').value = slide.desktop_image || '';
+    document.getElementById('slideMobileUrl').value = slide.mobile_image || '';
+    document.getElementById('slideSortOrder').value = slide.sort_order || 0;
+
+    openModal('slideModal');
+}
+
+async function handleSlideSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('saveSlideBtn');
+    const slideId = document.getElementById('slideId').value.trim();
+    const isEdit = !!slideId;
+
+    btn.disabled = true;
+    btn.innerHTML = `<span>Saving...</span>`;
+
+    const formData = new FormData();
+    formData.append('title', document.getElementById('slideTitle').value.trim());
+    formData.append('subtitle', document.getElementById('slideSubtitle').value.trim());
+    formData.append('badge_text', document.getElementById('slideBadgeText').value.trim());
+    formData.append('cta_text', document.getElementById('slideCtaText').value.trim());
+    formData.append('cta_url', document.getElementById('slideCtaUrl').value.trim());
+    formData.append('sort_order', document.getElementById('slideSortOrder').value.trim() || '0');
+
+    const deskFile = document.getElementById('slideDesktopFile').files[0];
+    if (deskFile) formData.append('desktop_image_file', deskFile);
+    formData.append('desktop_image_url', document.getElementById('slideDesktopUrl').value.trim());
+
+    const mobFile = document.getElementById('slideMobileFile').files[0];
+    if (mobFile) formData.append('mobile_image_file', mobFile);
+    formData.append('mobile_image_url', document.getElementById('slideMobileUrl').value.trim());
+
+    try {
+        const url = isEdit ? `/api/admin/hero-slides/${slideId}` : '/api/admin/hero-slides';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+            method: method,
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            body: formData
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert(data.message || (isEdit ? 'Hero banner updated successfully!' : 'Hero banner added successfully!'));
+            closeModal('slideModal');
+            loadAdminSlides();
+        } else {
+            alert(data.detail || 'Failed to save banner slide.');
+        }
+    } catch (err) {
+        console.error('Slide save error', err);
+        alert('An error occurred while saving the banner.');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="save" class="w-4 h-4"></i><span id="saveSlideBtnText">${isEdit ? 'Update & Replace Banner' : 'Save & Publish Banner'}</span>`;
+        lucide.createIcons();
+    }
+}
+
 async function deleteAdminSlide(id) {
-    if (!confirm('Delete this banner slide?')) return;
+    if (!confirm('Are you sure you want to delete this banner slide?')) return;
     try {
         const res = await fetch(`/api/admin/hero-slides/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
-        if (res.ok) loadAdminSlides();
+        if (res.ok) {
+            loadAdminSlides();
+        } else {
+            alert('Failed to delete slide');
+        }
     } catch (e) {
         console.error('Delete slide error', e);
     }
@@ -910,10 +1022,38 @@ async function resolveAdminTicket(ticketId) {
 
 async function loadAdminSettings() {
     try {
-        const res = await fetch('/api/store-info');
+        const res = await fetch('/api/admin/settings', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
         const data = await res.json();
-        if (data.bank_account_no) document.getElementById('setting_bank_account_no').value = data.bank_account_no;
-        if (data.bank_ifsc) document.getElementById('setting_bank_ifsc').value = data.bank_ifsc;
+        const s = data.settings || {};
+
+        if (s.bank_account_no && document.getElementById('setting_bank_account_no')) document.getElementById('setting_bank_account_no').value = s.bank_account_no;
+        if (s.bank_ifsc && document.getElementById('setting_bank_ifsc')) document.getElementById('setting_bank_ifsc').value = s.bank_ifsc;
+        if (s.razorpay_key_id && document.getElementById('setting_razorpay_key_id')) document.getElementById('setting_razorpay_key_id').value = s.razorpay_key_id;
+
+        // Announcement Banner
+        if (document.getElementById('setting_announcement_enabled')) {
+            document.getElementById('setting_announcement_enabled').checked = (s.announcement_enabled !== 'false' && s.announcement_enabled !== false);
+        }
+        if (document.getElementById('setting_announcement_text')) {
+            document.getElementById('setting_announcement_text').value = s.announcement_text || '';
+        }
+        if (document.getElementById('setting_announcement_coupon')) {
+            document.getElementById('setting_announcement_coupon').value = s.announcement_coupon || '';
+        }
+        if (document.getElementById('setting_announcement_link')) {
+            document.getElementById('setting_announcement_link').value = s.announcement_link || '';
+        }
+
+        // Social Media Accounts
+        if (document.getElementById('setting_social_instagram')) document.getElementById('setting_social_instagram').value = s.social_instagram || '';
+        if (document.getElementById('setting_social_youtube')) document.getElementById('setting_social_youtube').value = s.social_youtube || '';
+        if (document.getElementById('setting_social_twitter')) document.getElementById('setting_social_twitter').value = s.social_twitter || '';
+        if (document.getElementById('setting_social_linkedin')) document.getElementById('setting_social_linkedin').value = s.social_linkedin || '';
+        if (document.getElementById('setting_social_facebook')) document.getElementById('setting_social_facebook').value = s.social_facebook || '';
+        if (document.getElementById('setting_social_telegram')) document.getElementById('setting_social_telegram').value = s.social_telegram || '';
+        if (document.getElementById('setting_social_whatsapp')) document.getElementById('setting_social_whatsapp').value = s.social_whatsapp || '';
     } catch (e) {
         console.error('Settings load error', e);
     }
@@ -956,9 +1096,20 @@ async function handleAdminPasswordChange(e) {
 async function saveAllSettings() {
     const payload = {
         settings: {
-            bank_account_no: document.getElementById('setting_bank_account_no').value.trim(),
-            bank_ifsc: document.getElementById('setting_bank_ifsc').value.trim(),
-            razorpay_key_id: document.getElementById('setting_razorpay_key_id').value.trim()
+            bank_account_no: document.getElementById('setting_bank_account_no')?.value.trim() || '',
+            bank_ifsc: document.getElementById('setting_bank_ifsc')?.value.trim() || '',
+            razorpay_key_id: document.getElementById('setting_razorpay_key_id')?.value.trim() || '',
+            announcement_enabled: document.getElementById('setting_announcement_enabled')?.checked ? 'true' : 'false',
+            announcement_text: document.getElementById('setting_announcement_text')?.value.trim() || '',
+            announcement_coupon: document.getElementById('setting_announcement_coupon')?.value.trim() || '',
+            announcement_link: document.getElementById('setting_announcement_link')?.value.trim() || '',
+            social_instagram: document.getElementById('setting_social_instagram')?.value.trim() || '',
+            social_youtube: document.getElementById('setting_social_youtube')?.value.trim() || '',
+            social_twitter: document.getElementById('setting_social_twitter')?.value.trim() || '',
+            social_linkedin: document.getElementById('setting_social_linkedin')?.value.trim() || '',
+            social_facebook: document.getElementById('setting_social_facebook')?.value.trim() || '',
+            social_telegram: document.getElementById('setting_social_telegram')?.value.trim() || '',
+            social_whatsapp: document.getElementById('setting_social_whatsapp')?.value.trim() || ''
         }
     };
 
@@ -972,7 +1123,7 @@ async function saveAllSettings() {
             body: JSON.stringify(payload)
         });
         if (res.ok) {
-            alert('Store settings saved successfully!');
+            alert('Store settings & social links saved successfully! Live store updated.');
         } else {
             alert('Failed to save settings');
         }
