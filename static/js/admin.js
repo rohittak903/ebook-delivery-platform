@@ -1,4 +1,4 @@
-// Admin Dashboard Logic - Raja Rohit Tak
+// Admin Dashboard Logic - QELVORIA Store Management
 
 let adminToken = '';
 let currentTab = 'overview';

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QELVORIA Admin Dashboard - Raja Rohit Tak</title>
+    <title>QELVORIA Admin Dashboard</title>
     <link rel="icon" type="image/png" href="/static/favicon.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -46,7 +46,7 @@
                 <h2 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
                     QELVORIA
                 </h2>
-                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Admin Dashboard • Raja Rohit Tak</p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Admin Dashboard • Store Management</p>
             </div>
 
             <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" autocomplete="off" class="space-y-4">
@@ -107,7 +107,7 @@
                     </div>
                     <div>
                         <h2 class="font-black text-white text-base tracking-wider leading-none">QELVORIA</h2>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Raja Rohit Tak</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Store Management</span>
                     </div>
                 </div>
 
@@ -193,10 +193,10 @@
                         <i data-lucide="refresh-cw" class="w-4 h-4"></i>
                     </button>
                     <div class="flex items-center gap-2 pl-3 border-l border-slate-800">
-                        <div class="w-8 h-8 rounded-full bg-brand-600 text-white font-bold text-xs flex items-center justify-center">
-                            RT
+                        <div class="w-8 h-8 rounded-full bg-brand-600 text-slate-950 font-bold text-xs flex items-center justify-center">
+                            AD
                         </div>
-                        <span class="text-xs font-bold text-white">Raja Rohit Tak</span>
+                        <span class="text-xs font-bold text-white">Admin Management</span>
                     </div>
                 </div>
             </header>
@@ -212,7 +212,7 @@
                                 <span class="text-xs font-bold text-slate-400 uppercase">Total Revenue</span>
                                 <div id="statRevenue" class="text-3xl font-extrabold text-white mt-1">₹0.00</div>
                                 <span class="text-[11px] font-semibold text-emerald-400 flex items-center gap-1 mt-1">
-                                    <i data-lucide="trending-up" class="w-3 h-3"></i> Canara Bank Settled
+                                    <i data-lucide="trending-up" class="w-3 h-3"></i> Razorpay Settled
                                 </span>
                             </div>
                             <div class="w-12 h-12 rounded-2xl bg-emerald-950 text-emerald-400 flex items-center justify-center font-bold text-xl border border-emerald-800">
@@ -246,9 +246,9 @@
 
                         <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm flex items-center justify-between">
                             <div>
-                                <span class="text-xs font-bold text-slate-400 uppercase">Settlement Account</span>
-                                <div class="text-base font-extrabold text-white mt-1">Canara Bank</div>
-                                <span class="text-[10px] font-mono text-emerald-400 font-bold block">110076462071</span>
+                                <span class="text-xs font-bold text-slate-400 uppercase">Payment Gateway</span>
+                                <div class="text-base font-extrabold text-white mt-1">Razorpay Live</div>
+                                <span class="text-[10px] font-mono text-emerald-400 font-bold block">100% Automated</span>
                             </div>
                             <div class="w-12 h-12 rounded-2xl bg-teal-950 text-teal-400 flex items-center justify-center border border-teal-800">
                                 <i data-lucide="landmark" class="w-6 h-6"></i>
@@ -621,7 +621,7 @@
                                         <button onclick="sendTicketFormShortcut()" class="px-2.5 py-1 bg-amber-950 hover:bg-amber-900 border border-amber-800 text-amber-300 rounded-lg whitespace-nowrap">📋 Send Ticket Form</button>
                                         <button onclick="setAdminQuickReply('Hello! I am your QELVORIA Support Assistant. How can I assist you today?')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg whitespace-nowrap">👋 Introduction</button>
                                         <button onclick="setAdminQuickReply('Your ebook has been dispatched instantly to your email!')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg whitespace-nowrap">⚡ Delivery Sent</button>
-                                        <button onclick="setAdminQuickReply('Use promo code ROHIT20 at checkout for an instant 20% discount.')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg whitespace-nowrap">🎁 20% Coupon</button>
+                                        <button onclick="setAdminQuickReply('Use promo code QELVORIA20 at checkout for an instant 20% discount.')" class="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 rounded-lg whitespace-nowrap">🎁 20% Coupon</button>
                                     </div>
                                     <form onsubmit="handleAdminReplySubmit(event)" class="flex gap-2">
                                         <textarea 
@@ -655,13 +655,13 @@
                                 <i data-lucide="lock" class="w-5 h-5 text-brand-400"></i>
                                 <h3 class="font-bold text-sm text-white">Change Admin Password</h3>
                             </div>
-                            <span class="text-xs text-slate-400">Logged in as <strong>RajaRohitTak</strong></span>
+                            <span class="text-xs text-slate-400">Logged in as <strong id="adminUsernameDisplay">Admin</strong></span>
                         </div>
 
                         <form onsubmit="handleAdminPasswordChange(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-300 mb-1">Current Password *</label>
-                                <input type="password" id="adminCurrentPass" required placeholder="Rajatak.com" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
+                                <input type="password" id="adminCurrentPass" required placeholder="Current Password" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-300 mb-1">New Password *</label>
@@ -710,11 +710,11 @@
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-300 mb-1">Bank Account Number</label>
-                                <input type="text" id="setting_bank_account_no" value="110076462071" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white font-bold">
+                                <input type="text" id="setting_bank_account_no" value="" placeholder="Optional Bank Account Number" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white font-bold">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-300 mb-1">IFSC Code</label>
-                                <input type="text" id="setting_bank_ifsc" value="CNRB0002614" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white font-bold">
+                                <input type="text" id="setting_bank_ifsc" value="" placeholder="Optional IFSC Code" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono text-white font-bold">
                             </div>
                         </div>
                     </div>
@@ -744,12 +744,12 @@
                         <div class="space-y-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-300 mb-1">Announcement Message Text *</label>
-                                <input type="text" id="setting_announcement_text" placeholder="🎉 Welcome to QELVORIA: Use coupon code ROHIT20 for 20% OFF! Instant delivery." class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl text-xs text-white">
+                                <input type="text" id="setting_announcement_text" placeholder="🎉 Welcome to QELVORIA: Use coupon code QELVORIA20 for 20% OFF! Instant delivery." class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl text-xs text-white">
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-xs font-bold text-slate-300 mb-1">Coupon Code Highlight (Optional)</label>
-                                    <input type="text" id="setting_announcement_coupon" placeholder="ROHIT20" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl text-xs font-mono uppercase text-white font-bold">
+                                    <input type="text" id="setting_announcement_coupon" placeholder="QELVORIA20" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 focus:border-amber-500 rounded-xl text-xs font-mono uppercase text-white font-bold">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-300 mb-1">Target Click Link URL</label>
@@ -909,7 +909,7 @@
                                     </button>
                                 </div>
                                 <div class="relative flex items-center">
-                                    <input type="text" id="setting_social_whatsapp" placeholder="https://wa.me/919035630901" class="w-full pl-3.5 pr-9 py-2 bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl text-xs text-white">
+                                    <input type="text" id="setting_social_whatsapp" placeholder="https://wa.me/..." class="w-full pl-3.5 pr-9 py-2 bg-slate-950 border border-slate-800 focus:border-emerald-500 rounded-xl text-xs text-white">
                                     <button type="button" onclick="clearSocialInput('setting_social_whatsapp', 'WhatsApp')" class="absolute right-2.5 text-slate-500 hover:text-rose-400 p-1 transition" title="Delete WhatsApp Link">
                                         <i data-lucide="trash" class="w-3.5 h-3.5"></i>
                                     </button>
@@ -1256,7 +1256,7 @@
             <form onsubmit="handleAddCouponSubmit(event)" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Promo Code (Uppercase) *</label>
-                    <input type="text" id="couponCodeInput" required placeholder="e.g. ROHIT20, SAVE50" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono uppercase text-white">
+                    <input type="text" id="couponCodeInput" required placeholder="e.g. QELVORIA20, SAVE50" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs font-mono uppercase text-white">
                 </div>
                 <div class="grid grid-cols-2 gap-3">
                     <div>
@@ -1417,6 +1417,6 @@
     </div>
 
     <!-- Admin JS with cache buster -->
-    <script src="/static/js/admin.js?v=4.0.0"></script>
+    <script src="/static/js/admin.js?v=4.1.0"></script>
 </body>
 </html>

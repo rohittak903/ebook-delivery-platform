@@ -37,7 +37,7 @@ async function loadStoreInfo() {
                 annBar.classList.remove('hidden');
                 const annText = document.getElementById('announcementTextContent');
                 if (annText && data.announcement_text) {
-                    const coupon = data.announcement_coupon || 'ROHIT20';
+                    const coupon = data.announcement_coupon || 'QELVORIA20';
                     const link = data.announcement_link || '/#catalog';
                     annText.innerHTML = `
                         <a href="${link}" class="hover:underline flex items-center gap-1.5 flex-wrap justify-center">
@@ -503,7 +503,7 @@ async function startRazorpayCartFlow() {
             key: orderInfo.key_id || 'rzp_live_TVwW1GpXBFloh7',
             amount: orderInfo.amount,
             currency: 'INR',
-            name: 'QELVORIA (Raja Rohit Tak)',
+            name: 'QELVORIA',
             description: orderInfo.description,
             order_id: orderInfo.order_id,
             prefill: {
@@ -590,7 +590,7 @@ async function startRazorpayDirectPayment() {
             key: orderInfo.key_id || 'rzp_live_TVwW1GpXBFloh7',
             amount: orderInfo.amount,
             currency: 'INR',
-            name: 'QELVORIA (Raja Rohit Tak)',
+            name: 'QELVORIA',
             description: orderInfo.description,
             order_id: orderInfo.order_id,
             prefill: {
@@ -1066,8 +1066,8 @@ function closeModal(id) {
         { id: 1, question: "How do I get my ebook after purchase?", answer: "⚡ **Instant Automated Delivery:**\nImmediately after payment, your download link appears on screen and is automatically sent to your **Email** and **WhatsApp** within 5 seconds!\n\nYou can also click **'Find Past Purchases'** anytime to re-download with lifetime access." },
         { id: 2, question: "What payment methods are supported?", answer: "💳 **Accepted Payment Methods:**\nWe accept 100% secure payments via **Razorpay**:\n• **UPI:** Google Pay, PhonePe, Paytm, BHIM, CRED, FamPay\n• **Cards:** Visa, Mastercard, RuPay, Maestro\n• **Net Banking:** All major Indian banks\n• **Wallets:** Paytm, Mobikwik, Amazon Pay" },
         { id: 3, question: "Which devices and file formats are supported?", answer: "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required." },
-        { id: 4, question: "Are there any active discount coupons or bundle deals?", answer: "🎁 **Active Discounts & Bundles:**\n• Use promo code **`ROHIT20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**." },
-        { id: 5, question: "How do I contact customer support if I need help?", answer: "👋 **Customer Support Desk:**\n• **Email:** rohittak903@gmail.com\n• **WhatsApp Direct:** +91 9035630901\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• A live support specialist can also assist you directly here!" }
+        { id: 4, question: "Are there any active discount coupons or bundle deals?", answer: "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**." },
+        { id: 5, question: "How do I contact customer support if I need help?", answer: "👋 **Customer Support Desk:**\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• **Live Support:** A live support specialist can also assist you directly here!" }
     ];
 
     function getPresetQuestions() {

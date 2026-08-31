@@ -270,7 +270,7 @@ async def unified_login(req: UnifiedLoginRequest):
                         "role": "admin",
                         "redirect": "/admin.html",
                         "token": session_token,
-                        "name": "Raja Rohit Tak (Admin)",
+                        "name": "Store Admin",
                         "message": "Welcome back Admin! Redirecting to dashboard..."
                     }
                     
@@ -516,7 +516,7 @@ async def create_support_ticket(req: SupportTicketRequest):
         )) as cursor:
             ticket_id = cursor.lastrowid
         await db.commit()
-    return {"success": True, "ticket_id": ticket_id, "message": "Support ticket submitted. Rohit Tak's team will verify and deliver your book promptly!"}
+    return {"success": True, "ticket_id": ticket_id, "message": "Support ticket submitted. Our support team will verify and deliver your book promptly!"}
 
 # --- Store Information ---
 
@@ -528,21 +528,21 @@ async def get_store_info():
         curr_sym = "₹"
     return {
         "store_name": settings.get("store_name", "QELVORIA"),
-        "store_tagline": settings.get("store_tagline", "Premium Digital Publishing & Ebooks by Raja Rohit Tak"),
+        "store_tagline": settings.get("store_tagline", "Premium Digital Publishing & Ebook Bundles"),
         "currency": curr_sym,
         "currency_code": settings.get("currency_code", "INR"),
-        "support_email": settings.get("support_email", "rohittak903@gmail.com"),
-        "support_whatsapp": settings.get("support_whatsapp", "+919035630901"),
-        "bank_account_no": settings.get("bank_account_no", "110076462071"),
-        "bank_ifsc": settings.get("bank_ifsc", "CNRB0002614"),
-        "bank_name": settings.get("bank_name", "Canara Bank"),
-        "bank_holder_name": settings.get("bank_holder_name", "ROHIT TAK"),
-        "upi_id": settings.get("upi_id", "9035630901@superyes"),
-        "upi_name": settings.get("upi_name", "ROHIT TAK"),
-        "upi_qr_image": settings.get("upi_qr_image", "/uploads/qr/rohit_upi_qr.jpg"),
+        "support_email": settings.get("support_email", "support@qelvoria.com"),
+        "support_whatsapp": settings.get("support_whatsapp", ""),
+        "bank_account_no": settings.get("bank_account_no", ""),
+        "bank_ifsc": settings.get("bank_ifsc", ""),
+        "bank_name": settings.get("bank_name", ""),
+        "bank_holder_name": settings.get("bank_holder_name", "QELVORIA"),
+        "upi_id": settings.get("upi_id", ""),
+        "upi_name": settings.get("upi_name", "QELVORIA"),
+        "upi_qr_image": settings.get("upi_qr_image", ""),
         "announcement_enabled": settings.get("announcement_enabled", "true") == "true",
-        "announcement_text": settings.get("announcement_text", "🎉 Welcome to QELVORIA: Use coupon code ROHIT20 for 20% OFF! Instant delivery."),
-        "announcement_coupon": settings.get("announcement_coupon", "ROHIT20"),
+        "announcement_text": settings.get("announcement_text", "🎉 Welcome to QELVORIA: Use coupon code QELVORIA20 for 20% OFF! Instant delivery."),
+        "announcement_coupon": settings.get("announcement_coupon", "QELVORIA20"),
         "announcement_link": settings.get("announcement_link", "/#catalog"),
         "social_instagram": settings.get("social_instagram", "https://instagram.com"),
         "social_youtube": settings.get("social_youtube", "https://youtube.com"),
@@ -550,7 +550,7 @@ async def get_store_info():
         "social_linkedin": settings.get("social_linkedin", "https://linkedin.com"),
         "social_facebook": settings.get("social_facebook", ""),
         "social_telegram": settings.get("social_telegram", ""),
-        "social_whatsapp": settings.get("social_whatsapp", "https://wa.me/919035630901"),
+        "social_whatsapp": settings.get("social_whatsapp", ""),
         "chat_presets": [
             {
                 "id": 1,
@@ -570,12 +570,12 @@ async def get_store_info():
             {
                 "id": 4,
                 "question": settings.get("chat_preset_q4", "Are there any active discount coupons or bundle deals?"),
-                "answer": settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`ROHIT20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
+                "answer": settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
             },
             {
                 "id": 5,
                 "question": settings.get("chat_preset_q5", "How do I contact customer support if I need help?"),
-                "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Email:** rohittak903@gmail.com\n• **WhatsApp Direct:** +91 9035630901\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• A live support specialist can also assist you directly here!")
+                "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• **Live Support:** A live support specialist can also assist you directly here!")
             }
         ]
     }
@@ -874,7 +874,7 @@ def create_licensed_ebook_pdf(title: str, author: str, customer_name: str, order
 0 -36 Td
 (Official Instant Digital Delivery by QELVORIA - All Rights Reserved.) Tj
 0 -18 Td
-(Customer Support: rohittak903@gmail.com | WhatsApp: +91 9035630901) Tj
+(Customer Support: support@qelvoria.com) Tj
 ET"""
     stream_bytes = stream_content.encode("latin1", errors="replace")
     stream_len = len(stream_bytes)
@@ -1009,7 +1009,7 @@ async def download_ebook(token: str):
             pass
 
     title = (ebook["title"] if ebook else None) or ebook_title or "QELVORIA Digital Ebook"
-    author = (ebook["author"] if ebook else None) or "Raja Rohit Tak"
+    author = (ebook["author"] if ebook else None) or "QELVORIA Editorial Team"
     desc = (ebook["description"] if ebook else None) or "Official Digital Edition published by QELVORIA."
     customer = customer_name or "Valued Reader"
     code = order_code or "QV-ORDER"
@@ -1125,7 +1125,7 @@ async def admin_login(req: AdminLoginRequest):
                 admin_username = "RajaRohitTak"
                 
         if not is_valid:
-            raise HTTPException(status_code=401, detail="Invalid username or password. Please use RajaRohitTak / Rajatak.com")
+            raise HTTPException(status_code=401, detail="Invalid username or password.")
             
         session_token = secrets.token_hex(24)
         ACTIVE_ADMIN_SESSIONS.add(session_token)
@@ -2156,7 +2156,7 @@ async def razorpay_create_order(req: dict):
             "coupon_code": coupon_code if discount_amount > 0 else None,
             "currency": "INR",
             "key_id": key_id,
-            "name": "QELVORIA (Raja Rohit Tak)",
+            "name": "QELVORIA",
             "description": f"Purchase: {', '.join(ebook_titles)[:60]}",
             "customer_name": req.get("customer_name", ""),
             "customer_email": req.get("customer_email", ""),
@@ -2492,7 +2492,7 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
     customers = []
     for r in rows:
         cust = dict(r)
-        msg_text = f"Hello {cust['name']}, this is Raja Rohit Tak from QELVORIA! How is your reading experience going?"
+        msg_text = f"Hello {cust['name']}, this is QELVORIA Support! How is your reading experience going?"
         cust["whatsapp_url"] = generate_whatsapp_link(cust["phone"], msg_text)
         customers.append(cust)
         
@@ -2513,10 +2513,10 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
     p_a3 = settings.get("chat_preset_a3", "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required.")
 
     p_q4 = settings.get("chat_preset_q4", "Are there any active discount coupons or bundle deals?")
-    p_a4 = settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`ROHIT20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
+    p_a4 = settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
 
     p_q5 = settings.get("chat_preset_q5", "How do I contact customer support if I need help?")
-    p_a5 = settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Email:** rohittak903@gmail.com\n• **WhatsApp Direct:** +91 9035630901\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• A live support specialist can also assist you directly here!")
+    p_a5 = settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• **Live Support:** A live support specialist can also assist you directly here!")
 
     presets = [
         (p_q1, p_a1),
@@ -2583,7 +2583,7 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
     if any(k in msg for k in ["coupon", "discount", "promo", "code", "offer", "voucher", "deal", "cheap", "save"]):
         return (
             "🎁 **Exclusive Active Discount Codes for QELVORIA:**\n\n"
-            "1. **`ROHIT20`** — Get **20% OFF** on any single ebook or bundle!\n"
+            "1. **`QELVORIA20`** — Get **20% OFF** on any single ebook or bundle!\n"
             "2. **`WELCOME50`** — **50% OFF** special welcome discount for first-time buyers!\n"
             "3. **`SPECIAL30`** — **30% OFF** limited time offer!\n\n"
             "👉 *Apply these codes directly in your Shopping Cart or at Checkout for instant savings.*",
@@ -2604,7 +2604,7 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
         ])
         return (
             f"📦 **Curated High-Value Ebook Bundles:**\n\n{bundle_text or '- AI & Solopreneur Ultimate Master Bundle'}\n\nBundles give you instant access to complete learning paths at over 60% savings!",
-            ["🔥 Go to Bundles Section", "🎁 Apply Coupon ROHIT20", "📋 Open Support Ticket Form"],
+            ["🔥 Go to Bundles Section", "🎁 Apply Coupon QELVORIA20", "📋 Open Support Ticket Form"],
             []
         )
 
@@ -2675,8 +2675,8 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
     ])
 
     return (
-        f"👋 **Here is what I found for you:**\n\n{books_summary}\n\n*Use discount code `ROHIT20` for 20% off your entire cart!*",
-        ["🎁 Apply Coupon ROHIT20", "📋 Open Support Ticket Form", "🔥 View Bestsellers"],
+        f"👋 **Here is what I found for you:**\n\n{books_summary}\n\n*Use discount code `QELVORIA20` for 20% off your entire cart!*",
+        ["🎁 Apply Coupon QELVORIA20", "📋 Open Support Ticket Form", "🔥 View Bestsellers"],
         top_books
     )
 
