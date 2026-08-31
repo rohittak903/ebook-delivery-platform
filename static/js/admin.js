@@ -418,7 +418,7 @@ async function loadAdminBundles() {
         const bundles = data.bundles || [];
 
         if (bundles.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No bundles created yet.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No bundles created yet. Click "+ Create New Bundle" above to create one.</td></tr>`;
             return;
         }
 
@@ -427,15 +427,17 @@ async function loadAdminBundles() {
                 <td class="py-3 px-6 font-bold text-white">${b.title}</td>
                 <td class="py-3 px-4"><span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 text-[10px] font-extrabold border border-amber-800">${b.badge_text || 'BUNDLE'}</span></td>
                 <td class="py-3 px-4 font-mono text-slate-400 text-xs">${b.ebook_ids}</td>
-                <td class="py-3 px-4 text-slate-400 line-through">₹${b.price.toFixed(2)}</td>
-                <td class="py-3 px-4 font-bold text-emerald-400">₹${b.sale_price.toFixed(2)}</td>
+                <td class="py-3 px-4 text-slate-400 line-through">₹${Number(b.price).toFixed(2)}</td>
+                <td class="py-3 px-4 font-bold text-emerald-400">₹${Number(b.sale_price).toFixed(2)}</td>
                 <td class="py-3 px-6 text-right">
-                    <button onclick="deleteAdminBundle(${b.id})" class="p-1.5 text-slate-500 hover:text-rose-400 rounded-lg hover:bg-slate-800 transition" title="Delete">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <button onclick="deleteAdminBundle(${b.id})" class="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5 shadow-sm" title="Delete Bundle">
+                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                        <span>Delete Bundle</span>
                     </button>
                 </td>
             </tr>
         `).join('');
+        lucide.createIcons();
     } catch (e) {
         console.error('Bundles load error', e);
     }
@@ -487,7 +489,7 @@ async function handleAddBundleSubmit(e) {
             body: formData
         });
         if (res.ok) {
-            alert('Bundle offer published!');
+            alert('Bundle offer published successfully!');
             closeModal('addBundleModal');
             loadAdminBundles();
         } else {
@@ -501,17 +503,24 @@ async function handleAddBundleSubmit(e) {
 }
 
 async function deleteAdminBundle(id) {
-    if (!confirm('Delete this bundle offer?')) return;
+    if (!confirm('Are you sure you want to delete this bundle offer? It will be removed immediately from your live storefront.')) return;
     try {
         const res = await fetch(`/api/admin/bundles/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
-        if (res.ok) loadAdminBundles();
+        if (res.ok) {
+            alert('Bundle offer deleted successfully!');
+            loadAdminBundles();
+        } else {
+            const err = await res.json().catch(() => ({}));
+            alert(err.detail || 'Failed to delete bundle.');
+        }
     } catch (e) {
         console.error('Bundle delete error', e);
     }
 }
+window.deleteAdminBundle = deleteAdminBundle;
 
 // --- Promo Codes / Coupons Management ---
 
@@ -1133,6 +1142,11 @@ async function clearAllSocialLinks() {
         await saveAllSettings(true, '🗑️ All social media links deleted and live store updated!');
     }
 }
+
+async function saveAnnouncementSettings() {
+    await saveAllSettings(true, '🎉 Top Announcement Banner updated & live on store!');
+}
+window.saveAnnouncementSettings = saveAnnouncementSettings;
 
 async function handleAdminPasswordChange(e) {
     e.preventDefault();

@@ -43,18 +43,26 @@ async function loadStoreInfo() {
         // 1. Dynamic Top Announcement Bar
         const annBar = document.getElementById('topAnnouncementBar');
         if (annBar) {
-            if (data.announcement_enabled === false) {
+            const isEnabled = (data.announcement_enabled !== false && data.announcement_enabled !== 'false');
+            if (!isEnabled) {
                 annBar.classList.add('hidden');
             } else {
                 annBar.classList.remove('hidden');
                 const annText = document.getElementById('announcementTextContent');
-                if (annText && data.announcement_text) {
-                    const coupon = data.announcement_coupon || 'ROHIT20';
+                if (annText) {
+                    const text = data.announcement_text || '🎉 Welcome to QELVORIA: Premium Digital Publishing & Ebook Bundles.';
+                    const coupon = data.announcement_coupon;
                     const link = data.announcement_link || '/#catalog';
+                    
+                    let couponHtml = '';
+                    if (coupon && typeof coupon === 'string' && coupon.trim() !== '' && !text.includes(coupon.trim())) {
+                        couponHtml = `<strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded text-[11px] ml-1">${coupon.trim()}</strong>`;
+                    }
+
                     annText.innerHTML = `
-                        <a href="${link}" class="hover:underline flex items-center gap-1.5 flex-wrap justify-center">
-                            <span>${data.announcement_text}</span>
-                            ${coupon ? `<strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded text-[11px]">${coupon}</strong>` : ''}
+                        <a href="${link}" class="hover:underline flex items-center gap-1.5 flex-wrap justify-center text-xs font-semibold text-slate-200 hover:text-white transition">
+                            <span>${text}</span>
+                            ${couponHtml}
                         </a>
                     `;
                 }
