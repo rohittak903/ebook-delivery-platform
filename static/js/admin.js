@@ -1107,16 +1107,16 @@ async function loadAdminSettings() {
     }
 }
 
-function clearSocialInput(inputId) {
+async function clearSocialInput(inputId, platformName = 'Social media') {
     const el = document.getElementById(inputId);
     if (el) {
         el.value = '';
-        el.focus();
     }
+    await saveAllSettings(true, `🗑️ ${platformName} link deleted and live store updated!`);
 }
 
-function clearAllSocialLinks() {
-    if (confirm('Are you sure you want to clear/delete all social media links?')) {
+async function clearAllSocialLinks() {
+    if (confirm('Are you sure you want to delete ALL social media links? This will immediately remove them from the store.')) {
         const ids = [
             'setting_social_instagram',
             'setting_social_youtube',
@@ -1130,6 +1130,7 @@ function clearAllSocialLinks() {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });
+        await saveAllSettings(true, '🗑️ All social media links deleted and live store updated!');
     }
 }
 
@@ -1167,7 +1168,7 @@ async function handleAdminPasswordChange(e) {
     }
 }
 
-async function saveAllSettings() {
+async function saveAllSettings(isSilent = false, customMsg = '') {
     const payload = {
         settings: {
             bank_account_no: document.getElementById('setting_bank_account_no')?.value.trim() || '',
@@ -1197,7 +1198,7 @@ async function saveAllSettings() {
             body: JSON.stringify(payload)
         });
         if (res.ok) {
-            alert('Store settings & social links saved successfully! Live store updated.');
+            alert(customMsg || (isSilent ? 'Settings saved.' : 'Store settings & social links saved successfully! Live store updated.'));
         } else {
             alert('Failed to save settings');
         }
