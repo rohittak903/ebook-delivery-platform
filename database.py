@@ -271,7 +271,7 @@ DEFAULT_SETTINGS = {
     "chat_preset_q4": "Are there any active discount coupons or bundle deals?",
     "chat_preset_a4": "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.",
     "chat_preset_q5": "How do I contact customer support if I need help?",
-    "chat_preset_a5": "👋 **Customer Support Desk:**\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• **Live Support:** A live support specialist can also assist you directly here!",
+    "chat_preset_a5": "👋 **Customer Support Desk:**\n• Please fill out the instant **Support Request Form** below with your details.\n• A live support specialist is also ready to assist you right here!\n\n[SUPPORT_FORM]",
     "whatsapp_mode": "direct_link",
     "whatsapp_api_url": "https://graph.facebook.com/v18.0/YOUR_PHONE_NUMBER_ID/messages",
     "whatsapp_api_token": "",

@@ -164,6 +164,7 @@ class SupportTicketRequest(BaseModel):
     order_code: Optional[str] = ""
     transaction_ref: Optional[str] = ""
     message: str
+    session_id: Optional[str] = ""
 
 class AdminLoginRequest(BaseModel):
     username: str
@@ -499,6 +500,7 @@ async def google_auth(req: dict):
 # --- Support Ticket APIs ---
 
 @app.post("/api/support/ticket")
+@app.post("/api/support-ticket")
 async def create_support_ticket(req: SupportTicketRequest):
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("""
@@ -515,8 +517,38 @@ async def create_support_ticket(req: SupportTicketRequest):
             req.message.strip()
         )) as cursor:
             ticket_id = cursor.lastrowid
+
+        # If submitted from live chat session, log notification into chat messages
+        if req.session_id and req.session_id.strip():
+            sid = req.session_id.strip()
+            ticket_summary_msg = (
+                f"📋 **Official Support Ticket #QV-{ticket_id} Submitted!**\n"
+                f"• **Name:** {req.customer_name.strip()}\n"
+                f"• **Email:** {req.customer_email.strip().lower()}\n"
+                f"• **Phone:** {req.customer_phone.strip()}\n"
+                f"• **Order/Ref:** {req.order_code.strip() or 'N/A'}\n"
+                f"• **Message:** {req.message.strip()}\n\n"
+                f"⚡ *Our support team is reviewing your ticket and will verify & deliver promptly.*"
+            )
+            try:
+                await db.execute("""
+                    INSERT INTO chat_messages (session_id, sender, sender_name, message, created_at)
+                    VALUES (?, 'bot', 'QELVORIA Assistant', ?, CURRENT_TIMESTAMP)
+                """, (sid, ticket_summary_msg))
+                await db.execute("""
+                    UPDATE chat_sessions 
+                    SET last_message = ?, unread_admin_count = unread_admin_count + 1, last_activity = CURRENT_TIMESTAMP 
+                    WHERE session_id = ?
+                """, (f"Ticket #QV-{ticket_id} submitted", sid))
+            except Exception as e:
+                print(f"Chat session notification error: {e}")
+
         await db.commit()
-    return {"success": True, "ticket_id": ticket_id, "message": "Support ticket submitted. Our support team will verify and deliver your book promptly!"}
+    return {
+        "success": True, 
+        "ticket_id": ticket_id, 
+        "message": f"Support ticket #QV-{ticket_id} submitted. Our support team will verify and deliver your book promptly!"
+    }
 
 # --- Store Information ---
 
@@ -575,7 +607,7 @@ async def get_store_info():
             {
                 "id": 5,
                 "question": settings.get("chat_preset_q5", "How do I contact customer support if I need help?"),
-                "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• **Live Support:** A live support specialist can also assist you directly here!")
+                "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• Please fill out the instant **Support Request Form** below with your details.\n• A live support specialist is also ready to assist you right here!\n\n[SUPPORT_FORM]")
             }
         ]
     }
@@ -2516,7 +2548,7 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
     p_a4 = settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
 
     p_q5 = settings.get("chat_preset_q5", "How do I contact customer support if I need help?")
-    p_a5 = settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• **Live Support:** A live support specialist can also assist you directly here!")
+    p_a5 = settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• Please fill out the instant **Support Request Form** below with your details.\n• A live support specialist is also ready to assist you right here!\n\n[SUPPORT_FORM]")
 
     presets = [
         (p_q1, p_a1),
@@ -2579,7 +2611,18 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
                 []
             )
 
-    # 2. Coupon & Discount Queries
+    # 2. Contact / Support Desk (When customer mentions help, support, ticket, problem, issue, refund, etc.)
+    if any(k in msg for k in ["contact", "support", "ticket", "call", "human", "talk", "help", "agent", "assistant", "problem", "issue", "refund", "not received", "didn't receive", "missing", "query", "complaint", "not delivered"]):
+        return (
+            "👋 **QELVORIA Customer Support Desk:**\n\n"
+            "We are here 24/7 to assist you with your ebook downloads, orders, or any inquiries.\n\n"
+            "Please fill out our instant **Support Request Form** below with your details, and our support team will resolve your request promptly:\n\n"
+            "[SUPPORT_FORM]",
+            ["📋 Open Full Support Modal", "🔥 Browse Best Sellers", "🔍 Find My Purchases"],
+            []
+        )
+
+    # 3. Coupon & Discount Queries
     if any(k in msg for k in ["coupon", "discount", "promo", "code", "offer", "voucher", "deal", "cheap", "save"]):
         return (
             "🎁 **Exclusive Active Discount Codes for QELVORIA:**\n\n"
@@ -2591,7 +2634,7 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
             []
         )
 
-    # 3. Bundle Deals Queries
+    # 4. Bundle Deals Queries
     if any(k in msg for k in ["bundle", "pack", "package", "combo", "collection", "all in one", "multiple"]):
         async with aiosqlite.connect(DB_PATH) as db:
             db.row_factory = aiosqlite.Row
@@ -2608,7 +2651,7 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
             []
         )
 
-    # 4. Instant Delivery & File Format Queries
+    # 5. Instant Delivery & File Format Queries
     if any(k in msg for k in ["delivery", "download", "format", "pdf", "epub", "word", "docx", "receive", "access", "when will i get"]):
         return (
             "⚡ **Instant Digital Delivery Guarantee:**\n\n"
@@ -2620,7 +2663,7 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
             []
         )
 
-    # 5. Payment Methods Queries
+    # 6. Payment Methods Queries
     if any(k in msg for k in ["pay", "payment", "gpay", "google pay", "phonepe", "paytm", "upi", "card", "credit", "debit", "netbanking", "fampay", "bank"]):
         return (
             "💳 **Accepted Payment Methods:**\n\n"
@@ -2630,18 +2673,6 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
             "• **NetBanking:** All major Indian banks.\n"
             "• **Digital Wallets:** Paytm, Mobikwik, Amazon Pay.",
             ["🔥 Browse Books", "🎁 Get Discount Code", "📋 Open Support Ticket Form"],
-            []
-        )
-
-    # 6. Contact / Support Desk
-    if any(k in msg for k in ["contact", "support", "ticket", "call", "human", "talk", "help", "agent", "assistant"]):
-        return (
-            "👋 **QELVORIA Customer Support Desk:**\n\n"
-            "• **Support Team:** 24/7 Digital Delivery & Customer Assistance\n"
-            "• **Support Ticket:** Click below to submit your details and attachments\n"
-            "• **Direct Help:** A live support assistant can also join this conversation directly.\n\n"
-            "How can we assist you with your reading experience today?",
-            ["📋 Open Support Ticket Form", "🔥 Browse Best Sellers", "🔍 Find Purchases"],
             []
         )
 

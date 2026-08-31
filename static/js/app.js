@@ -1666,7 +1666,10 @@ function closeModal(id) {
             thread.innerHTML = chatHistory.map((m, idx) => {
                 const isUser = m.sender === 'visitor' || m.sender === 'user';
                 const isAdmin = m.sender === 'admin';
-                const formattedText = parseChatMarkdown(m.message || m.text || '');
+                const rawMsg = m.message || m.text || '';
+                const hasSupportTag = rawMsg.includes('[SUPPORT_FORM]') || m.show_support_form || (!isUser && !isAdmin && (rawMsg.toLowerCase().includes('support request form') || rawMsg.toLowerCase().includes('support ticket form') || rawMsg.toLowerCase().includes('customer support desk')));
+                const cleanMsgText = rawMsg.replace(/\[SUPPORT_FORM\]/g, '').trim();
+                const formattedText = parseChatMarkdown(cleanMsgText);
 
                 let cardsHtml = '';
                 if (m.books && m.books.length > 0) {
@@ -1684,6 +1687,60 @@ function closeModal(id) {
                             `).join('')}
                         </div>
                     `;
+                }
+
+                let supportFormHtml = '';
+                if (hasSupportTag) {
+                    const identity = getCustomerIdentity();
+                    if (m.ticket_submitted) {
+                        supportFormHtml = `
+                            <div class="mt-2.5 p-3 bg-emerald-950/80 border border-emerald-800 rounded-2xl text-emerald-200 space-y-1">
+                                <div class="font-extrabold flex items-center gap-1.5 text-xs text-emerald-300">
+                                    <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                    <span>Support Ticket #${m.ticket_id || 'Submitted'} Confirmed</span>
+                                </div>
+                                <p class="text-[11px] text-emerald-300/90 leading-relaxed">
+                                    Our support team has received your ticket and will verify & assist you promptly!
+                                </p>
+                            </div>
+                        `;
+                    } else {
+                        supportFormHtml = `
+                            <div id="inChatTicketWrapper_${idx}" class="mt-2.5 p-3 bg-slate-950/90 rounded-2xl border border-slate-800 space-y-2 text-xs text-white shadow-inner">
+                                <div class="flex items-center justify-between pb-1.5 border-b border-slate-800">
+                                    <div class="flex items-center gap-1.5 font-bold text-amber-400">
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                        <span>Instant Support Request Form</span>
+                                    </div>
+                                    <span class="text-[9px] text-slate-400 uppercase font-bold">24/7 Desk</span>
+                                </div>
+                                <form onsubmit="window.qelvoriaChat.submitInChatTicket(event, ${idx})" class="space-y-2">
+                                    <div>
+                                        <input type="text" id="inChatName_${idx}" required placeholder="Your Full Name *" value="${identity.name !== 'Visitor' ? identity.name : ''}" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 focus:border-slate-500 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none">
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <input type="email" id="inChatEmail_${idx}" required placeholder="Email Address *" value="${identity.email || ''}" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 focus:border-slate-500 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none">
+                                        <input type="tel" id="inChatPhone_${idx}" required placeholder="WhatsApp / Mobile *" value="${identity.phone || ''}" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 focus:border-slate-500 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <input type="text" id="inChatOrder_${idx}" placeholder="Order ID or Payment Ref (Optional)" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 focus:border-slate-500 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none">
+                                    </div>
+                                    <div>
+                                        <textarea id="inChatMsg_${idx}" required rows="2" placeholder="Describe your question or issue in detail... *" class="w-full px-2.5 py-1.5 bg-slate-900 border border-slate-800 focus:border-slate-500 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none resize-none"></textarea>
+                                    </div>
+                                    <div class="flex items-center gap-2 pt-0.5">
+                                        <button type="submit" id="inChatSubmitBtn_${idx}" class="flex-1 py-2 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow transition flex items-center justify-center gap-1.5">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                                            <span>Submit Support Ticket</span>
+                                        </button>
+                                        <button type="button" onclick="openHelpModal()" class="px-2.5 py-2 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 text-[11px] font-bold rounded-xl transition" title="Open full screen form to attach file">
+                                            <span>Attach File</span>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        `;
+                    }
                 }
 
                 let chipsHtml = '';
@@ -1713,6 +1770,7 @@ function closeModal(id) {
                         <div class="qelvoria-msg-bubble ${bubbleClass}">
                             ${senderNameLabel}
                             <div>${formattedText}</div>
+                            ${supportFormHtml}
                             ${cardsHtml}
                         </div>
                         ${chipsHtml}
@@ -1851,6 +1909,15 @@ function closeModal(id) {
                     quick_replies: otherQuestions,
                     books: []
                 });
+            } else if (cleanQ.includes('help') || cleanQ.includes('support') || cleanQ.includes('ticket') || cleanQ.includes('issue') || cleanQ.includes('problem')) {
+                chatHistory.push({
+                    sender: 'bot',
+                    sender_name: 'QELVORIA Assistant',
+                    created_at: new Date().toISOString(),
+                    message: "👋 **QELVORIA Customer Support Desk:**\n\nPlease fill out the instant **Support Request Form** below with your details, and our team will resolve your request promptly:\n\n[SUPPORT_FORM]",
+                    quick_replies: getPresetQuestions(),
+                    books: []
+                });
             } else {
                 chatHistory.push({
                     sender: 'bot',
@@ -1921,6 +1988,60 @@ function closeModal(id) {
         }
     }
 
+    async function submitInChatTicket(e, msgIdx) {
+        if (e) e.preventDefault();
+        const btn = document.getElementById(`inChatSubmitBtn_${msgIdx}`);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = `<span class="inline-block w-3 h-3 border-2 border-slate-950 border-t-transparent rounded-full animate-spin mr-1"></span><span>Submitting...</span>`;
+        }
+
+        const name = document.getElementById(`inChatName_${msgIdx}`)?.value.trim() || '';
+        const email = document.getElementById(`inChatEmail_${msgIdx}`)?.value.trim() || '';
+        const phone = document.getElementById(`inChatPhone_${msgIdx}`)?.value.trim() || '';
+        const orderRef = document.getElementById(`inChatOrder_${msgIdx}`)?.value.trim() || '';
+        const message = document.getElementById(`inChatMsg_${msgIdx}`)?.value.trim() || '';
+
+        try {
+            const res = await fetch('/api/support/ticket', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    customer_name: name,
+                    customer_email: email,
+                    customer_phone: phone,
+                    order_code: orderRef,
+                    transaction_ref: orderRef,
+                    message: message,
+                    session_id: visitorSessionId
+                })
+            });
+
+            const data = await res.json();
+            if (res.ok && data.success) {
+                if (chatHistory[msgIdx]) {
+                    chatHistory[msgIdx].ticket_submitted = true;
+                    chatHistory[msgIdx].ticket_id = data.ticket_id;
+                }
+                forceCustomerChatScroll = true;
+                renderChatMessages();
+                setTimeout(fetchVisitorChatHistory, 600);
+            } else {
+                alert(`Notice: ${data.detail || data.message || 'Could not submit ticket.'}`);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = `<span>Submit Support Ticket</span>`;
+                }
+            }
+        } catch (err) {
+            alert('Network sync issue. Please try again.');
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = `<span>Submit Support Ticket</span>`;
+            }
+        }
+    }
+
     // Expose global controller
     window.qelvoriaChat = {
         toggle: toggleChatWidget,
@@ -1928,7 +2049,8 @@ function closeModal(id) {
         handleSubmit: handleChatSubmit,
         clearHistory: clearChatHistory,
         endChat: endChatSession,
-        updatePresets: updateChatPresets
+        updatePresets: updateChatPresets,
+        submitInChatTicket: submitInChatTicket
     };
 
     if (document.readyState === 'loading') {
