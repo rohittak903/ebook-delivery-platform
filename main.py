@@ -1635,6 +1635,7 @@ async def admin_get_support_tickets(request: Request, token: str = Depends(requi
     return {"tickets": tickets}
 
 @app.post("/api/admin/support-tickets/{ticket_id}/status")
+@app.post("/api/admin/support/status/{ticket_id}")
 async def admin_update_ticket_status(
     ticket_id: int,
     req: dict,
@@ -1651,6 +1652,7 @@ async def admin_update_ticket_status(
     return {"success": True, "message": f"Ticket #{ticket_id} updated to {status}"}
 
 @app.post("/api/admin/support-tickets/{ticket_id}/deliver")
+@app.post("/api/admin/support/resolve-and-deliver/{ticket_id}")
 async def admin_ticket_deliver_ebook(
     ticket_id: int,
     req: dict,
@@ -1659,9 +1661,8 @@ async def admin_ticket_deliver_ebook(
     token: str = Depends(require_admin_auth)
 ):
     ebook_id = req.get("ebook_id")
-    if not ebook_id:
-        raise HTTPException(status_code=400, detail="Ebook selection required")
-        
+    admin_notes = req.get("admin_notes", "")
+    
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM support_tickets WHERE id = ?", (ticket_id,)) as cursor:
@@ -1669,14 +1670,30 @@ async def admin_ticket_deliver_ebook(
             if not ticket:
                 raise HTTPException(status_code=404, detail="Ticket not found")
                 
-        async with db.execute("SELECT * FROM ebooks WHERE id = ?", (ebook_id,)) as cursor:
-            ebook = await cursor.fetchone()
-            if not ebook:
-                raise HTTPException(status_code=404, detail="Ebook not found")
-                
+        # If no specific ebook_id passed, check if we have any active ebook
+        if not ebook_id:
+            async with db.execute("SELECT id FROM ebooks WHERE is_active = 1 ORDER BY id ASC LIMIT 1") as cursor:
+                first_eb = await cursor.fetchone()
+                if first_eb:
+                    ebook_id = first_eb["id"]
+
+        ebook = None
+        if ebook_id:
+            async with db.execute("SELECT * FROM ebooks WHERE id = ?", (ebook_id,)) as cursor:
+                ebook = await cursor.fetchone()
+
+        # Fallback to first available active ebook if not found by ID
+        if not ebook:
+            async with db.execute("SELECT * FROM ebooks WHERE is_active = 1 ORDER BY id ASC LIMIT 1") as cursor:
+                ebook = await cursor.fetchone()
+            # Simply resolve ticket if no ebook exists
+            await db.execute("UPDATE support_tickets SET status = 'resolved', admin_notes = ? WHERE id = ?", (admin_notes or "Marked resolved by admin", ticket_id))
+            await db.commit()
+            return {"success": True, "message": f"Ticket #{ticket_id} marked as resolved."}
+
         settings = await get_settings()
-        order_code = f"EV-HELP-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(2).upper()}"
-        access_token = secrets.token_urlsafe(32)
+        order_code = f"QV-HELP-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(2).upper()}"
+        access_token = create_signed_download_token(order_code, ebook["id"], ebook["title"], ticket["customer_name"])
         
         async with db.execute("""
             INSERT INTO orders (
@@ -1691,17 +1708,38 @@ async def admin_ticket_deliver_ebook(
             ticket["customer_phone"],
             ebook["id"],
             ebook["title"],
-            settings.get("currency_code", "INR"),
+            settings.get("store_currency", "₹"),
             access_token
         )) as cursor:
             order_id = cursor.lastrowid
             
+        base_url = str(request.base_url).rstrip("/")
+        download_link = f"{base_url}/api/download/{access_token}"
+
         # Mark ticket resolved
-        await db.execute("UPDATE support_tickets SET status = 'resolved', admin_notes = ? WHERE id = ?", (f"Ebook delivered (Order {order_code})", ticket_id))
+        notes = admin_notes or f"Ebook '{ebook['title']}' delivered (Order {order_code})"
+        await db.execute("UPDATE support_tickets SET status = 'resolved', admin_notes = ? WHERE id = ?", (notes, ticket_id))
+
+        # If customer had a chat session, log notification into their live chat
+        try:
+            async with db.execute("SELECT session_id FROM chat_sessions WHERE visitor_email = ? ORDER BY last_activity DESC LIMIT 1", (ticket["customer_email"],)) as s_cursor:
+                s_row = await s_cursor.fetchone()
+                if s_row:
+                    sid = s_row["session_id"]
+                    res_msg = (
+                        f"✅ **Support Ticket #QV-{ticket_id} Resolved!**\n\n"
+                        f"Your ebook **{ebook['title']}** has been delivered.\n"
+                        f"• **Order Reference:** `{order_code}`\n"
+                        f"• [📥 Click Here for Instant Download]({download_link})\n\n"
+                        f"*A copy has also been sent to your email ({ticket['customer_email']}). Enjoy reading!*"
+                    )
+                    await db.execute("INSERT INTO chat_messages (session_id, sender, sender_name, message, created_at) VALUES (?, 'admin', 'Support Specialist', ?, CURRENT_TIMESTAMP)", (sid, res_msg))
+                    await db.execute("UPDATE chat_sessions SET last_message = ?, last_activity = CURRENT_TIMESTAMP WHERE session_id = ?", ("Ebook delivered & ticket resolved", sid))
+        except Exception as e:
+            print(f"Chat delivery notification notice: {e}")
+
         await db.commit()
         
-    base_url = str(request.base_url).rstrip("/")
-    download_link = f"{base_url}/api/download/{access_token}"
     background_tasks.add_task(process_delivery_background, order_id, base_url)
     
     return {

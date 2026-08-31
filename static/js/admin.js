@@ -964,6 +964,8 @@ async function loadAdminOrders() {
 
 // --- Support Tickets Desk ---
 
+let cachedAdminTickets = [];
+
 async function loadAdminTickets() {
     const tbody = document.getElementById('adminTicketsTableBody');
     tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading tickets...</td></tr>`;
@@ -973,14 +975,14 @@ async function loadAdminTickets() {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
-        const tickets = data.tickets || [];
+        cachedAdminTickets = data.tickets || [];
 
-        if (tickets.length === 0) {
+        if (cachedAdminTickets.length === 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No support tickets recorded yet.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = tickets.map(t => {
+        tbody.innerHTML = cachedAdminTickets.map(t => {
             const hasAttachment = t.attachment_file && t.attachment_file.trim().length > 0;
             const waUrl = t.whatsapp_reply_url || `https://wa.me/${(t.customer_phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${t.customer_name}, this is QELVORIA Support regarding your support ticket #${t.id}. How can we assist you?`)}`;
 
@@ -1002,6 +1004,7 @@ async function loadAdminTickets() {
                     <td class="py-3 px-4 text-slate-300 text-xs max-w-xs">
                         ${t.order_code ? `<div class="font-mono text-[10px] text-brand-400 font-bold mb-0.5">Order/Ref: ${t.order_code}</div>` : ''}
                         <div class="line-clamp-3">${t.message}</div>
+                        ${t.admin_notes ? `<div class="mt-1 text-[10px] text-emerald-400 font-medium">Note: ${t.admin_notes}</div>` : ''}
                     </td>
                     <td class="py-3 px-4">
                         ${hasAttachment ? `
@@ -1011,7 +1014,7 @@ async function loadAdminTickets() {
                         ` : `<span class="text-slate-500 text-xs italic">No attachment</span>`}
                     </td>
                     <td class="py-3 px-4">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'resolved' ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'resolved' ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-rose-950 text-rose-300 border border-rose-800'}">
                             ${(t.status || 'open').toUpperCase()}
                         </span>
                     </td>
@@ -1021,7 +1024,7 @@ async function loadAdminTickets() {
                             <span>Chat</span>
                         </button>
                         ${t.status !== 'resolved' ? `
-                            <button onclick="resolveAdminTicket(${t.id})" class="px-3 py-1 bg-white hover:bg-slate-200 text-slate-950 rounded-lg text-xs font-bold shadow-sm transition">Resolve & Deliver</button>
+                            <button onclick="openResolveTicketModal(${t.id})" class="px-3 py-1 bg-white hover:bg-slate-200 text-slate-950 rounded-lg text-xs font-bold shadow-sm transition">Resolve & Deliver</button>
                         ` : `<span class="text-slate-500 text-xs font-semibold">Resolved</span>`}
                     </td>
                 </tr>
@@ -1049,30 +1052,145 @@ function jumpToChatSession(sessionId, email) {
     }
 }
 
-async function resolveAdminTicket(ticketId) {
-    if (cachedEbooks.length === 0) {
-        const res = await fetch('/api/admin/ebooks', { headers: { 'Authorization': `Bearer ${adminToken}` } });
-        const data = await res.json();
-        cachedEbooks = data.ebooks || [];
+async function openResolveTicketModal(ticketId) {
+    const ticket = cachedAdminTickets.find(t => t.id === ticketId);
+    if (!ticket) {
+        alert('Ticket details not found. Refreshing tickets...');
+        loadAdminTickets();
+        return;
     }
-    const ebookId = cachedEbooks.length > 0 ? cachedEbooks[0].id : 1;
+
+    document.getElementById('resolveTicketId').value = ticket.id;
+    document.getElementById('resolveTicketHeaderInfo').innerText = `Ticket #TICK-${ticket.id} • ${ticket.customer_name} (${ticket.customer_email})`;
+    document.getElementById('resolveTicketMessagePreview').innerText = ticket.message || 'No message provided.';
+    document.getElementById('resolveTicketNotes').value = '';
+
+    // Load and populate Ebooks dropdown
+    if (cachedEbooks.length === 0) {
+        try {
+            const res = await fetch('/api/admin/ebooks', { headers: { 'Authorization': `Bearer ${adminToken}` } });
+            const data = await res.json();
+            cachedEbooks = data.ebooks || [];
+        } catch (e) {
+            console.error('Failed to load ebooks for resolve modal', e);
+        }
+    }
+
+    const selectEl = document.getElementById('resolveTicketEbookSelect');
+    if (selectEl) {
+        if (cachedEbooks.length === 0) {
+            selectEl.innerHTML = `<option value="">No ebooks available in catalog</option>`;
+        } else {
+            selectEl.innerHTML = cachedEbooks.map(eb => `
+                <option value="${eb.id}">${eb.title} (₹${eb.sale_price || eb.price})</option>
+            `).join('');
+        }
+    }
+
+    openModal('resolveTicketModal');
+}
+
+async function submitTicketResolveAndDeliver() {
+    const ticketId = document.getElementById('resolveTicketId').value;
+    const selectEl = document.getElementById('resolveTicketEbookSelect');
+    const ebookId = selectEl ? parseInt(selectEl.value) : null;
+    const adminNotes = document.getElementById('resolveTicketNotes').value.trim();
+    const btn = document.getElementById('btnConfirmDeliverEbook');
+
+    if (!ticketId) {
+        alert('Missing ticket ID.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="inline-block w-3 h-3 border-2 border-slate-950 border-t-transparent rounded-full animate-spin mr-1"></span><span>Delivering...</span>`;
+    }
 
     try {
-        const res = await fetch(`/api/admin/support/resolve-and-deliver/${ticketId}`, {
+        const res = await fetch(`/api/admin/support-tickets/${ticketId}/deliver`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${adminToken}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ ebook_id: ebookId })
+            body: JSON.stringify({
+                ebook_id: ebookId,
+                admin_notes: adminNotes
+            })
         });
-        if (res.ok) {
-            alert('Ticket resolved and ebook dispatched to customer!');
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            closeModal('resolveTicketModal');
+            alert(`🎉 Success: ${data.message || 'Ticket resolved and ebook dispatched to customer!'}`);
             loadAdminTickets();
+            loadAdminOrders();
+        } else {
+            alert(`Notice: ${data.detail || data.message || 'Failed to resolve ticket.'}`);
         }
     } catch (e) {
         console.error('Resolve error', e);
+        alert('Network sync issue while resolving ticket.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="send" class="w-3.5 h-3.5"></i><span>Deliver & Resolve</span>`;
+            lucide.createIcons();
+        }
     }
+}
+
+async function submitTicketMarkOnlyResolved() {
+    const ticketId = document.getElementById('resolveTicketId').value;
+    const adminNotes = document.getElementById('resolveTicketNotes').value.trim();
+    const btn = document.getElementById('btnMarkOnlyResolved');
+
+    if (!ticketId) {
+        alert('Missing ticket ID.');
+        return;
+    }
+
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span>Updating...</span>`;
+    }
+
+    try {
+        const res = await fetch(`/api/admin/support-tickets/${ticketId}/status`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                status: 'resolved',
+                admin_notes: adminNotes || 'Marked resolved by admin'
+            })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            closeModal('resolveTicketModal');
+            alert(`✅ Ticket #${ticketId} marked as resolved!`);
+            loadAdminTickets();
+        } else {
+            alert(`Notice: ${data.detail || data.message || 'Failed to update ticket status.'}`);
+        }
+    } catch (e) {
+        console.error('Status update error', e);
+        alert('Network sync issue while updating ticket.');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<span>Mark Resolved (No Ebook)</span>`;
+        }
+    }
+}
+
+// Backward-compatible alias for existing calls
+async function resolveAdminTicket(ticketId) {
+    openResolveTicketModal(ticketId);
 }
 
 // --- Settings & Admin Password Change ---
