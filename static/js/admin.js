@@ -1107,6 +1107,32 @@ async function loadAdminSettings() {
     }
 }
 
+function clearSocialInput(inputId) {
+    const el = document.getElementById(inputId);
+    if (el) {
+        el.value = '';
+        el.focus();
+    }
+}
+
+function clearAllSocialLinks() {
+    if (confirm('Are you sure you want to clear/delete all social media links?')) {
+        const ids = [
+            'setting_social_instagram',
+            'setting_social_youtube',
+            'setting_social_twitter',
+            'setting_social_linkedin',
+            'setting_social_facebook',
+            'setting_social_telegram',
+            'setting_social_whatsapp'
+        ];
+        ids.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.value = '';
+        });
+    }
+}
+
 async function handleAdminPasswordChange(e) {
     e.preventDefault();
     const btn = document.getElementById('changePassBtn');

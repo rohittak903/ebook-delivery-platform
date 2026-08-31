@@ -294,10 +294,14 @@ function closeCartDrawer() {
 }
 
 function removeCartItem(id) {
-    cart = cart.filter(item => item.id !== id);
+    const idStr = String(id);
+    const idNum = Number(id);
+    cart = cart.filter(item => String(item.id) !== idStr && Number(item.id) !== idNum);
     saveCart();
     renderCartDrawer();
 }
+window.removeCartItem = removeCartItem;
+window.removeFromCart = removeCartItem;
 
 function renderCartDrawer() {
     const container = document.getElementById('cartItemsContainer');
@@ -325,16 +329,17 @@ function renderCartDrawer() {
 
     let subtotal = 0;
     container.innerHTML = cart.map(item => {
-        subtotal += item.price;
+        const itemPrice = Number(item.price) || 0;
+        subtotal += itemPrice;
         return `
             <div class="flex items-center gap-3 p-3 bg-slate-950 rounded-2xl border border-slate-800">
-                <img src="${item.cover_image}" alt="Book Cover" class="w-12 h-16 object-cover rounded-lg border border-slate-700 shrink-0">
+                <img src="${item.cover_image || item.cover || '/uploads/covers/python-ai-cover.jpg'}" alt="Book Cover" class="w-12 h-16 object-cover rounded-lg border border-slate-700 shrink-0">
                 <div class="flex-1 min-w-0">
                     <h5 class="text-xs font-bold text-white truncate">${item.title}</h5>
                     <p class="text-[10px] text-slate-400">${item.author || 'Author'}</p>
-                    <span class="text-xs font-extrabold text-brand-400">₹${item.price}</span>
+                    <span class="text-xs font-extrabold text-brand-400">₹${itemPrice.toFixed(2)}</span>
                 </div>
-                <button onclick="removeCartItem(${item.id})" class="p-2 text-slate-500 hover:text-rose-400 transition" title="Remove">
+                <button onclick="removeCartItem('${item.id}')" class="p-2 text-slate-500 hover:text-rose-400 transition" title="Remove from Cart">
                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
             </div>

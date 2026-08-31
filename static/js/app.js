@@ -70,31 +70,42 @@ async function loadStoreInfo() {
 }
 
 function updateSocialLinksUI(data) {
-    const ig = document.getElementById('socialLinkInstagram');
-    if (ig) {
-        if (data.social_instagram) { ig.href = data.social_instagram; ig.classList.remove('hidden'); }
-        else { ig.classList.add('hidden'); }
+    const container = document.getElementById('socialLinksContainer');
+    const section = document.getElementById('socialConnectSection');
+    if (!container) return;
+
+    const platforms = [
+        { key: 'social_instagram', label: 'Instagram', icon: 'instagram', colorClass: 'text-pink-400', url: data.social_instagram },
+        { key: 'social_youtube', label: 'YouTube', icon: 'youtube', colorClass: 'text-rose-400', url: data.social_youtube },
+        { key: 'social_twitter', label: 'X (Twitter)', icon: 'twitter', colorClass: 'text-slate-300', url: data.social_twitter },
+        { key: 'social_linkedin', label: 'LinkedIn', icon: 'linkedin', colorClass: 'text-blue-400', url: data.social_linkedin },
+        { key: 'social_facebook', label: 'Facebook', icon: 'facebook', colorClass: 'text-blue-500', url: data.social_facebook },
+        { key: 'social_telegram', label: 'Telegram', icon: 'send', colorClass: 'text-sky-400', url: data.social_telegram },
+        { key: 'social_whatsapp', label: 'WhatsApp Support', icon: 'message-circle', colorClass: 'text-emerald-400', url: data.social_whatsapp }
+    ];
+
+    const activePlatforms = platforms.filter(p => p.url && typeof p.url === 'string' && p.url.trim() !== '');
+
+    if (activePlatforms.length === 0) {
+        if (section) section.classList.add('hidden');
+        container.innerHTML = '';
+        return;
     }
-    const yt = document.getElementById('socialLinkYoutube');
-    if (yt) {
-        if (data.social_youtube) { yt.href = data.social_youtube; yt.classList.remove('hidden'); }
-        else { yt.classList.add('hidden'); }
-    }
-    const tw = document.getElementById('socialLinkTwitter');
-    if (tw) {
-        if (data.social_twitter) { tw.href = data.social_twitter; tw.classList.remove('hidden'); }
-        else { tw.classList.add('hidden'); }
-    }
-    const li = document.getElementById('socialLinkLinkedin');
-    if (li) {
-        if (data.social_linkedin) { li.href = data.social_linkedin; li.classList.remove('hidden'); }
-        else { li.classList.add('hidden'); }
-    }
-    const wa = document.getElementById('socialLinkWhatsapp');
-    if (wa) {
-        if (data.social_whatsapp) { wa.href = data.social_whatsapp; wa.classList.remove('hidden'); }
-        else { wa.classList.add('hidden'); }
-    }
+
+    if (section) section.classList.remove('hidden');
+
+    container.innerHTML = activePlatforms.map(p => `
+        <a 
+            href="${p.url}" 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            class="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-600 rounded-2xl text-xs font-bold text-slate-200 hover:text-white transition shadow-sm"
+        >
+            <i data-lucide="${p.icon}" class="w-4 h-4 ${p.colorClass}"></i>
+            <span>${p.label}</span>
+        </a>
+    `).join('');
+
     lucide.createIcons();
 }
 
@@ -514,29 +525,44 @@ function saveCart() {
     localStorage.setItem('ebookvault_cart', JSON.stringify(cart));
     updateCartBadge();
     renderCatalog();
+    renderBestSellers();
 }
 
-function toggleAddToCart(bookId) {
-    const book = catalogEbooks.find(b => b.id === bookId);
-    if (!book) return;
+function removeFromCart(bookId) {
+    const idStr = String(bookId);
+    const idNum = Number(bookId);
+    cart = cart.filter(item => String(item.id) !== idStr && Number(item.id) !== idNum);
+    saveCart();
+    renderCartDrawer();
+}
+window.removeFromCart = removeFromCart;
+window.removeCartItem = removeFromCart;
 
-    const idx = cart.findIndex(item => item.id === bookId);
+function toggleAddToCart(bookId) {
+    const idStr = String(bookId);
+    const idNum = Number(bookId);
+    const idx = cart.findIndex(item => String(item.id) === idStr || Number(item.id) === idNum);
     if (idx > -1) {
         cart.splice(idx, 1);
     } else {
-        const price = book.sale_price && book.sale_price > 0 ? book.sale_price : book.price;
-        cart.push({
-            id: book.id,
-            title: book.title,
-            author: book.author,
-            price: price,
-            cover: book.cover_image,
-            format: book.file_format
-        });
+        const book = catalogEbooks.find(b => String(b.id) === idStr || Number(b.id) === idNum);
+        if (book) {
+            const price = book.sale_price && book.sale_price > 0 ? book.sale_price : book.price;
+            cart.push({
+                id: book.id,
+                title: book.title,
+                author: book.author,
+                price: price,
+                cover: book.cover_image,
+                cover_image: book.cover_image,
+                format: book.file_format
+            });
+        }
     }
     saveCart();
     renderCartDrawer();
 }
+window.toggleAddToCart = toggleAddToCart;
 
 function openCartDrawer() {
     renderCartDrawer();
@@ -551,6 +577,7 @@ function closeCartDrawer() {
 function renderCartDrawer() {
     const list = document.getElementById('cartItemsList');
     const totalEl = document.getElementById('cartTotalAmount');
+    if (!list || !totalEl) return;
 
     if (cart.length === 0) {
         list.innerHTML = `
@@ -561,13 +588,16 @@ function renderCartDrawer() {
             </div>
         `;
         totalEl.innerText = `${storeCurrency}0.00`;
-        document.getElementById('cartCheckoutBtn').disabled = true;
+        const chkBtn = document.getElementById('cartCheckoutBtn');
+        if (chkBtn) chkBtn.disabled = true;
         lucide.createIcons();
         return;
     }
 
-    document.getElementById('cartCheckoutBtn').disabled = false;
-    let subtotal = cart.reduce((acc, item) => acc + item.price, 0);
+    const chkBtn = document.getElementById('cartCheckoutBtn');
+    if (chkBtn) chkBtn.disabled = false;
+    
+    let subtotal = cart.reduce((acc, item) => acc + (Number(item.price) || 0), 0);
     let finalAmount = subtotal;
 
     if (cartAppliedCoupon) {
@@ -577,14 +607,14 @@ function renderCartDrawer() {
     list.innerHTML = cart.map(item => `
         <div class="flex items-center justify-between p-3.5 bg-slate-950 rounded-2xl border border-slate-800">
             <div class="flex items-center gap-3 truncate">
-                <img src="${item.cover || '/uploads/covers/python-ai-cover.jpg'}" class="w-12 h-16 object-cover rounded-lg border border-slate-800 shadow-sm flex-shrink-0">
+                <img src="${item.cover || item.cover_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-12 h-16 object-cover rounded-lg border border-slate-800 shadow-sm flex-shrink-0">
                 <div class="truncate">
                     <h4 class="font-bold text-xs text-white truncate">${item.title}</h4>
-                    <div class="text-[11px] text-slate-500">By ${item.author}</div>
-                    <div class="text-xs font-extrabold text-brand-400 mt-1">${storeCurrency}${item.price.toFixed(2)}</div>
+                    <div class="text-[11px] text-slate-500">By ${item.author || 'Author'}</div>
+                    <div class="text-xs font-extrabold text-brand-400 mt-1">${storeCurrency}${Number(item.price).toFixed(2)}</div>
                 </div>
             </div>
-            <button onclick="toggleAddToCart(${item.id})" class="p-2 text-slate-500 hover:text-rose-400 rounded-lg transition" title="Remove">
+            <button onclick="removeFromCart('${item.id}')" class="p-2 text-slate-500 hover:text-rose-400 rounded-lg transition" title="Remove from Cart">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
         </div>
