@@ -1153,31 +1153,81 @@ function openHelpModal() {
 async function handleSupportSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('helpSubmitBtn');
-    btn.disabled = true;
+    if (btn) btn.disabled = true;
 
-    const payload = {
-        customer_name: document.getElementById('helpName').value.trim(),
-        customer_email: document.getElementById('helpEmail').value.trim(),
-        customer_phone: document.getElementById('helpPhone').value.trim(),
-        message: document.getElementById('helpMessage').value.trim()
-    };
+    const sessionId = localStorage.getItem('qelvoria_chat_session_id') || '';
+    const name = document.getElementById('helpName').value.trim();
+    const email = document.getElementById('helpEmail').value.trim();
+    const phone = document.getElementById('helpPhone').value.trim();
+    const orderRef = document.getElementById('helpOrderRef')?.value.trim() || '';
+    const message = document.getElementById('helpMessage').value.trim();
+    const fileInput = document.getElementById('helpFile');
+    const hasFile = fileInput && fileInput.files && fileInput.files[0];
 
-    try {
-        const res = await fetch('/api/support/ticket', {
+    let fetchOptions = {};
+    if (hasFile) {
+        const formData = new FormData();
+        formData.append('customer_name', name);
+        formData.append('customer_email', email);
+        formData.append('customer_phone', phone);
+        formData.append('order_code', orderRef);
+        formData.append('transaction_ref', orderRef);
+        formData.append('message', message);
+        formData.append('session_id', sessionId);
+        formData.append('attachment_file', fileInput.files[0]);
+
+        fetchOptions = {
+            method: 'POST',
+            body: formData
+        };
+    } else {
+        fetchOptions = {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        if (res.ok) {
-            alert('Support request submitted! Raja Rohit Tak will contact you on WhatsApp.');
+            body: JSON.stringify({
+                customer_name: name,
+                customer_email: email,
+                customer_phone: phone,
+                order_code: orderRef,
+                transaction_ref: orderRef,
+                message: message,
+                session_id: sessionId
+            })
+        };
+    }
+
+    try {
+        const res = await fetch('/api/support/ticket', fetchOptions);
+        const data = await res.json().catch(() => ({}));
+        if (res.ok && data.success) {
+            alert(`🎉 Support Ticket #${data.ticket_id || ''} submitted successfully! Our support team will assist you promptly.`);
+            document.getElementById('supportTicketForm')?.reset();
             closeModal('helpModal');
+            
+            // Auto-refresh chat if open
+            if (window.qelvoriaChat && window.qelvoriaChat.fetchHistory) {
+                window.qelvoriaChat.fetchHistory();
+            }
         } else {
-            alert('Failed to submit ticket.');
+            let errorDetail = 'Failed to submit ticket.';
+            if (data.detail) {
+                if (typeof data.detail === 'string') {
+                    errorDetail = data.detail;
+                } else if (Array.isArray(data.detail)) {
+                    errorDetail = data.detail.map(d => d.msg || JSON.stringify(d)).join(', ');
+                } else {
+                    errorDetail = JSON.stringify(data.detail);
+                }
+            } else if (data.message) {
+                errorDetail = data.message;
+            }
+            alert(`Submission Error: ${errorDetail}`);
         }
     } catch (e) {
         console.error('Support error', e);
+        alert('Network error submitting ticket. Please check your connection and try again.');
     } finally {
-        btn.disabled = false;
+        if (btn) btn.disabled = false;
     }
 }
 
@@ -1200,3 +1250,611 @@ function closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
 }
+
+// ================= QELVORIA NATIVE AI CHAT AGENT & LIVE DESK WIDGET =================
+
+(function() {
+    'use strict';
+
+    let isChatOpen = false;
+    let isAgentTyping = false;
+    let chatHistory = [];
+    let visitorSessionId = localStorage.getItem('qelvoria_chat_session_id');
+    if (!visitorSessionId) {
+        visitorSessionId = 'qv_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4);
+        localStorage.setItem('qelvoria_chat_session_id', visitorSessionId);
+    }
+
+    let visitorSessionStatus = 'bot_active';
+    let visitorChatSyncTimer = null;
+
+    function getCustomerIdentity() {
+        let name = 'Visitor';
+        let email = '';
+        let phone = '';
+        try {
+            const cust = JSON.parse(localStorage.getItem('qelvoria_customer') || '{}');
+            if (cust.name) name = cust.name;
+            if (cust.email) email = cust.email;
+            if (cust.phone) phone = cust.phone;
+        } catch (e) {}
+
+        if (name === 'Visitor' && localStorage.getItem('qelvoria_cust_name')) {
+            name = localStorage.getItem('qelvoria_cust_name');
+        }
+        if (!email && localStorage.getItem('qelvoria_cust_email')) {
+            email = localStorage.getItem('qelvoria_cust_email');
+        }
+        return { name, email, phone };
+    }
+
+    const INITIAL_GREETING = {
+        sender: 'bot',
+        sender_name: 'QELVORIA Assistant',
+        created_at: new Date().toISOString(),
+        message: `👋 **Welcome to QELVORIA!**\n\nI am your 24/7 Digital Assistant. How can I assist you with your reading experience today?`,
+        quick_replies: [
+            "🔥 Best Selling Ebooks",
+            "🎁 Active Discount Coupons",
+            "⚡ How Instant Delivery Works",
+            "📋 Open Support Ticket Form",
+            "🔍 Find My Purchases"
+        ],
+        books: []
+    };
+
+    function formatChatTime(dStr) {
+        try {
+            const d = dStr ? new Date(dStr) : new Date();
+            return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function initChatAgentWidget() {
+        if (document.getElementById('qelvoriaChatContainer')) return;
+
+        // Inject Styles
+        const style = document.createElement('style');
+        style.textContent = `
+            #qelvoriaChatContainer {
+                position: fixed;
+                bottom: 24px;
+                right: 24px;
+                z-index: 99999;
+                font-family: inherit;
+            }
+            .qelvoria-chat-launcher {
+                width: 58px;
+                height: 58px;
+                border-radius: 50%;
+                background: #090d16;
+                border: 1.5px solid #334155;
+                color: #ffffff;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+            }
+            .qelvoria-chat-launcher:hover {
+                transform: scale(1.06);
+                border-color: #94a3b8;
+            }
+            .qelvoria-chat-window {
+                position: fixed;
+                bottom: 92px;
+                right: 24px;
+                width: 380px;
+                max-width: calc(100vw - 32px);
+                height: 530px;
+                max-height: calc(100vh - 110px);
+                background: #090d16;
+                border: 1px solid #1e293b;
+                border-radius: 24px;
+                box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.75);
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+                pointer-events: none;
+                transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+                z-index: 99999;
+            }
+            .qelvoria-chat-window.active {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+                pointer-events: auto;
+            }
+            .qelvoria-msg-bubble {
+                max-width: 88%;
+                padding: 10px 14px;
+                border-radius: 18px;
+                font-size: 12.5px;
+                line-height: 1.5;
+                word-break: break-word;
+            }
+            .qelvoria-msg-bot {
+                background: #0f172a;
+                border: 1px solid #1e293b;
+                color: #e2e8f0;
+                border-bottom-left-radius: 4px;
+                align-self: flex-start;
+            }
+            .qelvoria-msg-admin {
+                background: #064e3b;
+                border: 1px solid #059669;
+                color: #ecfdf5;
+                border-bottom-left-radius: 4px;
+                align-self: flex-start;
+            }
+            .qelvoria-msg-user {
+                background: #ffffff;
+                color: #090d16;
+                font-weight: 600;
+                border-bottom-right-radius: 4px;
+                align-self: flex-end;
+            }
+            .qelvoria-quick-chip {
+                display: inline-flex;
+                align-items: center;
+                padding: 5px 11px;
+                background: #0f172a;
+                border: 1px solid #334155;
+                border-radius: 12px;
+                font-size: 11px;
+                font-weight: 600;
+                color: #cbd5e1;
+                cursor: pointer;
+                transition: all 0.2s;
+                white-space: nowrap;
+            }
+            .qelvoria-quick-chip:hover {
+                background: #ffffff;
+                color: #090d16;
+                border-color: #ffffff;
+            }
+            .qelvoria-typing-dot {
+                width: 6px;
+                height: 6px;
+                background: #94a3b8;
+                border-radius: 50%;
+                display: inline-block;
+                animation: qelvoriaBounce 1.4s infinite ease-in-out both;
+            }
+            .qelvoria-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+            .qelvoria-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+            @keyframes qelvoriaBounce {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1.0); }
+            }
+            @media (max-width: 480px) {
+                #qelvoriaChatContainer { bottom: 16px; right: 16px; }
+                .qelvoria-chat-window {
+                    bottom: 84px;
+                    right: 12px;
+                    width: calc(100vw - 24px);
+                    height: calc(100vh - 100px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Build HTML Markup
+        const container = document.createElement('div');
+        container.id = 'qelvoriaChatContainer';
+        container.innerHTML = `
+            <!-- Chat Window -->
+            <div id="qelvoriaChatWindow" class="qelvoria-chat-window">
+                
+                <!-- Header -->
+                <div class="px-4 py-3.5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="relative w-9 h-9 rounded-full bg-slate-900 border border-slate-700 flex items-center justify-center text-white flex-shrink-0">
+                            <span class="font-black text-xs text-white" id="qelvoriaHeaderAvatar">Q</span>
+                            <span id="qelvoriaStatusDot" class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-slate-950 rounded-full"></span>
+                        </div>
+                        <div>
+                            <div class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <span id="qelvoriaHeaderTitle">QELVORIA Assistant</span>
+                                <span id="qelvoriaHeaderTag" class="px-1.5 py-0.2 bg-emerald-950 text-emerald-300 text-[9px] font-extrabold rounded border border-emerald-800">AI 24/7</span>
+                            </div>
+                            <div class="text-[10px] text-slate-400" id="qelvoriaHeaderSubtitle">Customer Care & Instant Delivery Desk</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5">
+                        <button onclick="window.qelvoriaChat.endChat()" class="px-2 py-1 bg-slate-900 hover:bg-rose-950/80 border border-slate-800 hover:border-rose-800 text-slate-400 hover:text-rose-300 rounded-lg text-[10px] font-bold transition flex items-center gap-1" title="End conversation">
+                            <span>End Chat</span>
+                        </button>
+                        <button onclick="window.qelvoriaChat.clearHistory()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Clear Chat">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                        <button onclick="window.qelvoriaChat.toggle()" class="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition" title="Close">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Messages Thread -->
+                <div id="qelvoriaChatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 flex flex-col">
+                    <!-- Injected dynamically -->
+                </div>
+
+                <!-- Typing indicator -->
+                <div id="qelvoriaTyping" class="px-4 py-1 text-slate-400 text-xs hidden items-center gap-1.5">
+                    <span class="text-[11px] font-medium text-slate-400">Assistant is typing</span>
+                    <span class="qelvoria-typing-dot"></span>
+                    <span class="qelvoria-typing-dot"></span>
+                    <span class="qelvoria-typing-dot"></span>
+                </div>
+
+                <!-- Footer Input Area -->
+                <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2">
+                    <form onsubmit="window.qelvoriaChat.handleSubmit(event)" class="flex items-center gap-2">
+                        <input 
+                            type="text" 
+                            id="qelvoriaChatInput" 
+                            placeholder="Ask about books, coupons, orders..." 
+                            class="flex-1 px-3.5 py-2.5 bg-slate-900 border border-slate-800 focus:border-slate-500 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none transition"
+                        >
+                        <button 
+                            type="submit" 
+                            id="qelvoriaChatSendBtn"
+                            class="p-2.5 bg-white hover:bg-slate-200 text-slate-950 rounded-xl transition shadow-md flex items-center justify-center flex-shrink-0 font-bold"
+                            title="Send"
+                        >
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                        </button>
+                    </form>
+                    <div class="flex items-center justify-between text-[10px] text-slate-500 px-1">
+                        <button onclick="openHelpModal()" class="text-slate-400 hover:text-white transition flex items-center gap-1">
+                            <span>📋 Submit Support Ticket</span>
+                        </button>
+                        <span>⚡ Instant Delivery Guarantee</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Floating Launcher Button -->
+            <button 
+                id="qelvoriaChatLauncher" 
+                onclick="window.qelvoriaChat.toggle()" 
+                class="qelvoria-chat-launcher"
+                title="Chat with QELVORIA Support"
+            >
+                <svg id="qelvoriaIconChat" class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                <svg id="qelvoriaIconClose" class="w-6 h-6 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                
+                <!-- Online Green Status Indicator -->
+                <span class="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-900 rounded-full animate-ping opacity-75"></span>
+                <span class="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-slate-900 rounded-full"></span>
+            </button>
+        `;
+
+        document.body.appendChild(container);
+
+        fetchVisitorChatHistory();
+
+        // Background poller every 3.5s for live admin replies
+        if (!visitorChatSyncTimer) {
+            visitorChatSyncTimer = setInterval(fetchVisitorChatHistory, 3500);
+        }
+    }
+
+    async function fetchVisitorChatHistory() {
+        try {
+            const res = await fetch(`/api/chat/messages/${visitorSessionId}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            
+            visitorSessionStatus = data.status || 'bot_active';
+            updateWidgetHeaderStatus(visitorSessionStatus);
+
+            if (data.messages && data.messages.length > 0) {
+                chatHistory = data.messages;
+            } else if (chatHistory.length === 0) {
+                chatHistory = [INITIAL_GREETING];
+            }
+            renderChatMessages();
+        } catch (e) {
+            if (chatHistory.length === 0) {
+                chatHistory = [INITIAL_GREETING];
+                renderChatMessages();
+            }
+        }
+    }
+
+    function updateWidgetHeaderStatus(status) {
+        const titleEl = document.getElementById('qelvoriaHeaderTitle');
+        const tagEl = document.getElementById('qelvoriaHeaderTag');
+        const subtitleEl = document.getElementById('qelvoriaHeaderSubtitle');
+
+        if (status === 'admin_joined') {
+            if (titleEl) titleEl.innerText = 'Support Specialist';
+            if (tagEl) {
+                tagEl.className = 'px-1.5 py-0.2 bg-emerald-900 text-emerald-200 text-[9px] font-extrabold rounded border border-emerald-700';
+                tagEl.innerText = 'Live Support';
+            }
+            if (subtitleEl) subtitleEl.innerText = 'Online • Direct Assistance';
+        } else if (status === 'closed') {
+            if (titleEl) titleEl.innerText = 'QELVORIA Assistant';
+            if (tagEl) {
+                tagEl.className = 'px-1.5 py-0.2 bg-slate-800 text-slate-400 text-[9px] font-extrabold rounded border border-slate-700';
+                tagEl.innerText = 'Closed';
+            }
+            if (subtitleEl) subtitleEl.innerText = 'Chat ended by customer';
+        } else {
+            if (titleEl) titleEl.innerText = 'QELVORIA Assistant';
+            if (tagEl) {
+                tagEl.className = 'px-1.5 py-0.2 bg-emerald-950 text-emerald-300 text-[9px] font-extrabold rounded border border-emerald-800';
+                tagEl.innerText = 'AI 24/7';
+            }
+            if (subtitleEl) subtitleEl.innerText = 'Customer Care & Instant Delivery Desk';
+        }
+    }
+
+    let lastRenderedCustomerChatKey = '';
+    let forceCustomerChatScroll = false;
+
+    function renderChatMessages() {
+        const thread = document.getElementById('qelvoriaChatMessages');
+        if (!thread) return;
+
+        const lastM = chatHistory[chatHistory.length - 1];
+        const currentKey = `${chatHistory.length}_${lastM?.id || ''}_${lastM?.message?.length || lastM?.text?.length || ''}`;
+        const isNearBottom = (thread.scrollHeight - thread.scrollTop - thread.clientHeight) < 95;
+
+        if (currentKey !== lastRenderedCustomerChatKey) {
+            lastRenderedCustomerChatKey = currentKey;
+
+            thread.innerHTML = chatHistory.map((m, idx) => {
+                const isUser = m.sender === 'visitor' || m.sender === 'user';
+                const isAdmin = m.sender === 'admin';
+                const formattedText = parseChatMarkdown(m.message || m.text || '');
+
+                let cardsHtml = '';
+                if (m.books && m.books.length > 0) {
+                    cardsHtml = `
+                        <div class="mt-2.5 space-y-2 w-full">
+                            ${m.books.map(b => `
+                                <a href="/book.html?id=${b.id}" class="flex items-center gap-2.5 p-2 bg-slate-950 rounded-xl border border-slate-800 hover:border-slate-600 transition block">
+                                    <img src="${b.cover_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-9 h-12 object-cover rounded-lg border border-slate-800 flex-shrink-0">
+                                    <div class="flex-1 min-w-0">
+                                        <div class="font-bold text-white text-[11px] truncate">${b.title}</div>
+                                        <div class="text-[10px] font-mono font-bold text-emerald-400">₹${b.sale_price || b.price}</div>
+                                    </div>
+                                    <span class="px-2 py-1 bg-white text-slate-950 rounded-lg text-[9px] font-extrabold flex-shrink-0">View</span>
+                                </a>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                let chipsHtml = '';
+                if (m.quick_replies && m.quick_replies.length > 0 && idx === chatHistory.length - 1) {
+                    chipsHtml = `
+                        <div class="flex flex-wrap gap-1.5 mt-2.5">
+                            ${m.quick_replies.map(qr => `
+                                <button onclick="window.qelvoriaChat.sendQuery('${escapeChatAttr(qr)}')" class="qelvoria-quick-chip">
+                                    ${qr}
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                let bubbleClass = 'qelvoria-msg-bot';
+                let senderNameLabel = '';
+                if (isUser) {
+                    bubbleClass = 'qelvoria-msg-user';
+                } else if (isAdmin) {
+                    bubbleClass = 'qelvoria-msg-admin';
+                    senderNameLabel = `<span class="text-[9px] font-bold text-emerald-400 mb-0.5 block">🛡️ Support Specialist</span>`;
+                }
+
+                return `
+                    <div class="flex flex-col ${isUser ? 'items-end' : 'items-start'} space-y-1">
+                        <div class="qelvoria-msg-bubble ${bubbleClass}">
+                            ${senderNameLabel}
+                            <div>${formattedText}</div>
+                            ${cardsHtml}
+                        </div>
+                        ${chipsHtml}
+                        <span class="text-[9px] text-slate-500 px-1">${formatChatTime(m.created_at || m.time)}</span>
+                    </div>
+                `;
+            }).join('');
+
+            if (forceCustomerChatScroll || isNearBottom || chatHistory.length <= 2) {
+                setTimeout(() => {
+                    thread.scrollTop = thread.scrollHeight;
+                }, 10);
+                forceCustomerChatScroll = false;
+            }
+        }
+    }
+
+    function parseChatMarkdown(text) {
+        if (!text) return '';
+        return text
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/`(.*?)`/g, '<code class="px-1 py-0.5 bg-slate-800 rounded font-mono text-[11px] text-amber-300">$1</code>')
+            .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-indigo-400 underline font-bold hover:text-indigo-300">$1</a>')
+            .replace(/\n/g, '<br>');
+    }
+
+    function escapeChatAttr(s) {
+        return s.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    function toggleChatWidget() {
+        isChatOpen = !isChatOpen;
+        const win = document.getElementById('qelvoriaChatWindow');
+        const iconChat = document.getElementById('qelvoriaIconChat');
+        const iconClose = document.getElementById('qelvoriaIconClose');
+
+        if (win) {
+            if (isChatOpen) {
+                win.classList.add('active');
+                iconChat?.classList.add('hidden');
+                iconClose?.classList.remove('hidden');
+                setTimeout(() => document.getElementById('qelvoriaChatInput')?.focus(), 200);
+            } else {
+                win.classList.remove('active');
+                iconChat?.classList.remove('hidden');
+                iconClose?.classList.add('hidden');
+            }
+        }
+    }
+
+    async function sendChatMessage(text) {
+        const query = (text || '').trim();
+        if (!query || isAgentTyping) return;
+
+        // Check special quick action shortcuts
+        if (query.includes('Open Support Ticket Form') || query.includes('Submit Support Ticket')) {
+            openHelpModal();
+            return;
+        }
+        if (query.includes('Start New Chat') || query.includes('Restart Chat')) {
+            visitorSessionId = 'qv_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4);
+            localStorage.setItem('qelvoria_chat_session_id', visitorSessionId);
+            chatHistory = [INITIAL_GREETING];
+            renderChatMessages();
+            return;
+        }
+
+        const identity = getCustomerIdentity();
+
+        // Push User Message
+        chatHistory.push({
+            sender: 'visitor',
+            sender_name: identity.name,
+            created_at: new Date().toISOString(),
+            message: query
+        });
+        renderChatMessages();
+
+        // Clear Input
+        const inp = document.getElementById('qelvoriaChatInput');
+        if (inp) inp.value = '';
+
+        // Show typing indicator if in bot mode
+        if (visitorSessionStatus !== 'admin_joined') {
+            isAgentTyping = true;
+            const typingEl = document.getElementById('qelvoriaTyping');
+            if (typingEl) {
+                typingEl.classList.remove('hidden');
+                typingEl.classList.add('flex');
+            }
+        }
+
+        try {
+            const res = await fetch('/api/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    session_id: visitorSessionId,
+                    message: query,
+                    visitor_name: identity.name,
+                    visitor_email: identity.email
+                })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.reply) {
+                    chatHistory.push({
+                        sender: 'bot',
+                        sender_name: 'QELVORIA Assistant',
+                        created_at: new Date().toISOString(),
+                        message: data.reply,
+                        quick_replies: data.quick_replies || [],
+                        books: data.books || []
+                    });
+                }
+            } else {
+                throw new Error('API error');
+            }
+        } catch (e) {
+            // Client Fallback Knowledge
+            chatHistory.push({
+                sender: 'bot',
+                sender_name: 'QELVORIA Assistant',
+                created_at: new Date().toISOString(),
+                message: "👋 I'm here to help! You can browse our bestseller library, apply coupon **`ROHIT20`** for 20% OFF, or click below to submit a support ticket.",
+                quick_replies: ["📋 Open Support Ticket Form", "🎁 Active Discount Coupons", "🔥 Best Selling Ebooks"],
+                books: []
+            });
+        } finally {
+            isAgentTyping = false;
+            const typingEl = document.getElementById('qelvoriaTyping');
+            if (typingEl) {
+                typingEl.classList.add('hidden');
+                typingEl.classList.remove('flex');
+            }
+            renderChatMessages();
+        }
+    }
+
+    async function endChatSession() {
+        if (!confirm('End this conversation?')) return;
+
+        try {
+            await fetch('/api/chat/end', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ session_id: visitorSessionId })
+            });
+            visitorSessionStatus = 'closed';
+            updateWidgetHeaderStatus('closed');
+            chatHistory.push({
+                sender: 'bot',
+                sender_name: 'QELVORIA Assistant',
+                created_at: new Date().toISOString(),
+                message: "🔒 **This chat session has ended.** Thank you for visiting QELVORIA!",
+                quick_replies: ["🔄 Start New Chat", "🔥 Browse Ebooks", "📋 Open Support Ticket Form"]
+            });
+            renderChatMessages();
+        } catch (e) {
+            console.error('End chat error', e);
+        }
+    }
+
+    function handleChatSubmit(e) {
+        if (e) e.preventDefault();
+        const inp = document.getElementById('qelvoriaChatInput');
+        if (inp) sendChatMessage(inp.value);
+    }
+
+    function clearChatHistory() {
+        if (!confirm('Clear chat history?')) return;
+        visitorSessionId = 'qv_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36).substring(4);
+        localStorage.setItem('qelvoria_chat_session_id', visitorSessionId);
+        chatHistory = [INITIAL_GREETING];
+        renderChatMessages();
+    }
+
+    // Expose global controller
+    window.qelvoriaChat = {
+        toggle: toggleChatWidget,
+        sendQuery: sendChatMessage,
+        handleSubmit: handleChatSubmit,
+        clearHistory: clearChatHistory,
+        endChat: endChatSession
+    };
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initChatAgentWidget);
+    } else {
+        initChatAgentWidget();
+    }
+})();
+
+
+

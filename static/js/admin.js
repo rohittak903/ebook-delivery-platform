@@ -146,6 +146,8 @@ function switchTab(tabId) {
         'slides': 'Hero Slider Banners',
         'customers': 'Registered Customers CRM',
         'orders': 'Orders & Delivery Logs',
+        'livechats': 'Live Customer Chat Desk',
+        'tickets': 'Support Tickets Desk',
         'settings': 'Store Settings & Password',
     };
     const titleEl = document.getElementById('adminPageTitle');
@@ -159,6 +161,8 @@ function switchTab(tabId) {
     else if (tabId === 'slides') loadAdminSlides();
     else if (tabId === 'customers') loadAdminCustomers();
     else if (tabId === 'orders') loadAdminOrders();
+    else if (tabId === 'livechats') loadAdminChatSessions();
+    else if (tabId === 'tickets') loadAdminTickets();
     else if (tabId === 'settings') loadAdminSettings();
 
     lucide.createIcons();
@@ -953,42 +957,86 @@ async function loadAdminOrders() {
 
 async function loadAdminTickets() {
     const tbody = document.getElementById('adminTicketsTableBody');
-    tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">Loading tickets...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading tickets...</td></tr>`;
 
     try {
-        const res = await fetch('/api/admin/support/tickets', {
+        const res = await fetch('/api/admin/support-tickets', {
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const data = await res.json();
         const tickets = data.tickets || [];
 
         if (tickets.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="py-8 text-center text-slate-500">No support tickets.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">No support tickets recorded yet.</td></tr>`;
             return;
         }
 
-        tbody.innerHTML = tickets.map(t => `
-            <tr class="hover:bg-slate-900/60 transition">
-                <td class="py-3 px-6 font-mono font-bold text-rose-300">#TICK-${t.id}</td>
-                <td class="py-3 px-4">
-                    <div class="font-bold text-white">${t.customer_name}</div>
-                    <div class="text-[11px] text-slate-400">${t.customer_email} • ${t.customer_phone}</div>
-                </td>
-                <td class="py-3 px-4 text-slate-300 text-xs">${t.message}</td>
-                <td class="py-3 px-4">
-                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'resolved' ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}">
-                        ${t.status.toUpperCase()}
-                    </span>
-                </td>
-                <td class="py-3 px-6 text-right">
-                    ${t.status !== 'resolved' ? `
-                        <button onclick="resolveAdminTicket(${t.id})" class="px-3 py-1 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-bold">Deliver & Resolve</button>
-                    ` : `<span class="text-slate-500 text-xs font-semibold">Resolved</span>`}
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = tickets.map(t => {
+            const hasAttachment = t.attachment_file && t.attachment_file.trim().length > 0;
+            const waUrl = t.whatsapp_reply_url || `https://wa.me/${(t.customer_phone || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(`Hello ${t.customer_name}, this is QELVORIA Support regarding your support ticket #${t.id}. How can we assist you?`)}`;
+
+            return `
+                <tr class="hover:bg-slate-900/60 transition">
+                    <td class="py-3 px-6">
+                        <div class="font-mono font-bold text-rose-400">#TICK-${t.id}</div>
+                        <div class="text-[10px] text-slate-500">${new Date(t.created_at).toLocaleString()}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        <div class="font-bold text-white">${t.customer_name}</div>
+                        <div class="text-[11px] text-slate-400 mb-1">${t.customer_email}</div>
+                        ${t.customer_phone ? `
+                            <a href="${waUrl}" target="_blank" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800 text-[10px] font-bold hover:bg-emerald-900 transition">
+                                <span>📱 ${t.customer_phone}</span>
+                            </a>
+                        ` : ''}
+                    </td>
+                    <td class="py-3 px-4 text-slate-300 text-xs max-w-xs">
+                        ${t.order_code ? `<div class="font-mono text-[10px] text-brand-400 font-bold mb-0.5">Order/Ref: ${t.order_code}</div>` : ''}
+                        <div class="line-clamp-3">${t.message}</div>
+                    </td>
+                    <td class="py-3 px-4">
+                        ${hasAttachment ? `
+                            <a href="${t.attachment_file}" target="_blank" class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-[11px] font-bold border border-slate-700 transition">
+                                <span>📎 View File</span>
+                            </a>
+                        ` : `<span class="text-slate-500 text-xs italic">No attachment</span>`}
+                    </td>
+                    <td class="py-3 px-4">
+                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${t.status === 'resolved' ? 'bg-emerald-950 text-emerald-300' : 'bg-rose-950 text-rose-300'}">
+                            ${(t.status || 'open').toUpperCase()}
+                        </span>
+                    </td>
+                    <td class="py-3 px-6 text-right space-x-1.5 whitespace-nowrap">
+                        <button onclick="jumpToChatSession('${t.session_id || ''}', '${t.customer_email || ''}')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white rounded-lg text-xs font-bold transition inline-flex items-center gap-1" title="Open live chat with customer">
+                            <i data-lucide="message-square" class="w-3 h-3"></i>
+                            <span>Chat</span>
+                        </button>
+                        ${t.status !== 'resolved' ? `
+                            <button onclick="resolveAdminTicket(${t.id})" class="px-3 py-1 bg-white hover:bg-slate-200 text-slate-950 rounded-lg text-xs font-bold shadow-sm transition">Resolve & Deliver</button>
+                        ` : `<span class="text-slate-500 text-xs font-semibold">Resolved</span>`}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        lucide.createIcons();
     } catch (e) {
         console.error('Tickets load error', e);
+    }
+}
+
+function jumpToChatSession(sessionId, email) {
+    switchTab('livechats');
+    if (sessionId) {
+        openAdminChatSession(sessionId);
+    } else if (email) {
+        const inp = document.getElementById('chatSessionSearch');
+        if (inp) {
+            inp.value = email;
+            filterChatSessions();
+        }
+        if (cachedChatSessions.length > 0) {
+            openAdminChatSession(cachedChatSessions[0].session_id);
+        }
     }
 }
 
@@ -1143,4 +1191,364 @@ function openModal(id) {
 function closeModal(id) {
     const el = document.getElementById(id);
     if (el) el.classList.add('hidden');
+}
+
+// ================= LIVE CUSTOMER CHAT DESK (ADMIN) =================
+
+let activeChatSessionId = null;
+let cachedChatSessions = [];
+let chatDeskPollTimer = null;
+let currentSessionData = null;
+
+async function loadAdminChatSessions() {
+    if (!adminToken) return;
+    try {
+        const res = await fetch('/api/admin/chat/sessions', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        cachedChatSessions = data.sessions || [];
+
+        // Update Total Unread Badge in Sidebar
+        const totalUnread = cachedChatSessions.reduce((acc, s) => acc + (s.unread_admin_count || 0), 0);
+        const badge = document.getElementById('adminLiveChatUnreadBadge');
+        if (badge) {
+            if (totalUnread > 0) {
+                badge.innerText = totalUnread;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        renderAdminChatSessionsList(cachedChatSessions);
+
+        if (activeChatSessionId) {
+            pollActiveChatMessages();
+        }
+    } catch (e) {
+        console.error('Error loading chat sessions', e);
+    }
+}
+
+function renderAdminChatSessionsList(sessions) {
+    const listEl = document.getElementById('adminChatSessionsList');
+    if (!listEl) return;
+
+    if (sessions.length === 0) {
+        listEl.innerHTML = `
+            <div class="py-16 text-center text-slate-500 px-4">
+                <i data-lucide="message-square" class="w-8 h-8 mx-auto mb-2 text-slate-700"></i>
+                <div class="font-bold">No live chats yet</div>
+                <div class="text-[11px] text-slate-500 mt-1">When visitors start chatting on your website, conversations will appear here in real-time.</div>
+            </div>
+        `;
+        lucide.createIcons();
+        return;
+    }
+
+    listEl.innerHTML = sessions.map(s => {
+        const isSelected = s.session_id === activeChatSessionId;
+        const isTakeover = s.status === 'admin_joined';
+        const isClosed = s.status === 'closed';
+        const unread = s.unread_admin_count || 0;
+        const hasTicket = !!s.latest_ticket_id;
+
+        return `
+            <div onclick="openAdminChatSession('${s.session_id}')" class="p-3.5 cursor-pointer transition flex items-start gap-3 ${isSelected ? 'bg-slate-900 border-l-4 border-emerald-500' : 'hover:bg-slate-900/50'}">
+                <div class="relative w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-xs text-white flex-shrink-0">
+                    <span>${(s.visitor_name || 'V').charAt(0).toUpperCase()}</span>
+                    ${unread > 0 ? `<span class="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 text-slate-950 text-[9px] font-extrabold rounded-full flex items-center justify-center">${unread}</span>` : ''}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between gap-1 mb-0.5">
+                        <span class="font-bold text-white truncate text-xs">${s.visitor_name || 'Visitor'}</span>
+                        <span class="text-[10px] text-slate-500 whitespace-nowrap">${formatChatTime(s.last_activity)}</span>
+                    </div>
+                    <p class="text-[11px] text-slate-400 truncate mb-1.5">${s.last_message || 'Started a conversation'}</p>
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        ${hasTicket ? `
+                            <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-amber-950 text-amber-300 border border-amber-800">
+                                📋 Ticket #${s.latest_ticket_id}
+                            </span>
+                        ` : ''}
+                        <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold ${isTakeover ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : (isClosed ? 'bg-slate-800 text-slate-400' : 'bg-blue-950 text-blue-300 border border-blue-800')}">
+                            ${isTakeover ? '🛡️ Live Joined' : (isClosed ? '🔒 Closed' : '🤖 AI Bot Active')}
+                        </span>
+                        <span class="text-[10px] text-slate-500 font-mono">${s.total_messages || 0} msgs</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    lucide.createIcons();
+}
+
+function filterChatSessions() {
+    const q = (document.getElementById('chatSessionSearch')?.value || '').toLowerCase().trim();
+    if (!q) {
+        renderAdminChatSessionsList(cachedChatSessions);
+        return;
+    }
+    const filtered = cachedChatSessions.filter(s => 
+        (s.visitor_name || '').toLowerCase().includes(q) ||
+        (s.visitor_email || '').toLowerCase().includes(q) ||
+        (s.last_message || '').toLowerCase().includes(q) ||
+        (s.session_id || '').toLowerCase().includes(q)
+    );
+    renderAdminChatSessionsList(filtered);
+}
+
+function formatChatTime(dateStr) {
+    if (!dateStr) return '';
+    try {
+        const d = new Date(dateStr);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+        return '';
+    }
+}
+
+let lastRenderedMessagesKey = '';
+let activeChatForceScrollBottom = false;
+
+async function openAdminChatSession(sessionId) {
+    if (activeChatSessionId !== sessionId) {
+        lastRenderedMessagesKey = '';
+        activeChatForceScrollBottom = true;
+    }
+    activeChatSessionId = sessionId;
+    
+    // Toggle UI views
+    const emptyState = document.getElementById('adminChatEmptyState');
+    const activeView = document.getElementById('adminChatActiveView');
+    if (emptyState) emptyState.classList.add('hidden');
+    if (activeView) activeView.classList.remove('hidden');
+
+    renderAdminChatSessionsList(cachedChatSessions);
+    await pollActiveChatMessages();
+}
+
+async function pollActiveChatMessages() {
+    if (!activeChatSessionId) return;
+
+    try {
+        const res = await fetch(`/api/admin/chat/sessions/${activeChatSessionId}/messages`, {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        currentSessionData = data.session || {};
+        const messages = data.messages || [];
+
+        // Update header details
+        const visitorNameEl = document.getElementById('activeChatVisitorName');
+        const visitorAvatarEl = document.getElementById('activeChatAvatar');
+        const visitorContactEl = document.getElementById('activeChatVisitorContact');
+        
+        if (visitorNameEl) visitorNameEl.innerText = currentSessionData.visitor_name || 'Visitor';
+        if (visitorAvatarEl) visitorAvatarEl.innerText = (currentSessionData.visitor_name || 'V').charAt(0).toUpperCase();
+        if (visitorContactEl) visitorContactEl.innerText = `Session: ${currentSessionData.session_id} • ${currentSessionData.visitor_email || 'No email'}`;
+
+        const isTakeover = currentSessionData.status === 'admin_joined';
+        const badgeEl = document.getElementById('activeChatStatusBadge');
+        const takeoverBtn = document.getElementById('toggleTakeoverBtn');
+        const takeoverText = document.getElementById('takeoverBtnText');
+
+        if (badgeEl) {
+            if (isTakeover) {
+                badgeEl.className = 'px-2 py-0.5 rounded text-[9px] font-extrabold bg-emerald-950 text-emerald-300 border border-emerald-800';
+                badgeEl.innerText = '🛡️ Live Support Joined';
+            } else {
+                badgeEl.className = 'px-2 py-0.5 rounded text-[9px] font-extrabold bg-blue-950 text-blue-300 border border-blue-800';
+                badgeEl.innerText = '🤖 AI Bot Active';
+            }
+        }
+
+        if (takeoverText) {
+            takeoverText.innerText = isTakeover ? 'Hand Over to AI Bot' : 'Take Over Chat';
+        }
+        if (takeoverBtn) {
+            takeoverBtn.className = isTakeover 
+                ? 'px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5'
+                : 'px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5';
+        }
+
+        // Render messages
+        const stream = document.getElementById('adminChatMessagesStream');
+        if (!stream) return;
+
+        const lastMsg = messages[messages.length - 1];
+        const messagesKey = `${activeChatSessionId}_${messages.length}_${lastMsg?.id || ''}_${lastMsg?.message?.length || ''}`;
+        const isNearBottom = (stream.scrollHeight - stream.scrollTop - stream.clientHeight) < 95;
+
+        if (messagesKey !== lastRenderedMessagesKey) {
+            lastRenderedMessagesKey = messagesKey;
+
+            stream.innerHTML = messages.map(m => {
+                const isVisitor = m.sender === 'visitor';
+                const isAdmin = m.sender === 'admin';
+                const isBot = m.sender === 'bot';
+                const isTicketCard = (m.message || '').includes('SUPPORT TICKET SUBMITTED');
+
+                let bubbleClass = 'bg-slate-900 border border-slate-800 text-slate-200';
+                let alignClass = 'items-start';
+                let senderLabel = '🤖 QELVORIA Assistant';
+
+                if (isTicketCard) {
+                    bubbleClass = 'bg-amber-950/40 border border-amber-800/80 text-amber-100 shadow-md';
+                    alignClass = 'items-start';
+                    senderLabel = `📋 Support Ticket Form (Customer)`;
+                } else if (isVisitor) {
+                    bubbleClass = 'bg-slate-800 border border-slate-700 text-white';
+                    alignClass = 'items-start';
+                    senderLabel = `👤 ${m.sender_name || 'Customer'}`;
+                } else if (isAdmin) {
+                    bubbleClass = 'bg-emerald-950/80 border border-emerald-700 text-emerald-100';
+                    alignClass = 'items-end';
+                    senderLabel = `🛡️ Support Specialist (You)`;
+                }
+
+                // Format markdown
+                let formattedMsg = (m.message || '')
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" class="text-amber-400 underline font-bold hover:text-amber-300 inline-flex items-center gap-1"><span>$1</span> ↗</a>')
+                    .replace(/\n/g, '<br>');
+
+                return `
+                    <div class="flex flex-col ${alignClass} space-y-1">
+                        <span class="text-[10px] font-bold text-slate-400 px-1">${senderLabel} • ${formatChatTime(m.created_at)}</span>
+                        <div class="max-w-[85%] p-3.5 rounded-2xl text-xs leading-relaxed ${bubbleClass}">
+                            ${formattedMsg}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (activeChatForceScrollBottom || isNearBottom) {
+                setTimeout(() => {
+                    stream.scrollTop = stream.scrollHeight;
+                }, 10);
+                activeChatForceScrollBottom = false;
+            }
+        }
+    } catch (e) {
+        console.error('Error polling chat messages', e);
+    }
+}
+
+async function handleAdminReplySubmit(e) {
+    if (e) e.preventDefault();
+    if (!activeChatSessionId) return;
+
+    const inp = document.getElementById('adminReplyInput');
+    const msg = (inp?.value || '').trim();
+    if (!msg) return;
+
+    const btn = document.getElementById('adminSendReplyBtn');
+    if (btn) btn.disabled = true;
+
+    try {
+        const res = await fetch(`/api/admin/chat/sessions/${activeChatSessionId}/reply`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ message: msg, takeover: true })
+        });
+
+        if (res.ok) {
+            if (inp) inp.value = '';
+            activeChatForceScrollBottom = true;
+            await pollActiveChatMessages();
+            await loadAdminChatSessions();
+        } else {
+            alert('Failed to send reply');
+        }
+    } catch (err) {
+        console.error('Admin reply error', err);
+    } finally {
+        if (btn) btn.disabled = false;
+    }
+}
+
+async function toggleAdminTakeover() {
+    if (!activeChatSessionId || !currentSessionData) return;
+    const newStatus = currentSessionData.status === 'admin_joined' ? 'bot_active' : 'admin_joined';
+
+    try {
+        const res = await fetch(`/api/admin/chat/sessions/${activeChatSessionId}/status`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: newStatus })
+        });
+        if (res.ok) {
+            await pollActiveChatMessages();
+            await loadAdminChatSessions();
+        }
+    } catch (e) {
+        console.error('Toggle takeover error', e);
+    }
+}
+
+async function closeActiveChatSession() {
+    if (!activeChatSessionId) return;
+    if (!confirm('Close this chat conversation?')) return;
+
+    try {
+        await fetch(`/api/admin/chat/sessions/${activeChatSessionId}/status`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status: 'closed' })
+        });
+        await pollActiveChatMessages();
+        await loadAdminChatSessions();
+    } catch (e) {}
+}
+
+async function sendTicketFormShortcut() {
+    if (!activeChatSessionId) return;
+
+    try {
+        const res = await fetch(`/api/admin/chat/sessions/${activeChatSessionId}/send-ticket-form`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        if (res.ok) {
+            await pollActiveChatMessages();
+            await loadAdminChatSessions();
+        } else {
+            alert('Failed to send Ticket Form to customer');
+        }
+    } catch (e) {
+        console.error('Send ticket form error', e);
+    }
+}
+
+function setAdminQuickReply(text) {
+    const inp = document.getElementById('adminReplyInput');
+    if (inp) {
+        inp.value = text;
+        inp.focus();
+    }
+}
+
+// Background poller for live chat in admin panel
+if (!chatDeskPollTimer) {
+    chatDeskPollTimer = setInterval(() => {
+        if (adminToken) {
+            loadAdminChatSessions();
+        }
+    }, 3500);
 }

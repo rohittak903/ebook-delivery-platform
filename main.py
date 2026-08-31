@@ -1,4 +1,5 @@
 import os
+import re
 import json
 import secrets
 import shutil
@@ -60,6 +61,7 @@ STATIC_DIR = os.path.join(BASE_DIR, "static")
 COVERS_DIR = os.path.join(UPLOADS_DIR, "covers")
 EBOOKS_DIR = os.path.join(UPLOADS_DIR, "ebooks")
 SAMPLES_DIR = os.path.join(UPLOADS_DIR, "samples")
+TICKETS_DIR = os.path.join(UPLOADS_DIR, "tickets")
 
 def get_writable_uploads_dir():
     # 1. Try project uploads directory
@@ -67,6 +69,7 @@ def get_writable_uploads_dir():
         os.makedirs(EBOOKS_DIR, exist_ok=True)
         os.makedirs(COVERS_DIR, exist_ok=True)
         os.makedirs(SAMPLES_DIR, exist_ok=True)
+        os.makedirs(TICKETS_DIR, exist_ok=True)
         test_file = os.path.join(EBOOKS_DIR, ".write_test")
         with open(test_file, "w") as f:
             f.write("ok")
@@ -81,6 +84,7 @@ def get_writable_uploads_dir():
     os.makedirs(os.path.join(tmp_uploads, "ebooks"), exist_ok=True)
     os.makedirs(os.path.join(tmp_uploads, "covers"), exist_ok=True)
     os.makedirs(os.path.join(tmp_uploads, "samples"), exist_ok=True)
+    os.makedirs(os.path.join(tmp_uploads, "tickets"), exist_ok=True)
     return tmp_uploads
 
 app = FastAPI(title="QELVORIA Digital Bookstore")
@@ -105,6 +109,16 @@ if os.path.exists(UPLOADS_DIR):
         app.mount("/uploads", StaticFiles(directory=UPLOADS_DIR), name="uploads")
     except Exception as e:
         print(f"Error mounting uploads: {e}")
+
+@app.get("/uploads/{file_path:path}")
+async def serve_upload_fallback(file_path: str):
+    local_path = os.path.join(UPLOADS_DIR, file_path)
+    if os.path.exists(local_path) and os.path.isfile(local_path):
+        return FileResponse(local_path)
+    tmp_path = os.path.join(tempfile.gettempdir(), "qelvoria_uploads", file_path)
+    if os.path.exists(tmp_path) and os.path.isfile(tmp_path):
+        return FileResponse(tmp_path)
+    raise HTTPException(status_code=404, detail="File not found")
 
 # In-memory admin sessions cache
 ACTIVE_ADMIN_SESSIONS = set()
@@ -161,6 +175,23 @@ class SettingsUpdateRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password: str
+
+class ChatAgentRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+class ChatSendMessageRequest(BaseModel):
+    session_id: str
+    message: str
+    visitor_name: Optional[str] = "Visitor"
+    visitor_email: Optional[str] = ""
+
+class AdminChatReplyRequest(BaseModel):
+    message: str
+    takeover: Optional[bool] = True
+
+class AdminChatStatusRequest(BaseModel):
+    status: str
 
 # In-memory customer sessions
 ACTIVE_CUSTOMER_SESSIONS = {}
@@ -1399,6 +1430,132 @@ async def admin_change_password(req: ChangePasswordRequest, token: str = Depends
                 
         await db.execute("UPDATE admins SET password_hash = ? WHERE id = 1", (hash_password(req.new_password),))
         await db.commit()
+# --- CUSTOMER SUPPORT TICKETS API ---
+
+@app.post("/api/support/ticket")
+async def submit_support_ticket(request: Request):
+    content_type = request.headers.get("content-type", "")
+    customer_name = ""
+    customer_email = ""
+    customer_phone = ""
+    order_code = ""
+    transaction_ref = ""
+    message = ""
+    file_path = ""
+    session_id = ""
+    
+    if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
+        try:
+            form = await request.form()
+            customer_name = str(form.get("customer_name") or "").strip()
+            customer_email = str(form.get("customer_email") or "").strip().lower()
+            customer_phone = str(form.get("customer_phone") or "").strip()
+            order_code = str(form.get("order_code") or "").strip()
+            transaction_ref = str(form.get("transaction_ref") or "").strip()
+            message = str(form.get("message") or "").strip()
+            session_id = str(form.get("session_id") or "").strip()
+            
+            file_obj = form.get("attachment_file")
+            if file_obj and hasattr(file_obj, "filename") and file_obj.filename:
+                try:
+                    target_tickets_dir = os.path.join(get_writable_uploads_dir(), "tickets")
+                    os.makedirs(target_tickets_dir, exist_ok=True)
+                    clean_filename = os.path.basename(file_obj.filename).replace(" ", "_")
+                    safe_fname = f"ticket_{secrets.token_hex(4)}_{clean_filename}"
+                    save_path = os.path.join(target_tickets_dir, safe_fname)
+                    contents = await file_obj.read()
+                    if contents:
+                        with open(save_path, "wb") as f:
+                            f.write(contents)
+                        file_path = f"/uploads/tickets/{safe_fname}"
+                except Exception as fe:
+                    print(f"Error saving ticket attachment file: {fe}")
+        except Exception as forme:
+            print(f"Form parsing error: {forme}")
+    else:
+        try:
+            body = await request.json()
+            customer_name = str(body.get("customer_name") or "").strip()
+            customer_email = str(body.get("customer_email") or "").strip().lower()
+            customer_phone = str(body.get("customer_phone") or "").strip()
+            order_code = str(body.get("order_code") or "").strip()
+            transaction_ref = str(body.get("transaction_ref") or "").strip()
+            message = str(body.get("message") or "").strip()
+            file_path = str(body.get("attachment_file") or "").strip()
+            session_id = str(body.get("session_id") or "").strip()
+        except Exception as jsone:
+            print(f"JSON parsing error: {jsone}")
+
+    if not customer_name or not customer_email or not message:
+        raise HTTPException(status_code=400, detail="Customer Name, Email Address, and Message are required.")
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        cursor = await db.execute("""
+            INSERT INTO support_tickets (
+                customer_name, customer_email, customer_phone, order_code, transaction_ref, message, attachment_file, session_id, status
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open')
+        """, (customer_name, customer_email, customer_phone, order_code, transaction_ref, message, file_path, session_id))
+        ticket_id = cursor.lastrowid
+
+        # Real-time customer sync
+        try:
+            await db.execute("""
+                INSERT INTO customers (name, email, phone, password_hash, auth_provider)
+                VALUES (?, ?, ?, '', 'support_ticket')
+                ON CONFLICT(email) DO UPDATE SET
+                    name = excluded.name,
+                    phone = CASE WHEN excluded.phone != '' AND excluded.phone IS NOT NULL THEN excluded.phone ELSE customers.phone END
+            """, (customer_name, customer_email, customer_phone))
+        except Exception:
+            pass
+
+        # Post ticket summary into Live Chat session if session_id is active
+        if session_id:
+            try:
+                db.row_factory = aiosqlite.Row
+                async with db.execute("SELECT id FROM chat_sessions WHERE session_id = ?", (session_id,)) as s_cursor:
+                    s_row = await s_cursor.fetchone()
+                
+                if not s_row:
+                    await db.execute("""
+                        INSERT INTO chat_sessions (session_id, visitor_name, visitor_email, visitor_phone, status, last_message, unread_admin_count, last_activity)
+                        VALUES (?, ?, ?, ?, 'bot_active', ?, 1, CURRENT_TIMESTAMP)
+                    """, (session_id, customer_name, customer_email, customer_phone, f"📋 Ticket #{ticket_id} submitted"))
+                else:
+                    await db.execute("""
+                        UPDATE chat_sessions 
+                        SET visitor_name = ?, visitor_email = ?, visitor_phone = ?, last_message = ?, unread_admin_count = unread_admin_count + 1, last_activity = CURRENT_TIMESTAMP
+                        WHERE session_id = ?
+                    """, (customer_name, customer_email, customer_phone, f"📋 Ticket #{ticket_id}: {message[:40]}", session_id))
+
+                ticket_msg = (
+                    f"📋 **SUPPORT TICKET SUBMITTED (Ticket #{ticket_id})**\n\n"
+                    f"• **Name:** {customer_name}\n"
+                    f"• **Email:** {customer_email}\n"
+                    f"• **WhatsApp:** {customer_phone or 'Not provided'}\n"
+                    f"• **Order/Ref:** {order_code or transaction_ref or 'N/A'}\n"
+                    f"• **Message:** {message}\n"
+                )
+                if file_path:
+                    ticket_msg += f"• **Attachment:** [📎 View Uploaded File]({file_path})\n"
+                ticket_msg += "\n*Support ticket logged into Admin Support Desk. Our team has been notified.*"
+
+                await db.execute("""
+                    INSERT INTO chat_messages (session_id, sender, sender_name, message, quick_replies, created_at)
+                    VALUES (?, 'visitor', ?, ?, '["🔥 Browse Ebooks", "🎁 Active Discounts"]', CURRENT_TIMESTAMP)
+                """, (session_id, customer_name, ticket_msg))
+            except Exception as ce:
+                print(f"Chat session ticket sync error: {ce}")
+
+        await db.commit()
+
+    return {
+        "success": True, 
+        "ticket_id": ticket_id,
+        "message": f"Support ticket #{ticket_id} submitted successfully! Our support team will assist you promptly.",
+        "file_url": file_path
+    }
+
 # --- Admin Support Tickets APIs ---
 
 @app.get("/api/admin/support-tickets")
@@ -1412,7 +1569,7 @@ async def admin_get_support_tickets(request: Request, token: str = Depends(requi
     settings = await get_settings()
     for row in rows:
         t = dict(row)
-        msg_text = f"Hello {t['customer_name']}, this is Rohit Tak from EBookVault support regarding your ticket #{t['id']}. How can I assist you with your ebook delivery?"
+        msg_text = f"Hello {t['customer_name']}, this is QELVORIA Support regarding your ticket #{t['id']}. How can we assist you?"
         t["whatsapp_reply_url"] = generate_whatsapp_link(t["customer_phone"], msg_text)
         tickets.append(t)
         
@@ -2313,6 +2470,390 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
         customers.append(cust)
         
     return {"customers": customers}
+
+# --- QELVORIA NATIVE AI LIVE CHAT SYSTEM & ADMIN TAKEOVER APIs ---
+
+async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list]:
+    # 1. Order lookup via email/phone/order_code
+    email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', raw_msg)
+    phone_match = re.search(r'(\+?91)?[6-9]\d{9}', raw_msg.replace(" ", "").replace("-", ""))
+    order_code_match = re.search(r'QV-[A-Z0-9-]+', raw_msg.upper())
+
+    if email_match or phone_match or order_code_match:
+        search_val = (email_match.group(0) if email_match else 
+                     (phone_match.group(0) if phone_match else 
+                     order_code_match.group(0)))
+        
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            query = """
+                SELECT o.order_code, o.amount, o.status, o.created_at, e.id as ebook_id, e.title, d.token, d.expires_at
+                FROM orders o
+                JOIN ebooks e ON o.ebook_id = e.id
+                LEFT JOIN download_tokens d ON o.id = d.order_id
+                WHERE (LOWER(o.customer_email) = ? OR o.customer_whatsapp LIKE ? OR o.order_code = ?)
+                WHERE (LOWER(o.customer_email) = ? OR o.order_code = ?)
+                AND o.status = 'completed'
+                ORDER BY o.id DESC LIMIT 5
+            """
+            params = (search_val.lower(), search_val.upper())
+            async with db.execute(query, params) as cursor:
+                orders = await cursor.fetchall()
+
+        if orders:
+            order_list_md = "\n".join([
+                f"- 📖 **{o['title']}** (Order: `{o['order_code']}`) — [📥 Instant Download](/api/download/{o['token']})"
+                for o in orders if o['token']
+            ])
+            return (
+                f"🎉 **Found your purchases for `{search_val}`!**\n\nHere are your active digital downloads:\n\n{order_list_md}\n\n*A copy has also been sent to your email.*",
+                ["🔥 Browse More Books", "🎁 Active Discounts", "📋 Submit Support Ticket"],
+                []
+            )
+        else:
+            return (
+                f"🔍 I checked our database but couldn't find any completed orders for **`{search_val}`**.\n\nIf you recently paid, please allow 10-30 seconds for transaction sync, or click below to submit a support ticket with your payment reference.",
+                ["📋 Open Support Ticket Form", "🔍 Find My Purchases", "🔥 View Best Sellers"],
+                []
+            )
+
+    # 2. Coupon & Discount Queries
+    if any(k in msg for k in ["coupon", "discount", "promo", "code", "offer", "voucher", "deal", "cheap", "save"]):
+        return (
+            "🎁 **Exclusive Active Discount Codes for QELVORIA:**\n\n"
+            "1. **`ROHIT20`** — Get **20% OFF** on any single ebook or bundle!\n"
+            "2. **`WELCOME50`** — **50% OFF** special welcome discount for first-time buyers!\n"
+            "3. **`SPECIAL30`** — **30% OFF** limited time offer!\n\n"
+            "👉 *Apply these codes directly in your Shopping Cart or at Checkout for instant savings.*",
+            ["🔥 View Bestsellers", "📦 View Bundles", "🛒 How to Checkout"],
+            []
+        )
+
+    # 3. Bundle Deals Queries
+    if any(k in msg for k in ["bundle", "pack", "package", "combo", "collection", "all in one", "multiple"]):
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            async with db.execute("SELECT * FROM bundles WHERE is_active = 1") as cursor:
+                bundles = await cursor.fetchall()
+        
+        bundle_text = "\n".join([
+            f"- 📦 **{b['title']}** — Only **₹{b['price']}** ~~(₹{b['regular_price']})~~ • *{b['badge_text'] or 'Save Big'}*"
+            for b in bundles
+        ])
+        return (
+            f"📦 **Curated High-Value Ebook Bundles:**\n\n{bundle_text or '- AI & Solopreneur Ultimate Master Bundle'}\n\nBundles give you instant access to complete learning paths at over 60% savings!",
+            ["🔥 Go to Bundles Section", "🎁 Apply Coupon ROHIT20", "📋 Open Support Ticket Form"],
+            []
+        )
+
+    # 4. Instant Delivery & File Format Queries
+    if any(k in msg for k in ["delivery", "download", "format", "pdf", "epub", "word", "docx", "receive", "access", "when will i get"]):
+        return (
+            "⚡ **Instant Digital Delivery Guarantee:**\n\n"
+            "• **Delivery Speed:** Under **5 seconds** immediately upon payment completion.\n"
+            "• **Channels:** Direct download link on screen + dispatched automatically to your **Email**.\n"
+            "• **Formats:** Clean, DRM-free **PDF** (compatible with mobile, PC, iPad, Kindle) & EPUB.\n"
+            "• **Lifetime Access:** Re-download your books anytime using the 'Find My Purchases' tool.",
+            ["🔥 Browse Catalog", "🎁 Active Discounts", "🔍 Find My Purchases"],
+            []
+        )
+
+    # 5. Payment Methods Queries
+    if any(k in msg for k in ["pay", "payment", "gpay", "google pay", "phonepe", "paytm", "upi", "card", "credit", "debit", "netbanking", "fampay", "bank"]):
+        return (
+            "💳 **Accepted Payment Methods:**\n\n"
+            "We process secure 256-bit encrypted payments via **Razorpay**.\n\n"
+            "• **UPI Apps:** Google Pay (GPay), PhonePe, Paytm, BHIM UPI, FamPay, CRED.\n"
+            "• **Cards:** Visa, Mastercard, RuPay, Maestro Credit & Debit Cards.\n"
+            "• **NetBanking:** All major Indian banks.\n"
+            "• **Digital Wallets:** Paytm, Mobikwik, Amazon Pay.",
+            ["🔥 Browse Books", "🎁 Get Discount Code", "📋 Open Support Ticket Form"],
+            []
+        )
+
+    # 6. Contact / Support Desk
+    if any(k in msg for k in ["contact", "support", "ticket", "call", "human", "talk", "help", "agent", "assistant"]):
+        return (
+            "👋 **QELVORIA Customer Support Desk:**\n\n"
+            "• **Support Team:** 24/7 Digital Delivery & Customer Assistance\n"
+            "• **Support Ticket:** Click below to submit your details and attachments\n"
+            "• **Direct Help:** A live support assistant can also join this conversation directly.\n\n"
+            "How can we assist you with your reading experience today?",
+            ["📋 Open Support Ticket Form", "🔥 Browse Best Sellers", "🔍 Find Purchases"],
+            []
+        )
+
+    # 7. Topic / Keyword Search in Books Catalog
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT id, title, slug, author, price, sale_price, category, cover_image, description
+            FROM ebooks WHERE is_active = 1
+            ORDER BY downloads_count DESC, id ASC
+        """) as cursor:
+            all_books = [dict(r) for r in await cursor.fetchall()]
+
+    matched_books = []
+    for b in all_books:
+        score = 0
+        search_corpus = f"{b['title']} {b['category']} {b['description']} {b['author']}".lower()
+        words = [w for w in re.findall(r'\w+', msg) if len(w) > 2]
+        for w in words:
+            if w in search_corpus:
+                score += 1
+        if score > 0:
+            matched_books.append((score, b))
+
+    matched_books.sort(key=lambda x: x[0], reverse=True)
+    top_books = [b for _, b in matched_books[:3]] if matched_books else all_books[:3]
+
+    books_summary = "\n".join([
+        f"- 📖 **[{b['title']}](/book.html?id={b['id']})** — **₹{b['sale_price'] or b['price']}**"
+        for b in top_books
+    ])
+
+    return (
+        f"👋 **Here is what I found for you:**\n\n{books_summary}\n\n*Use discount code `ROHIT20` for 20% off your entire cart!*",
+        ["🎁 Apply Coupon ROHIT20", "📋 Open Support Ticket Form", "🔥 View Bestsellers"],
+        top_books
+    )
+
+@app.post("/api/chat/send")
+@app.post("/api/chat-agent")
+async def chat_send_message(req: ChatSendMessageRequest):
+    session_id = req.session_id.strip() if req.session_id else f"qv_{secrets.token_hex(4)}"
+    msg = req.message.strip()
+    v_name = req.visitor_name.strip() if req.visitor_name else "Visitor"
+    v_email = req.visitor_email.strip().lower() if req.visitor_email else ""
+
+    if not msg:
+        raise HTTPException(status_code=400, detail="Message cannot be empty")
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+
+        # 1. Get or create session
+        async with db.execute("SELECT * FROM chat_sessions WHERE session_id = ?", (session_id,)) as cursor:
+            session = await cursor.fetchone()
+
+        if not session:
+            await db.execute("""
+                INSERT INTO chat_sessions (session_id, visitor_name, visitor_email, status, last_message, unread_admin_count, last_activity)
+                VALUES (?, ?, ?, 'bot_active', ?, 1, CURRENT_TIMESTAMP)
+            """, (session_id, v_name, v_email, msg[:60]))
+            status = 'bot_active'
+        else:
+            status = session['status']
+            update_name = v_name if v_name != 'Visitor' else session['visitor_name']
+            update_email = v_email if v_email else session['visitor_email']
+            # If session was closed, reactivate to bot_active
+            if status == 'closed':
+                status = 'bot_active'
+            await db.execute("""
+                UPDATE chat_sessions 
+                SET visitor_name = ?, visitor_email = ?, status = ?, last_message = ?, unread_admin_count = unread_admin_count + 1, last_activity = CURRENT_TIMESTAMP
+                WHERE session_id = ?
+            """, (update_name, update_email, status, msg[:60], session_id))
+
+        # 2. Insert visitor message
+        await db.execute("""
+            INSERT INTO chat_messages (session_id, sender, sender_name, message, created_at)
+            VALUES (?, 'visitor', ?, ?, CURRENT_TIMESTAMP)
+        """, (session_id, v_name, msg))
+        await db.commit()
+
+        # 3. If bot is active, generate instant automated reply
+        if status == 'bot_active':
+            reply_text, quick_replies, books_data = await generate_ai_bot_reply(msg.lower(), msg)
+
+            await db.execute("""
+                INSERT INTO chat_messages (session_id, sender, sender_name, message, quick_replies, books_data, created_at)
+                VALUES (?, 'bot', 'QELVORIA Assistant', ?, ?, ?, CURRENT_TIMESTAMP)
+            """, (session_id, reply_text, json.dumps(quick_replies), json.dumps(books_data)))
+
+            await db.execute("""
+                UPDATE chat_sessions SET last_message = ?, last_activity = CURRENT_TIMESTAMP WHERE session_id = ?
+            """, (reply_text[:60], session_id))
+            await db.commit()
+
+            return {
+                "success": True,
+                "session_id": session_id,
+                "status": "bot_active",
+                "reply": reply_text,
+                "quick_replies": quick_replies,
+                "books": books_data
+            }
+        else:
+            # Human admin is actively handling this conversation
+            return {
+                "success": True,
+                "session_id": session_id,
+                "status": status,
+                "reply": None,
+                "note": "A live support assistant is responding directly."
+            }
+
+@app.get("/api/chat/messages/{session_id}")
+async def get_chat_session_messages(session_id: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+
+        async with db.execute("SELECT * FROM chat_sessions WHERE session_id = ?", (session_id,)) as cursor:
+            session = await cursor.fetchone()
+
+        async with db.execute("""
+            SELECT id, session_id, sender, sender_name, message, quick_replies, books_data, created_at
+            FROM chat_messages WHERE session_id = ? ORDER BY id ASC
+        """, (session_id,)) as cursor:
+            rows = await cursor.fetchall()
+
+    messages = []
+    for r in rows:
+        m = dict(r)
+        try:
+            m['quick_replies'] = json.loads(m['quick_replies']) if m['quick_replies'] else []
+        except:
+            m['quick_replies'] = []
+        try:
+            m['books'] = json.loads(m['books_data']) if m['books_data'] else []
+        except:
+            m['books'] = []
+        messages.append(m)
+
+    return {
+        "session_id": session_id,
+        "status": session['status'] if session else 'bot_active',
+        "visitor_name": session['visitor_name'] if session else 'Visitor',
+        "messages": messages
+    }
+
+@app.get("/api/admin/chat/sessions")
+async def admin_get_chat_sessions(token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("""
+            SELECT 
+                cs.id, cs.session_id, cs.visitor_name, cs.visitor_email, cs.visitor_phone,
+                cs.status, cs.last_message, cs.unread_admin_count, cs.last_activity, cs.created_at,
+                (SELECT COUNT(*) FROM chat_messages cm WHERE cm.session_id = cs.session_id) as total_messages,
+                (SELECT COUNT(*) FROM support_tickets st WHERE st.session_id = cs.session_id OR (st.customer_email != '' AND LOWER(st.customer_email) = LOWER(cs.visitor_email))) as total_tickets,
+                (SELECT MAX(st.id) FROM support_tickets st WHERE st.session_id = cs.session_id OR (st.customer_email != '' AND LOWER(st.customer_email) = LOWER(cs.visitor_email))) as latest_ticket_id
+            FROM chat_sessions cs
+            ORDER BY cs.last_activity DESC
+            LIMIT 50
+        """) as cursor:
+            rows = await cursor.fetchall()
+
+    return {"sessions": [dict(r) for r in rows]}
+
+@app.get("/api/admin/chat/sessions/{session_id}/messages")
+async def admin_get_session_transcript(session_id: str, token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+
+        # Clear unread counter
+        await db.execute("UPDATE chat_sessions SET unread_admin_count = 0 WHERE session_id = ?", (session_id,))
+        await db.commit()
+
+        async with db.execute("SELECT * FROM chat_sessions WHERE session_id = ?", (session_id,)) as cursor:
+            session = await cursor.fetchone()
+
+        async with db.execute("""
+            SELECT id, session_id, sender, sender_name, message, quick_replies, books_data, created_at
+            FROM chat_messages WHERE session_id = ? ORDER BY id ASC
+        """, (session_id,)) as cursor:
+            rows = await cursor.fetchall()
+
+    messages = []
+    for r in rows:
+        m = dict(r)
+        try:
+            m['quick_replies'] = json.loads(m['quick_replies']) if m['quick_replies'] else []
+        except:
+            m['quick_replies'] = []
+        try:
+            m['books'] = json.loads(m['books_data']) if m['books_data'] else []
+        except:
+            m['books'] = []
+        messages.append(m)
+
+    return {
+        "session": dict(session) if session else {},
+        "messages": messages
+    }
+
+@app.post("/api/admin/chat/sessions/{session_id}/reply")
+async def admin_reply_to_chat(
+    session_id: str,
+    req: AdminChatReplyRequest,
+    token: str = Depends(require_admin_auth)
+):
+    admin_msg = req.message.strip()
+    if not admin_msg:
+        raise HTTPException(status_code=400, detail="Empty message")
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        # Insert admin message as Assistant
+        await db.execute("""
+            INSERT INTO chat_messages (session_id, sender, sender_name, message, created_at)
+            VALUES (?, 'admin', 'QELVORIA Assistant', ?, CURRENT_TIMESTAMP)
+        """, (session_id, admin_msg))
+
+        # If takeover is True, switch status to admin_joined
+        new_status = 'admin_joined' if req.takeover else 'bot_active'
+        await db.execute("""
+            UPDATE chat_sessions 
+            SET status = ?, last_message = ?, last_activity = CURRENT_TIMESTAMP
+            WHERE session_id = ?
+        """, (new_status, f"Assistant: {admin_msg[:40]}", session_id))
+        await db.commit()
+
+    return {"success": True, "message": "Message sent to customer", "status": new_status}
+
+@app.post("/api/admin/chat/sessions/{session_id}/status")
+async def admin_set_chat_status(
+    session_id: str,
+    req: AdminChatStatusRequest,
+    token: str = Depends(require_admin_auth)
+):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE chat_sessions SET status = ?, last_activity = CURRENT_TIMESTAMP WHERE session_id = ?", (req.status, session_id))
+        await db.commit()
+    return {"success": True, "status": req.status}
+
+@app.post("/api/admin/chat/sessions/{session_id}/send-ticket-form")
+async def admin_send_ticket_form_prompt(session_id: str, token: str = Depends(require_admin_auth)):
+    async with aiosqlite.connect(DB_PATH) as db:
+        ticket_prompt = (
+            "📋 **Customer Support & Issue Ticket Form**\n\n"
+            "Our support team has requested your details so we can investigate and resolve your request immediately. "
+            "Please click below to submit your details and attach any screenshot or receipt."
+        )
+        quick_actions = ["📋 Open Support Ticket Form", "🔥 Browse Ebooks"]
+        await db.execute("""
+            INSERT INTO chat_messages (session_id, sender, sender_name, message, quick_replies, created_at)
+            VALUES (?, 'admin', 'QELVORIA Assistant', ?, ?, CURRENT_TIMESTAMP)
+        """, (session_id, ticket_prompt, json.dumps(quick_actions)))
+        await db.execute("UPDATE chat_sessions SET last_message = 'Support team sent Ticket Form', last_activity = CURRENT_TIMESTAMP WHERE session_id = ?", (session_id,))
+        await db.commit()
+    return {"success": True, "message": "Support Ticket Form sent to customer in live chat"}
+
+@app.post("/api/chat/end")
+async def chat_end_session(req: dict):
+    session_id = (req.get("session_id") or "").strip()
+    if not session_id:
+        return {"success": False, "error": "No session ID"}
+
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE chat_sessions SET status = 'closed', last_message = 'Chat closed by customer', last_activity = CURRENT_TIMESTAMP WHERE session_id = ?", (session_id,))
+        await db.execute("""
+            INSERT INTO chat_messages (session_id, sender, sender_name, message, quick_replies, created_at)
+            VALUES (?, 'bot', 'QELVORIA Assistant', '🔒 **Chat ended by customer.** Thank you for visiting QELVORIA! If you need anything else, feel free to start a new chat.', '["🔄 Start New Chat", "🔥 Browse Ebooks"]', CURRENT_TIMESTAMP)
+        """, (session_id,))
+        await db.commit()
+
+    return {"success": True, "message": "Chat ended successfully"}
 
 # --- Web Page Routes ---
 

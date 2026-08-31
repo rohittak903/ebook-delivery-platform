@@ -163,6 +163,7 @@ CREATE TABLE IF NOT EXISTS support_tickets (
     order_code TEXT,
     transaction_ref TEXT,
     message TEXT NOT NULL,
+    attachment_file TEXT DEFAULT '',
     status TEXT DEFAULT 'open',
     admin_notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
@@ -197,6 +198,30 @@ CREATE TABLE IF NOT EXISTS admins (
 CREATE TABLE IF NOT EXISTS admin_sessions (
     token TEXT PRIMARY KEY,
     username TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chat_sessions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT UNIQUE NOT NULL,
+    visitor_name TEXT DEFAULT 'Visitor',
+    visitor_email TEXT DEFAULT '',
+    visitor_phone TEXT DEFAULT '',
+    status TEXT DEFAULT 'bot_active',
+    last_message TEXT DEFAULT '',
+    unread_admin_count INTEGER DEFAULT 0,
+    last_activity DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id TEXT NOT NULL,
+    sender TEXT NOT NULL,
+    sender_name TEXT NOT NULL,
+    message TEXT NOT NULL,
+    quick_replies TEXT DEFAULT '',
+    books_data TEXT DEFAULT '',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -287,6 +312,10 @@ async def init_db():
         except Exception:
             pass
         try:
+            await db.execute("ALTER TABLE support_tickets ADD COLUMN attachment_file TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
             await db.execute("""
                 CREATE TABLE IF NOT EXISTS admin_sessions (
                     token TEXT PRIMARY KEY,
@@ -315,7 +344,15 @@ async def init_db():
             ("RajaRohitTak", admin_pass_hash)
         )
 
-        # Starter ebooks are managed directly via Admin Panel (no auto-seeding)
+        # Auto-migrate columns if missing
+        try:
+            await db.execute("ALTER TABLE support_tickets ADD COLUMN attachment_file TEXT DEFAULT ''")
+        except Exception:
+            pass
+        try:
+            await db.execute("ALTER TABLE support_tickets ADD COLUMN session_id TEXT DEFAULT ''")
+        except Exception:
+            pass
 
         # Seed sample coupons if empty
         async with db.execute("SELECT COUNT(*) FROM coupons") as cursor:
