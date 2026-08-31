@@ -550,7 +550,34 @@ async def get_store_info():
         "social_linkedin": settings.get("social_linkedin", "https://linkedin.com"),
         "social_facebook": settings.get("social_facebook", ""),
         "social_telegram": settings.get("social_telegram", ""),
-        "social_whatsapp": settings.get("social_whatsapp", "https://wa.me/919035630901")
+        "social_whatsapp": settings.get("social_whatsapp", "https://wa.me/919035630901"),
+        "chat_presets": [
+            {
+                "id": 1,
+                "question": settings.get("chat_preset_q1", "How do I get my ebook after purchase?"),
+                "answer": settings.get("chat_preset_a1", "⚡ **Instant Automated Delivery:**\nImmediately after payment, your download link appears on screen and is automatically sent to your **Email** and **WhatsApp** within 5 seconds!\n\nYou can also click **'Find Past Purchases'** anytime to re-download with lifetime access.")
+            },
+            {
+                "id": 2,
+                "question": settings.get("chat_preset_q2", "What payment methods are supported?"),
+                "answer": settings.get("chat_preset_a2", "💳 **Accepted Payment Methods:**\nWe accept 100% secure payments via **Razorpay**:\n• **UPI:** Google Pay, PhonePe, Paytm, BHIM, CRED, FamPay\n• **Cards:** Visa, Mastercard, RuPay, Maestro\n• **Net Banking:** All major Indian banks\n• **Wallets:** Paytm, Mobikwik, Amazon Pay")
+            },
+            {
+                "id": 3,
+                "question": settings.get("chat_preset_q3", "Which devices and file formats are supported?"),
+                "answer": settings.get("chat_preset_a3", "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required.")
+            },
+            {
+                "id": 4,
+                "question": settings.get("chat_preset_q4", "Are there any active discount coupons or bundle deals?"),
+                "answer": settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`ROHIT20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
+            },
+            {
+                "id": 5,
+                "question": settings.get("chat_preset_q5", "How do I contact customer support if I need help?"),
+                "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Email:** rohittak903@gmail.com\n• **WhatsApp Direct:** +91 9035630901\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• A live support specialist can also assist you directly here!")
+            }
+        ]
     }
 
 @app.get("/api/ebooks")
@@ -2474,6 +2501,42 @@ async def admin_get_customers(token: str = Depends(require_admin_auth)):
 # --- QELVORIA NATIVE AI LIVE CHAT SYSTEM & ADMIN TAKEOVER APIs ---
 
 async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list]:
+    settings = await get_settings()
+
+    p_q1 = settings.get("chat_preset_q1", "How do I get my ebook after purchase?")
+    p_a1 = settings.get("chat_preset_a1", "⚡ **Instant Automated Delivery:**\nImmediately after payment, your download link appears on screen and is automatically sent to your **Email** and **WhatsApp** within 5 seconds!\n\nYou can also click **'Find Past Purchases'** anytime to re-download with lifetime access.")
+    
+    p_q2 = settings.get("chat_preset_q2", "What payment methods are supported?")
+    p_a2 = settings.get("chat_preset_a2", "💳 **Accepted Payment Methods:**\nWe accept 100% secure payments via **Razorpay**:\n• **UPI:** Google Pay, PhonePe, Paytm, BHIM, CRED, FamPay\n• **Cards:** Visa, Mastercard, RuPay, Maestro\n• **Net Banking:** All major Indian banks\n• **Wallets:** Paytm, Mobikwik, Amazon Pay")
+
+    p_q3 = settings.get("chat_preset_q3", "Which devices and file formats are supported?")
+    p_a3 = settings.get("chat_preset_a3", "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required.")
+
+    p_q4 = settings.get("chat_preset_q4", "Are there any active discount coupons or bundle deals?")
+    p_a4 = settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`ROHIT20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
+
+    p_q5 = settings.get("chat_preset_q5", "How do I contact customer support if I need help?")
+    p_a5 = settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• **Email:** rohittak903@gmail.com\n• **WhatsApp Direct:** +91 9035630901\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• A live support specialist can also assist you directly here!")
+
+    presets = [
+        (p_q1, p_a1),
+        (p_q2, p_a2),
+        (p_q3, p_a3),
+        (p_q4, p_a4),
+        (p_q5, p_a5)
+    ]
+    all_preset_questions = [p[0] for p in presets if p[0]]
+
+    # Check for direct Preset Question Match (Exact or Substring)
+    clean_msg = "".join(c for c in msg.lower() if c.isalnum() or c.isspace()).strip()
+    for idx, (q, a) in enumerate(presets):
+        if not q or not a:
+            continue
+        clean_q = "".join(c for c in q.lower() if c.isalnum() or c.isspace()).strip()
+        if clean_msg == clean_q or (len(clean_msg) >= 8 and (clean_msg in clean_q or clean_q in clean_msg)):
+            follow_ups = [item[0] for i, item in enumerate(presets) if i != idx and item[0]][:4]
+            return (a, follow_ups, [])
+
     # 1. Order lookup via email/phone/order_code
     email_match = re.search(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}', raw_msg)
     phone_match = re.search(r'(\+?91)?[6-9]\d{9}', raw_msg.replace(" ", "").replace("-", ""))
@@ -2491,7 +2554,6 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
                 FROM orders o
                 JOIN ebooks e ON o.ebook_id = e.id
                 LEFT JOIN download_tokens d ON o.id = d.order_id
-                WHERE (LOWER(o.customer_email) = ? OR o.customer_whatsapp LIKE ? OR o.order_code = ?)
                 WHERE (LOWER(o.customer_email) = ? OR o.order_code = ?)
                 AND o.status = 'completed'
                 ORDER BY o.id DESC LIMIT 5
@@ -2507,13 +2569,13 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
             ])
             return (
                 f"🎉 **Found your purchases for `{search_val}`!**\n\nHere are your active digital downloads:\n\n{order_list_md}\n\n*A copy has also been sent to your email.*",
-                ["🔥 Browse More Books", "🎁 Active Discounts", "📋 Submit Support Ticket"],
+                all_preset_questions[:3],
                 []
             )
         else:
             return (
                 f"🔍 I checked our database but couldn't find any completed orders for **`{search_val}`**.\n\nIf you recently paid, please allow 10-30 seconds for transaction sync, or click below to submit a support ticket with your payment reference.",
-                ["📋 Open Support Ticket Form", "🔍 Find My Purchases", "🔥 View Best Sellers"],
+                ["📋 Open Support Ticket Form", "🔍 Find My Purchases"] + all_preset_questions[:2],
                 []
             )
 

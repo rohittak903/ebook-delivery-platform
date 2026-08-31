@@ -61,6 +61,14 @@ async function loadStoreInfo() {
         const wa = document.getElementById('socialLinkWhatsapp');
         if (wa && data.social_whatsapp) wa.href = data.social_whatsapp;
 
+        // 3. Dynamic Chatbot Preset Queries
+        if (data.chat_presets && Array.isArray(data.chat_presets)) {
+            window.qelvoriaChatPresets = data.chat_presets;
+            if (window.qelvoriaChat && window.qelvoriaChat.updatePresets) {
+                window.qelvoriaChat.updatePresets(data.chat_presets);
+            }
+        }
+
         lucide.createIcons();
     } catch (e) {
         console.error('Store info error on book page', e);
@@ -1054,18 +1062,24 @@ function closeModal(id) {
         return { name, email, phone };
     }
 
+    let currentChatPresets = window.qelvoriaChatPresets || [
+        { id: 1, question: "How do I get my ebook after purchase?", answer: "⚡ **Instant Automated Delivery:**\nImmediately after payment, your download link appears on screen and is automatically sent to your **Email** and **WhatsApp** within 5 seconds!\n\nYou can also click **'Find Past Purchases'** anytime to re-download with lifetime access." },
+        { id: 2, question: "What payment methods are supported?", answer: "💳 **Accepted Payment Methods:**\nWe accept 100% secure payments via **Razorpay**:\n• **UPI:** Google Pay, PhonePe, Paytm, BHIM, CRED, FamPay\n• **Cards:** Visa, Mastercard, RuPay, Maestro\n• **Net Banking:** All major Indian banks\n• **Wallets:** Paytm, Mobikwik, Amazon Pay" },
+        { id: 3, question: "Which devices and file formats are supported?", answer: "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required." },
+        { id: 4, question: "Are there any active discount coupons or bundle deals?", answer: "🎁 **Active Discounts & Bundles:**\n• Use promo code **`ROHIT20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**." },
+        { id: 5, question: "How do I contact customer support if I need help?", answer: "👋 **Customer Support Desk:**\n• **Email:** rohittak903@gmail.com\n• **WhatsApp Direct:** +91 9035630901\n• **Support Ticket:** Click 'Submit Support Ticket' to submit your order or payment details for prompt assistance.\n• A live support specialist can also assist you directly here!" }
+    ];
+
+    function getPresetQuestions() {
+        return currentChatPresets.map(p => p.question).filter(Boolean);
+    }
+
     const INITIAL_GREETING = {
         sender: 'bot',
         sender_name: 'QELVORIA Assistant',
         created_at: new Date().toISOString(),
-        message: `👋 **Welcome to QELVORIA!**\n\nI am your 24/7 Digital Assistant. How can I assist you with your reading experience today?`,
-        quick_replies: [
-            "🔥 Best Selling Ebooks",
-            "🎁 Active Discount Coupons",
-            "⚡ How Instant Delivery Works",
-            "📋 Open Support Ticket Form",
-            "🔍 Find My Purchases"
-        ],
+        message: `👋 **Welcome to QELVORIA!**\n\nI am your 24/7 Digital Assistant. Click any quick query below or type your question:`,
+        quick_replies: getPresetQuestions(),
         books: []
     };
 
@@ -1548,15 +1562,33 @@ function closeModal(id) {
                 throw new Error('API error');
             }
         } catch (e) {
-            // Client Fallback Knowledge
-            chatHistory.push({
-                sender: 'bot',
-                sender_name: 'QELVORIA Assistant',
-                created_at: new Date().toISOString(),
-                message: "👋 I'm here to help! You can browse our bestseller library, apply coupon **`ROHIT20`** for 20% OFF, or click below to submit a support ticket.",
-                quick_replies: ["📋 Open Support Ticket Form", "🎁 Active Discount Coupons", "🔥 Best Selling Ebooks"],
-                books: []
+            // Client Fallback Knowledge using active presets
+            const cleanQ = query.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+            const foundPreset = currentChatPresets.find(p => {
+                const pq = p.question.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+                return pq === cleanQ || (cleanQ.length >= 8 && (pq.includes(cleanQ) || cleanQ.includes(pq)));
             });
+
+            if (foundPreset) {
+                const otherQuestions = currentChatPresets.filter(p => p.id !== foundPreset.id).map(p => p.question);
+                chatHistory.push({
+                    sender: 'bot',
+                    sender_name: 'QELVORIA Assistant',
+                    created_at: new Date().toISOString(),
+                    message: foundPreset.answer,
+                    quick_replies: otherQuestions,
+                    books: []
+                });
+            } else {
+                chatHistory.push({
+                    sender: 'bot',
+                    sender_name: 'QELVORIA Assistant',
+                    created_at: new Date().toISOString(),
+                    message: "👋 I'm here to help! Click any question below, or submit a support ticket for personal assistance.",
+                    quick_replies: getPresetQuestions(),
+                    books: []
+                });
+            }
         } finally {
             isAgentTyping = false;
             const typingEl = document.getElementById('qelvoriaTyping');
@@ -1606,13 +1638,25 @@ function closeModal(id) {
         renderChatMessages();
     }
 
+    function updateChatPresets(presets) {
+        if (presets && Array.isArray(presets) && presets.length > 0) {
+            currentChatPresets = presets;
+            INITIAL_GREETING.quick_replies = getPresetQuestions();
+            if (chatHistory.length === 1 && chatHistory[0].sender === 'bot') {
+                chatHistory[0].quick_replies = getPresetQuestions();
+                renderChatMessages();
+            }
+        }
+    }
+
     // Expose global controller
     window.qelvoriaChat = {
         toggle: toggleChatWidget,
         sendQuery: sendChatMessage,
         handleSubmit: handleChatSubmit,
         clearHistory: clearChatHistory,
-        endChat: endChatSession
+        endChat: endChatSession,
+        updatePresets: updateChatPresets
     };
 
     if (document.readyState === 'loading') {

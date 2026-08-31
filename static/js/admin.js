@@ -1111,6 +1111,14 @@ async function loadAdminSettings() {
         if (document.getElementById('setting_social_facebook')) document.getElementById('setting_social_facebook').value = s.social_facebook || '';
         if (document.getElementById('setting_social_telegram')) document.getElementById('setting_social_telegram').value = s.social_telegram || '';
         if (document.getElementById('setting_social_whatsapp')) document.getElementById('setting_social_whatsapp').value = s.social_whatsapp || '';
+
+        // 5 Chatbot Preset Queries & Automatic Answers
+        for (let i = 1; i <= 5; i++) {
+            const qEl = document.getElementById(`setting_chat_preset_q${i}`);
+            const aEl = document.getElementById(`setting_chat_preset_a${i}`);
+            if (qEl && s[`chat_preset_q${i}`] !== undefined) qEl.value = s[`chat_preset_q${i}`];
+            if (aEl && s[`chat_preset_a${i}`] !== undefined) aEl.value = s[`chat_preset_a${i}`];
+        }
     } catch (e) {
         console.error('Settings load error', e);
     }
@@ -1147,6 +1155,11 @@ async function saveAnnouncementSettings() {
     await saveAllSettings(true, '🎉 Top Announcement Banner updated & live on store!');
 }
 window.saveAnnouncementSettings = saveAnnouncementSettings;
+
+async function saveChatbotPresets() {
+    await saveAllSettings(true, '🤖 Chatbot 5 Preset Queries & Automatic Answers saved & live on store!');
+}
+window.saveChatbotPresets = saveChatbotPresets;
 
 async function handleAdminPasswordChange(e) {
     e.preventDefault();
@@ -1198,7 +1211,17 @@ async function saveAllSettings(isSilent = false, customMsg = '') {
             social_linkedin: document.getElementById('setting_social_linkedin')?.value.trim() || '',
             social_facebook: document.getElementById('setting_social_facebook')?.value.trim() || '',
             social_telegram: document.getElementById('setting_social_telegram')?.value.trim() || '',
-            social_whatsapp: document.getElementById('setting_social_whatsapp')?.value.trim() || ''
+            social_whatsapp: document.getElementById('setting_social_whatsapp')?.value.trim() || '',
+            chat_preset_q1: document.getElementById('setting_chat_preset_q1')?.value.trim() || '',
+            chat_preset_a1: document.getElementById('setting_chat_preset_a1')?.value.trim() || '',
+            chat_preset_q2: document.getElementById('setting_chat_preset_q2')?.value.trim() || '',
+            chat_preset_a2: document.getElementById('setting_chat_preset_a2')?.value.trim() || '',
+            chat_preset_q3: document.getElementById('setting_chat_preset_q3')?.value.trim() || '',
+            chat_preset_a3: document.getElementById('setting_chat_preset_a3')?.value.trim() || '',
+            chat_preset_q4: document.getElementById('setting_chat_preset_q4')?.value.trim() || '',
+            chat_preset_a4: document.getElementById('setting_chat_preset_a4')?.value.trim() || '',
+            chat_preset_q5: document.getElementById('setting_chat_preset_q5')?.value.trim() || '',
+            chat_preset_a5: document.getElementById('setting_chat_preset_a5')?.value.trim() || ''
         }
     };
 

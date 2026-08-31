@@ -918,6 +918,114 @@
                         </div>
                     </div>
 
+                    <!-- Chatbot 5 Preset Queries & Automated Answers Card -->
+                    <div class="bg-slate-900 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-5">
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-800 flex-wrap gap-2">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-9 h-9 rounded-xl bg-purple-950/80 text-purple-400 flex items-center justify-center border border-purple-800">
+                                    <i data-lucide="bot" class="w-5 h-5"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-sm text-white">Chatbot 5 Preset Queries & Automatic Answers</h3>
+                                    <p class="text-[11px] text-slate-400">Configure 5 quick questions that visitors can click to get instant automated answers in live chat</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="saveChatbotPresets()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl shadow transition flex items-center gap-1.5">
+                                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                                <span>Save Chatbot Presets</span>
+                            </button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Preset 1 -->
+                            <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-purple-950 text-purple-300 rounded text-[10px] font-extrabold border border-purple-800">Preset Query #1</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">Delivery & Downloads</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Question / Query Button Text *</label>
+                                    <input type="text" id="setting_chat_preset_q1" placeholder="How do I get my ebook after purchase?" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Automated Answer Message *</label>
+                                    <textarea id="setting_chat_preset_a1" rows="3" placeholder="Instant automated delivery answer..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white resize-none"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Preset 2 -->
+                            <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-purple-950 text-purple-300 rounded text-[10px] font-extrabold border border-purple-800">Preset Query #2</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">Payment Methods</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Question / Query Button Text *</label>
+                                    <input type="text" id="setting_chat_preset_q2" placeholder="What payment methods are supported?" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Automated Answer Message *</label>
+                                    <textarea id="setting_chat_preset_a2" rows="3" placeholder="Payment methods answer..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white resize-none"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Preset 3 -->
+                            <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-purple-950 text-purple-300 rounded text-[10px] font-extrabold border border-purple-800">Preset Query #3</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">Device & Format Compatibility</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Question / Query Button Text *</label>
+                                    <input type="text" id="setting_chat_preset_q3" placeholder="Which devices and file formats are supported?" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Automated Answer Message *</label>
+                                    <textarea id="setting_chat_preset_a3" rows="3" placeholder="Devices & PDF/DOCX compatibility answer..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white resize-none"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Preset 4 -->
+                            <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-purple-950 text-purple-300 rounded text-[10px] font-extrabold border border-purple-800">Preset Query #4</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">Discounts & Bundles</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Question / Query Button Text *</label>
+                                    <input type="text" id="setting_chat_preset_q4" placeholder="Are there any active discount coupons or bundle deals?" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Automated Answer Message *</label>
+                                    <textarea id="setting_chat_preset_a4" rows="3" placeholder="Discounts & bundles answer..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white resize-none"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Preset 5 -->
+                            <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800 space-y-2.5">
+                                <div class="flex items-center justify-between">
+                                    <span class="px-2 py-0.5 bg-purple-950 text-purple-300 rounded text-[10px] font-extrabold border border-purple-800">Preset Query #5</span>
+                                    <span class="text-[10px] text-slate-500 font-semibold">Customer Support Desk</span>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Question / Query Button Text *</label>
+                                    <input type="text" id="setting_chat_preset_q5" placeholder="How do I contact customer support if I need help?" class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-300 mb-1">Automated Answer Message *</label>
+                                    <textarea id="setting_chat_preset_a5" rows="3" placeholder="Customer support answer..." class="w-full px-3.5 py-2 bg-slate-900 border border-slate-800 focus:border-purple-500 rounded-xl text-xs text-white resize-none"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end pt-2 border-t border-slate-800">
+                            <button type="button" onclick="saveChatbotPresets()" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-extrabold rounded-xl shadow transition flex items-center gap-1.5">
+                                <i data-lucide="save" class="w-3.5 h-3.5"></i>
+                                <span>Save Chatbot Presets</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="flex justify-end">
                         <button onclick="saveAllSettings()" class="px-8 py-3 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
                             <i data-lucide="save" class="w-4 h-4"></i>
@@ -1309,6 +1417,6 @@
     </div>
 
     <!-- Admin JS with cache buster -->
-    <script src="/static/js/admin.js?v=3.9.2"></script>
+    <script src="/static/js/admin.js?v=4.0.0"></script>
 </body>
 </html>
