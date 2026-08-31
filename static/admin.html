@@ -14,12 +14,16 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#ffffff',
+                            600: '#f8fafc',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
                         }
                     }
                 }
@@ -30,30 +34,32 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="/static/css/custom.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex antialiased selection:bg-brand-500 selection:text-white">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex antialiased selection:bg-white selection:text-black">
 
     <!-- ================= 1. ADMIN LOGIN VIEW ================= -->
     <div id="loginView" class="fixed inset-0 z-50 bg-slate-950 flex items-center justify-center p-4">
         <div class="bg-slate-900 rounded-3xl max-w-md w-full p-8 shadow-2xl border border-slate-800 animate-fade-in">
             <div class="text-center mb-6">
-                <div class="w-16 h-16 rounded-2xl overflow-hidden border border-purple-500/40 bg-slate-950 flex items-center justify-center mx-auto mb-3 shadow-xl shadow-purple-500/20">
+                <div class="w-16 h-16 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex items-center justify-center mx-auto mb-3 shadow-xl">
                     <img src="/static/images/qelvoria-logo.png" onerror="this.src='/static/images/qelvoria-logo.jpg'" alt="QELVORIA" class="w-full h-full object-cover">
                 </div>
-                <h2 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300">
+                <h2 class="text-2xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400">
                     QELVORIA
                 </h2>
-                <p class="text-xs text-brand-400 font-bold uppercase tracking-wider mt-1">Admin Dashboard • Raja Rohit Tak</p>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">Admin Dashboard • Raja Rohit Tak</p>
             </div>
 
-            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+            <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" autocomplete="off" class="space-y-4">
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1.5">Admin Username</label>
                     <input 
                         type="text" 
                         id="adminUsername" 
                         required 
-                        value="RajaRohitTak" 
-                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        value="" 
+                        placeholder="Enter admin username"
+                        autocomplete="off"
+                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-slate-400 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400/30 transition"
                     >
                 </div>
                 <div>
@@ -62,27 +68,25 @@
                         type="password" 
                         id="adminPassword" 
                         required 
-                        value="Rajatak.com" 
-                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        value="" 
+                        placeholder="Enter admin password"
+                        autocomplete="new-password"
+                        class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 focus:border-slate-400 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400/30 transition"
                     >
                 </div>
-                <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-[11px] text-brand-300 flex items-start gap-2">
-                    <i data-lucide="key" class="w-4 h-4 flex-shrink-0 text-brand-400 mt-0.5"></i>
-                    <span>Default Credentials: <strong>RajaRohitTak / Rajatak.com</strong> (Changeable in Settings).</span>
-                </div>
+
                 <button 
                     type="submit" 
                     id="loginSubmitBtn"
-                    onclick="handleAdminLogin(event)"
-                    class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2 text-xs"
+                    class="w-full py-3 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs"
                 >
-                    <i data-lucide="log-in" class="w-4 h-4"></i>
+                    <i data-lucide="lock" class="w-4 h-4"></i>
                     <span>Sign In to Dashboard</span>
                 </button>
             </form>
             
             <div class="mt-6 pt-4 border-t border-slate-800 text-center">
-                <a href="/" class="text-xs text-slate-400 hover:text-brand-400 inline-flex items-center gap-1 font-medium">
+                <a href="/" class="text-xs text-slate-400 hover:text-white inline-flex items-center gap-1 font-medium transition">
                     <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i>
                     <span>Back to Storefront</span>
                 </a>
@@ -98,18 +102,18 @@
             <div>
                 <!-- Brand -->
                 <div class="p-6 flex items-center gap-3 border-b border-slate-800">
-                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-purple-500/30 bg-slate-950 flex-shrink-0 shadow-md">
+                    <div class="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 flex-shrink-0 shadow-md">
                         <img src="/static/images/qelvoria-logo.png" alt="QELVORIA Logo" class="w-full h-full object-cover">
                     </div>
                     <div>
                         <h2 class="font-black text-white text-base tracking-wider leading-none">QELVORIA</h2>
-                        <span class="text-[10px] text-brand-400 font-bold uppercase tracking-wider">Raja Rohit Tak</span>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Raja Rohit Tak</span>
                     </div>
                 </div>
 
                 <!-- Navigation Tabs -->
                 <nav class="p-4 space-y-1 text-xs font-semibold">
-                    <button onclick="switchTab('overview')" id="tab-overview" class="admin-tab-btn active-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-brand-600 text-white transition">
+                    <button onclick="switchTab('overview')" id="tab-overview" class="admin-tab-btn active-tab w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-white text-slate-950 font-bold shadow-md transition">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                         <span>Overview & Stats</span>
                     </button>
@@ -122,7 +126,7 @@
                         <span>Bundle Offers</span>
                     </button>
                     <button onclick="switchTab('coupons')" id="tab-coupons" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
-                        <i data-lucide="tag" class="w-4 h-4 text-purple-400"></i>
+                        <i data-lucide="tag" class="w-4 h-4 text-slate-400"></i>
                         <span>Promo Codes</span>
                     </button>
                     <button onclick="switchTab('reviews')" id="tab-reviews" class="admin-tab-btn w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-slate-800 text-slate-300 transition">
@@ -253,7 +257,7 @@
                             <h2 class="text-lg font-bold text-white">Ebook Catalog & External Links</h2>
                             <p class="text-xs text-slate-400">Configure prices in ₹, upload PDF/Word files, and add Google Books & Amazon Kindle links</p>
                         </div>
-                        <button onclick="openAddEbookModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <button onclick="openAddEbookModal()" class="px-4 py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                             <span>Add New Ebook</span>
                         </button>
@@ -287,7 +291,7 @@
                             <h2 class="text-lg font-bold text-white">Special Bundle Deals & Packs</h2>
                             <p class="text-xs text-slate-400">Create multi-book packages at special bundled prices</p>
                         </div>
-                        <button onclick="openAddBundleModal()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <button onclick="openAddBundleModal()" class="px-4 py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                             <span>Create New Bundle</span>
                         </button>
@@ -321,7 +325,7 @@
                             <h2 class="text-lg font-bold text-white">Promo Codes & Coupons</h2>
                             <p class="text-xs text-slate-400">Create percentage (%) or flat (₹) discount codes for customers</p>
                         </div>
-                        <button onclick="openAddCouponModal()" class="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <button onclick="openAddCouponModal()" class="px-4 py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                             <span>Add Promo Code</span>
                         </button>
@@ -355,7 +359,7 @@
                             <h2 class="text-lg font-bold text-white">Customer Reviews & AI Social Proof</h2>
                             <p class="text-xs text-slate-400">Moderate customer ratings and add AI spotlight reviews</p>
                         </div>
-                        <button onclick="openAddAiReviewModal()" class="px-4 py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <button onclick="openAddAiReviewModal()" class="px-4 py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2">
                             <i data-lucide="sparkles" class="w-4 h-4"></i>
                             <span>Add AI Spotlight Review</span>
                         </button>
@@ -389,7 +393,7 @@
                             <h2 class="text-lg font-bold text-white">Hero Slider Banners</h2>
                             <p class="text-xs text-slate-400">Add banners with distinct Desktop & Mobile visuals</p>
                         </div>
-                        <button onclick="openAddSlideModal()" class="px-4 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-2">
+                        <button onclick="openAddSlideModal()" class="px-4 py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center gap-2">
                             <i data-lucide="plus" class="w-4 h-4"></i>
                             <span>Add Hero Slide</span>
                         </button>
@@ -539,7 +543,7 @@
                                 <input type="password" id="adminNewPass" required placeholder="Minimum 6 characters" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                             </div>
                             <div class="flex items-end">
-                                <button type="submit" id="changePassBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition">
+                                <button type="submit" id="changePassBtn" class="w-full py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow transition">
                                     Update Password
                                 </button>
                             </div>
@@ -591,7 +595,7 @@
                     </div>
 
                     <div class="flex justify-end">
-                        <button onclick="saveAllSettings()" class="px-8 py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+                        <button onclick="saveAllSettings()" class="px-8 py-3 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
                             <i data-lucide="save" class="w-4 h-4"></i>
                             <span>Save All Settings</span>
                         </button>
@@ -663,9 +667,9 @@
                     <textarea id="ebookDescInput" required rows="3" placeholder="Summary of what readers will learn..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white"></textarea>
                 </div>
 
-                <div class="p-4 bg-brand-950/40 rounded-2xl border border-brand-800">
-                    <label class="block text-xs font-bold text-brand-300 mb-1">Ebook File * (.pdf, .docx, .doc)</label>
-                    <input type="file" id="ebookFileInput" required accept=".pdf,.docx,.doc,.epub" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-brand-600 file:text-white">
+                <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Ebook File * (.pdf, .docx, .doc)</label>
+                    <input type="file" id="ebookFileInput" required accept=".pdf,.docx,.doc,.epub" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-white file:text-slate-950">
                 </div>
 
                 <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800">
@@ -673,7 +677,7 @@
                     <input type="file" id="coverFileInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white">
                 </div>
 
-                <button type="submit" id="saveEbookBtn" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+                <button type="submit" id="saveEbookBtn" class="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
                     <i data-lucide="upload-cloud" class="w-4 h-4"></i>
                     <span>Upload & Publish Ebook</span>
                 </button>
@@ -695,17 +699,17 @@
                 <input type="hidden" id="editEbookId">
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Book Title *</label>
-                    <input type="text" id="editEbookTitle" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="text" id="editEbookTitle" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Author Name *</label>
-                        <input type="text" id="editEbookAuthor" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <input type="text" id="editEbookAuthor" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Category *</label>
-                        <select id="editEbookCategory" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <select id="editEbookCategory" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                             <option value="Artificial Intelligence">Artificial Intelligence</option>
                             <option value="Technology">Technology</option>
                             <option value="Business & Finance">Business & Finance</option>
@@ -719,11 +723,11 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Regular Price (₹) *</label>
-                        <input type="number" step="0.01" id="editEbookPrice" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <input type="number" step="0.01" id="editEbookPrice" required class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Sale Discount Price (₹)</label>
-                        <input type="number" step="0.01" id="editEbookSalePrice" placeholder="Optional" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <input type="number" step="0.01" id="editEbookSalePrice" placeholder="Optional" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                     </div>
                 </div>
 
@@ -745,15 +749,15 @@
 
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Description *</label>
-                    <textarea id="editEbookDesc" required rows="3" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+                    <textarea id="editEbookDesc" required rows="3" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
                 </div>
 
                 <div class="flex items-center gap-2">
-                    <input type="checkbox" id="editEbookFeatured" class="w-4 h-4 rounded text-brand-600 bg-slate-950 border-slate-800">
+                    <input type="checkbox" id="editEbookFeatured" class="w-4 h-4 rounded text-white bg-slate-950 border-slate-800">
                     <label for="editEbookFeatured" class="text-xs text-slate-300 font-semibold cursor-pointer">Feature on Storefront</label>
                 </div>
 
-                <button type="submit" id="updateEbookBtn" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+                <button type="submit" id="updateEbookBtn" class="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
                     <i data-lucide="check" class="w-4 h-4"></i>
                     <span>Save Ebook Changes</span>
                 </button>
@@ -800,7 +804,7 @@
                     <label class="block text-xs font-bold text-slate-300 mb-1">Description *</label>
                     <textarea id="bundleDescInput" required rows="2" placeholder="Brief enticing bundle summary..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white"></textarea>
                 </div>
-                <button type="submit" id="saveBundleBtn" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow transition">
+                <button type="submit" id="saveBundleBtn" class="w-full py-3 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow transition">
                     Publish Bundle Offer
                 </button>
             </form>
@@ -839,7 +843,7 @@
                     <label class="block text-xs font-bold text-slate-300 mb-1">Minimum Order Amount (₹)</label>
                     <input type="number" id="couponMinOrderInput" value="0" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white">
                 </div>
-                <button type="submit" id="saveCouponBtn" class="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl shadow transition">
+                <button type="submit" id="saveCouponBtn" class="w-full py-3 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow transition">
                     Create Promo Code
                 </button>
             </form>
@@ -882,7 +886,7 @@
                     <label class="block text-xs font-bold text-slate-300 mb-1">Review Text *</label>
                     <textarea id="aiReviewText" required rows="3" placeholder="Social proof review text..." class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white"></textarea>
                 </div>
-                <button type="submit" class="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow transition">
+                <button type="submit" class="w-full py-3 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow transition">
                     Publish AI Review
                 </button>
             </form>
@@ -890,6 +894,6 @@
     </div>
 
     <!-- Admin JS with cache buster -->
-    <script src="/static/js/admin.js?v=3.4.0"></script>
+    <script src="/static/js/admin.js?v=3.5.0"></script>
 </body>
 </html>

@@ -1,31 +1,29 @@
 // Admin Dashboard Logic - Raja Rohit Tak
 
-let adminToken = sessionStorage.getItem('qelvoria_admin_token') || sessionStorage.getItem('ebookvault_admin_token') || '';
+let adminToken = '';
 let currentTab = 'overview';
 let cachedEbooks = [];
 
-document.addEventListener('DOMContentLoaded', async () => {
-    // Clear persistent localStorage tokens so opening admin panel in new tabs/browsers always enforces login
+document.addEventListener('DOMContentLoaded', () => {
+    // Strictly clear all tokens on page load / refresh to always require login
+    adminToken = '';
+    sessionStorage.removeItem('ebookvault_admin_token');
+    sessionStorage.removeItem('qelvoria_admin_token');
     localStorage.removeItem('ebookvault_admin_token');
     localStorage.removeItem('qelvoria_admin_token');
 
-    if (adminToken) {
-        const isValid = await verifyAdminSession();
-        if (isValid) {
-            showDashboard();
-            return;
-        } else {
-            adminToken = '';
-            sessionStorage.removeItem('ebookvault_admin_token');
-            sessionStorage.removeItem('qelvoria_admin_token');
-        }
-    }
+    const uInput = document.getElementById('adminUsername');
+    const pInput = document.getElementById('adminPassword');
+    if (uInput) uInput.value = '';
+    if (pInput) pInput.value = '';
+
     showLogin();
 });
 
 // --- Auth Handling ---
 
 async function verifyAdminSession() {
+    if (!adminToken) return false;
     try {
         const res = await fetch('/api/admin/check-auth', {
             headers: { 'Authorization': `Bearer ${adminToken}` }
@@ -39,6 +37,10 @@ async function verifyAdminSession() {
 function showLogin() {
     document.getElementById('loginView').classList.remove('hidden');
     document.getElementById('dashboardView').classList.add('hidden');
+    const uInput = document.getElementById('adminUsername');
+    const pInput = document.getElementById('adminPassword');
+    if (uInput) uInput.value = '';
+    if (pInput) pInput.value = '';
 }
 
 function showDashboard() {
@@ -62,10 +64,10 @@ async function handleAdminLogin(e) {
     const password = passwordInput ? passwordInput.value.trim() : '';
 
     if (!username || !password) {
-        alert('Please provide both username and password.');
+        alert('Please enter both username and password.');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
+            btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
         return;
@@ -92,7 +94,7 @@ async function handleAdminLogin(e) {
             sessionStorage.setItem('qelvoria_admin_token', adminToken);
             showDashboard();
         } else {
-            alert(data.detail || 'Login failed. Please use credentials RajaRohitTak / Rajatak.com');
+            alert(data.detail || 'Invalid username or password. Please try again.');
         }
     } catch (err) {
         console.error('Login error', err);
@@ -100,7 +102,7 @@ async function handleAdminLogin(e) {
     } finally {
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = `<i data-lucide="log-in" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
+            btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4 mr-2"></i><span>Sign In to Dashboard</span>`;
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
     }
@@ -121,14 +123,14 @@ function switchTab(tabId) {
     currentTab = tabId;
     
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
-        btn.classList.remove('bg-brand-600', 'text-white');
+        btn.classList.remove('bg-white', 'text-slate-950', 'font-bold', 'shadow-md');
         btn.classList.add('hover:bg-slate-800', 'text-slate-300');
     });
     
     const activeBtn = document.getElementById(`tab-${tabId}`);
     if (activeBtn) {
         activeBtn.classList.remove('hover:bg-slate-800', 'text-slate-300');
-        activeBtn.classList.add('bg-brand-600', 'text-white');
+        activeBtn.classList.add('bg-white', 'text-slate-950', 'font-bold', 'shadow-md');
     }
 
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.add('hidden'));
@@ -144,25 +146,21 @@ function switchTab(tabId) {
         'slides': 'Hero Slider Banners',
         'customers': 'Registered Customers CRM',
         'orders': 'Orders & Delivery Logs',
-        'tickets': 'Support Ticket Desk',
-        'settings': 'Settings & Admin Password'
+        'settings': 'Store Settings & Password',
     };
-    document.getElementById('pageTitle').innerText = titles[tabId] || 'Admin';
+    const titleEl = document.getElementById('adminPageTitle');
+    if (titleEl) titleEl.innerText = titles[tabId] || 'Admin Dashboard';
 
-    refreshCurrentTab();
-}
+    if (tabId === 'overview') loadAdminStats();
+    else if (tabId === 'ebooks') loadAdminEbooks();
+    else if (tabId === 'bundles') loadAdminBundles();
+    else if (tabId === 'coupons') loadAdminCoupons();
+    else if (tabId === 'reviews') loadAdminReviews();
+    else if (tabId === 'slides') loadAdminSlides();
+    else if (tabId === 'customers') loadAdminCustomers();
+    else if (tabId === 'orders') loadAdminOrders();
+    else if (tabId === 'settings') loadAdminSettings();
 
-function refreshCurrentTab() {
-    if (currentTab === 'overview') loadAdminStats();
-    else if (currentTab === 'ebooks') loadAdminEbooks();
-    else if (currentTab === 'bundles') loadAdminBundles();
-    else if (currentTab === 'coupons') loadAdminCoupons();
-    else if (currentTab === 'reviews') loadAdminReviews();
-    else if (currentTab === 'slides') loadAdminSlides();
-    else if (currentTab === 'customers') loadAdminCustomers();
-    else if (currentTab === 'orders') loadAdminOrders();
-    else if (currentTab === 'tickets') loadAdminTickets();
-    else if (currentTab === 'settings') loadAdminSettings();
     lucide.createIcons();
 }
 
@@ -627,7 +625,7 @@ async function loadAdminReviews() {
                 <td class="py-3 px-4 text-slate-400 max-w-sm truncate italic">"${r.review_text}"</td>
                 <td class="py-3 px-4">
                     ${r.is_ai_generated ? 
-                        `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-950 text-purple-300 border border-purple-800">AI Review</span>` : 
+                        `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-200 border border-slate-700">AI Review</span>` : 
                         `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Verified Buyer</span>`
                     }
                 </td>
@@ -819,7 +817,7 @@ async function loadAdminOrders() {
         tbody.innerHTML = orders.map(o => `
             <tr class="hover:bg-slate-900/60 transition">
                 <td class="py-3 px-6">
-                    <div class="font-mono font-bold text-brand-300">${o.order_code}</div>
+                    <div class="font-mono font-bold text-slate-300">${o.order_code}</div>
                     <div class="text-[10px] text-slate-500">${new Date(o.created_at).toLocaleString()}</div>
                 </td>
                 <td class="py-3 px-4">
@@ -828,9 +826,9 @@ async function loadAdminOrders() {
                 </td>
                 <td class="py-3 px-4 text-slate-200 font-medium">${o.ebook_title}</td>
                 <td class="py-3 px-4 font-bold text-emerald-400">₹${o.amount.toFixed(2)}</td>
-                <td class="py-3 px-4 font-mono text-xs text-purple-300">${o.coupon_code || '-'}</td>
+                <td class="py-3 px-4 font-mono text-xs text-slate-300">${o.coupon_code || '-'}</td>
                 <td class="py-3 px-6 text-right">
-                    <a href="/api/download/${o.access_token}" target="_blank" class="px-2.5 py-1 bg-brand-600 text-white rounded text-[11px] font-bold">Download</a>
+                    <a href="/api/download/${o.access_token}" target="_blank" class="px-2.5 py-1 bg-white hover:bg-slate-200 text-slate-950 rounded-lg text-[11px] font-extrabold shadow-sm">Download</a>
                 </td>
             </tr>
         `).join('');

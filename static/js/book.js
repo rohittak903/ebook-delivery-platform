@@ -117,7 +117,7 @@ function renderReviewsList(reviews) {
                         ${'★'.repeat(r.rating || 5)}
                     </div>
                     ${r.is_ai_generated ? `
-                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-purple-950 text-purple-300 border border-purple-800">
+                        <span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-slate-800 text-slate-200 border border-slate-700">
                             ⭐ Top Review
                         </span>
                     ` : `

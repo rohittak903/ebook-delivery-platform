@@ -69,7 +69,7 @@ function renderHeroSlider() {
         <div class="flex flex-col lg:flex-row items-center justify-between gap-8 animate-fade-in">
             <div class="flex-1 max-w-2xl text-center lg:text-left">
                 ${slide.badge_text ? `
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-500/20 text-brand-300 text-xs font-extrabold uppercase tracking-wider mb-4 border border-brand-400/30">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 text-slate-200 text-xs font-extrabold uppercase tracking-wider mb-4 border border-slate-700">
                         <span>${slide.badge_text}</span>
                     </div>
                 ` : ''}
@@ -82,7 +82,7 @@ function renderHeroSlider() {
                 <div class="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4">
                     <a 
                         href="${slide.cta_url || '#bundles'}" 
-                        class="px-6 py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-sm rounded-xl shadow-lg shadow-brand-500/30 transition flex items-center gap-2"
+                        class="px-6 py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg transition flex items-center gap-2"
                     >
                         <span>${slide.cta_text || 'Explore Offers'}</span>
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
@@ -101,7 +101,7 @@ function renderHeroSlider() {
     `;
 
     dotsContainer.innerHTML = heroSlides.map((_, i) => `
-        <button onclick="goToHeroSlide(${i})" class="w-2.5 h-2.5 rounded-full transition ${i === currentSlideIndex ? 'bg-brand-500 w-6' : 'bg-slate-700 hover:bg-slate-600'}"></button>
+        <button onclick="goToHeroSlide(${i})" class="w-2.5 h-2.5 rounded-full transition ${i === currentSlideIndex ? 'bg-white w-6' : 'bg-slate-700 hover:bg-slate-600'}"></button>
     `).join('');
 
     lucide.createIcons();
@@ -156,10 +156,10 @@ function renderBundles() {
     }
 
     grid.innerHTML = bundleOffers.map(bundle => `
-        <div class="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 hover:border-brand-500/80 shadow-xl transition flex flex-col justify-between group">
+        <div class="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 hover:border-slate-600 shadow-xl transition flex flex-col justify-between group">
             <div>
                 <div class="flex items-center justify-between gap-2 mb-4">
-                    <span class="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase bg-amber-950/80 text-amber-300 border border-amber-800">
+                    <span class="px-3 py-1 rounded-full text-[11px] font-extrabold uppercase bg-slate-800 text-slate-200 border border-slate-700">
                         ${bundle.badge_text || 'BUNDLE PACK'}
                     </span>
                     <span class="text-xs text-emerald-400 font-bold">
@@ -167,16 +167,16 @@ function renderBundles() {
                     </span>
                 </div>
 
-                <h3 class="text-xl sm:text-2xl font-extrabold text-white leading-snug group-hover:text-brand-300 transition">
+                <h3 class="text-xl sm:text-2xl font-extrabold text-white leading-snug group-hover:text-slate-300 transition">
                     ${bundle.title}
                 </h3>
                 <p class="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed">
-                    ${bundle.description}
+                    ${bundle.description || ''}
                 </p>
 
                 <!-- Books Included Inside Bundle -->
                 <div class="mt-6 space-y-2">
-                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Included Guides (${bundle.books.length} Books):</span>
+                    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Includes ${bundle.books.length} Best-Selling Guides:</div>
                     ${bundle.books.map(b => `
                         <div class="flex items-center gap-3 p-2.5 bg-slate-950 rounded-xl border border-slate-800 text-xs">
                             <img src="${b.cover_image || '/uploads/covers/python-ai-cover.jpg'}" class="w-8 h-11 object-cover rounded-md flex-shrink-0">
@@ -201,7 +201,7 @@ function renderBundles() {
 
                 <button 
                     onclick="handleBuyBundleClick(${bundle.id})" 
-                    class="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
+                    class="px-6 py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow-lg transition flex items-center justify-center gap-2"
                 >
                     <i data-lucide="zap" class="w-4 h-4"></i>
                     <span>Get Bundle Now (₹${bundle.sale_price.toFixed(2)})</span>
@@ -244,7 +244,7 @@ function renderBestSellers() {
         const inCart = cart.some(item => item.id === book.id);
 
         return `
-            <div class="bg-slate-950 rounded-3xl p-5 border border-slate-800 hover:border-brand-500 hover:shadow-2xl transition duration-200 flex flex-col justify-between group">
+            <div class="bg-slate-950 rounded-3xl p-5 border border-slate-800 hover:border-slate-600 hover:shadow-2xl transition duration-200 flex flex-col justify-between group">
                 <div>
                     <a href="/book.html?id=${book.id}" class="block relative overflow-hidden rounded-2xl mb-4 bg-slate-900 aspect-[3/4] shadow-sm">
                         <img src="${book.cover_image || '/uploads/covers/python-ai-cover.jpg'}" alt="${book.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
@@ -252,14 +252,14 @@ function renderBestSellers() {
                             <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase shadow-sm bg-slate-900/90 text-white backdrop-blur-sm">
                                 #${idx + 1} Best Seller
                             </span>
-                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase shadow-sm bg-brand-600 text-white">
+                            <span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold uppercase shadow-sm bg-white text-slate-950">
                                 ${format}
                             </span>
                         </div>
                     </a>
 
-                    <div class="text-[10px] font-bold text-brand-400 uppercase tracking-wider mb-1">${book.category || 'General'}</div>
-                    <a href="/book.html?id=${book.id}" class="block font-bold text-white text-sm leading-snug line-clamp-2 hover:text-brand-300 transition">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">${book.category || 'General'}</div>
+                    <a href="/book.html?id=${book.id}" class="block font-bold text-white text-sm leading-snug line-clamp-2 hover:text-slate-300 transition">
                         ${book.title}
                     </a>
                     <p class="text-xs text-slate-400 mt-1">By ${book.author}</p>
@@ -278,7 +278,7 @@ function renderBestSellers() {
                         <button onclick="toggleAddToCart(${book.id})" class="p-2.5 ${inCart ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'} border border-slate-700 rounded-xl transition" title="Add to Cart">
                             <i data-lucide="${inCart ? 'check' : 'shopping-cart'}" class="w-4 h-4"></i>
                         </button>
-                        <a href="/book.html?id=${book.id}" class="px-3.5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1">
+                        <a href="/book.html?id=${book.id}" class="px-3.5 py-2.5 bg-white hover:bg-slate-200 text-slate-950 text-xs font-extrabold rounded-xl shadow transition flex items-center gap-1">
                             <span>Details</span>
                             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                         </a>
@@ -294,14 +294,14 @@ function renderBestSellers() {
 function renderCategories() {
     const pills = document.getElementById('categoryPills');
     let html = `
-        <button onclick="filterCategory('All')" class="category-pill ${currentCategory === 'All' ? 'bg-brand-600 text-white shadow-sm' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'} px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+        <button onclick="filterCategory('All')" class="category-pill ${currentCategory === 'All' ? 'bg-white text-slate-950 font-bold shadow-md' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'} px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
             All Categories
         </button>
     `;
     availableCategories.forEach(cat => {
         const active = currentCategory === cat;
         html += `
-            <button onclick="filterCategory('${cat}')" class="category-pill ${active ? 'bg-brand-600 text-white shadow-sm' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'} px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
+            <button onclick="filterCategory('${cat}')" class="category-pill ${active ? 'bg-white text-slate-950 font-bold shadow-md' : 'bg-slate-900 text-slate-300 hover:bg-slate-800 border border-slate-800'} px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap transition">
                 ${cat}
             </button>
         `;
@@ -350,18 +350,18 @@ function renderCatalog() {
         const inCart = cart.some(item => item.id === book.id);
 
         return `
-            <div class="bg-slate-900 rounded-3xl p-5 border border-slate-800 hover:border-brand-500 hover:shadow-2xl transition duration-200 flex flex-col justify-between group">
+            <div class="bg-slate-900 rounded-3xl p-5 border border-slate-800 hover:border-slate-600 hover:shadow-2xl transition duration-200 flex flex-col justify-between group">
                 <div>
                     <a href="/book.html?id=${book.id}" class="block relative overflow-hidden rounded-2xl mb-4 bg-slate-950 aspect-[3/4]">
                         <img src="${book.cover_image || '/uploads/covers/python-ai-cover.jpg'}" alt="${book.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy">
                         <div class="absolute top-3 left-3 right-3 flex items-center justify-between pointer-events-none">
-                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase shadow-sm bg-brand-600 text-white">${format}</span>
+                            <span class="px-2.5 py-1 rounded-lg text-[10px] font-extrabold uppercase shadow-sm bg-white text-slate-950">${format}</span>
                             ${hasDiscount ? `<span class="px-2 py-0.5 rounded-lg text-[10px] font-extrabold bg-rose-600 text-white shadow-sm">SALE</span>` : ''}
                         </div>
                     </a>
 
-                    <div class="text-[10px] font-bold text-brand-400 uppercase tracking-wider mb-1">${book.category || 'General'}</div>
-                    <a href="/book.html?id=${book.id}" class="block font-bold text-white text-base leading-snug line-clamp-2 hover:text-brand-300 transition">
+                    <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">${book.category || 'General'}</div>
+                    <a href="/book.html?id=${book.id}" class="block font-bold text-white text-base leading-snug line-clamp-2 hover:text-slate-300 transition">
                         ${book.title}
                     </a>
                     <p class="text-xs text-slate-400 mt-1">By ${book.author}</p>
@@ -384,7 +384,7 @@ function renderCatalog() {
                         <button onclick="toggleAddToCart(${book.id})" class="p-2.5 ${inCart ? 'bg-emerald-950 text-emerald-300 border-emerald-800' : 'bg-slate-950 text-slate-300 hover:bg-slate-800'} border border-slate-800 rounded-xl transition" title="Add to Cart">
                             <i data-lucide="${inCart ? 'check' : 'shopping-cart'}" class="w-4 h-4"></i>
                         </button>
-                        <a href="/book.html?id=${book.id}" class="px-3.5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white text-xs font-bold rounded-xl shadow transition flex items-center gap-1">
+                        <a href="/book.html?id=${book.id}" class="px-3.5 py-2.5 bg-white hover:bg-slate-200 text-slate-950 text-xs font-extrabold rounded-xl shadow transition flex items-center gap-1">
                             <span>Details</span>
                             <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
                         </a>

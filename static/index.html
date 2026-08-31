@@ -14,12 +14,16 @@
                 extend: {
                     colors: {
                         brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
+                            50: '#f8fafc',
+                            100: '#f1f5f9',
+                            300: '#cbd5e1',
+                            400: '#94a3b8',
+                            500: '#ffffff',
+                            600: '#f8fafc',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a',
+                            950: '#020617',
                         }
                     }
                 }
@@ -36,12 +40,12 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics-compat.js"></script>
     <link rel="stylesheet" href="/static/css/custom.css">
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-brand-500 selection:text-white pb-16 sm:pb-0">
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-white selection:text-black pb-16 sm:pb-0">
 
-    <!-- Top Announcement Bar -->
-    <div class="bg-gradient-to-r from-purple-700 via-brand-600 to-indigo-700 text-white text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-        <span>🎉 Welcome to <strong>QELVORIA</strong>: Use coupon code <strong class="underline font-mono bg-white/20 px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
+    <!-- Top Announcement Bar (Monochrome Luxury Theme) -->
+    <div class="bg-slate-900 border-b border-slate-800 text-slate-200 text-xs font-semibold py-2 px-4 text-center flex items-center justify-center gap-2 shadow-sm">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+        <span>🎉 Welcome to <strong>QELVORIA</strong>: Use coupon code <strong class="font-mono bg-white text-slate-950 font-bold px-1.5 py-0.5 rounded">ROHIT20</strong> for 20% OFF! Instant delivery.</span>
     </div>
 
     <!-- Navigation Header -->
@@ -50,14 +54,14 @@
             
             <!-- QELVORIA Logo & Brand -->
             <a href="/" class="flex items-center gap-2.5 sm:gap-3.5 group flex-shrink-0">
-                <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300 border border-purple-500/30 bg-slate-950 flex-shrink-0">
+                <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-2xl overflow-hidden shadow-lg group-hover:scale-105 transition-transform duration-300 border border-slate-700 bg-slate-950 flex-shrink-0">
                     <img src="/static/images/qelvoria-logo.png" alt="QELVORIA Logo" class="w-full h-full object-cover">
                 </div>
                 <div>
-                    <h1 id="brandName" class="font-black text-xl sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-300 leading-none">
+                    <h1 id="brandName" class="font-black text-xl sm:text-2xl tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-slate-400 leading-none">
                         QELVORIA
                     </h1>
-                    <p class="text-[9px] sm:text-[10px] font-bold text-brand-400 uppercase tracking-widest mt-0.5 hidden xs:block">Raja Rohit Tak</p>
+                    <p class="text-[9px] sm:text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5 hidden xs:block">Raja Rohit Tak</p>
                 </div>
             </a>
 
@@ -69,7 +73,7 @@
                         type="text" 
                         id="searchInput" 
                         placeholder="Search books, authors, topics..." 
-                        class="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-950/90 border border-slate-700/80 focus:border-brand-500 text-white placeholder:text-slate-500 rounded-xl text-xs sm:text-sm font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-brand-500/30 transition"
+                        class="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-slate-950/90 border border-slate-700 focus:border-slate-400 text-white placeholder:text-slate-500 rounded-xl text-xs sm:text-sm font-medium shadow-inner focus:outline-none focus:ring-2 focus:ring-slate-400/30 transition"
                     >
                 </div>
             </div>
@@ -83,7 +87,7 @@
                     title="Shopping Cart"
                 >
                     <i data-lucide="shopping-cart" class="w-4 h-4 sm:w-5 sm:h-5"></i>
-                    <span id="cartBadge" class="hidden absolute -top-1.5 -right-1.5 w-5 h-5 bg-brand-600 text-white text-[10px] font-extrabold rounded-full flex items-center justify-center shadow">
+                    <span id="cartBadge" class="hidden absolute -top-1.5 -right-1.5 w-5 h-5 bg-white text-slate-950 text-[10px] font-extrabold rounded-full flex items-center justify-center shadow">
                         0
                     </span>
                 </button>
@@ -92,7 +96,7 @@
                 <div id="authNavContainer">
                     <button 
                         onclick="openUnifiedAuthModal()" 
-                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-bold text-slate-900 bg-white hover:bg-slate-200 rounded-xl transition shadow-sm"
+                        class="inline-flex items-center gap-1.5 px-3 sm:px-4 py-2 text-xs font-extrabold text-slate-950 bg-white hover:bg-slate-200 rounded-xl transition shadow-sm"
                     >
                         <i data-lucide="user" class="w-3.5 h-3.5"></i>
                         <span>Sign In</span>
@@ -110,7 +114,7 @@
             <div class="max-w-7xl mx-auto relative z-10">
                 
                 <!-- Dynamic Hero Slider Container -->
-                <div id="heroSliderTrack" class="relative overflow-hidden rounded-3xl min-h-[340px] sm:min-h-[400px] bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-6 sm:p-12 border border-slate-800 shadow-2xl flex flex-col justify-center">
+                <div id="heroSliderTrack" class="relative overflow-hidden rounded-3xl min-h-[340px] sm:min-h-[400px] bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 sm:p-12 border border-slate-800 shadow-2xl flex flex-col justify-center">
                     <!-- Slides injected via JavaScript -->
                 </div>
 
@@ -361,7 +365,7 @@
                 
                 <!-- Left: We Accept title & icons matching reference image -->
                 <div class="flex flex-wrap items-center justify-center md:justify-start gap-3 sm:gap-4">
-                    <span class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-purple-300 flex items-center gap-1.5 mr-1">
+                    <span class="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 flex items-center gap-1.5 mr-1">
                         <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
                         <span>We Accept</span>
                     </span>
@@ -396,13 +400,13 @@
 
                         <!-- Net Banking -->
                         <div class="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-md text-slate-200 border border-slate-700 text-[10px] sm:text-[11px] font-bold shadow-sm" title="All Indian Banks Supported">
-                            <i data-lucide="landmark" class="w-3.5 h-3.5 text-brand-400"></i>
+                            <i data-lucide="landmark" class="w-3.5 h-3.5 text-slate-400"></i>
                             <span>Net Banking</span>
                         </div>
 
                         <!-- Wallets -->
                         <div class="flex items-center gap-1 bg-slate-800 px-2.5 py-1 rounded-md text-slate-200 border border-slate-700 text-[10px] sm:text-[11px] font-bold shadow-sm" title="Paytm, PhonePe, Mobikwik, AmazonPay">
-                            <i data-lucide="wallet" class="w-3.5 h-3.5 text-purple-400"></i>
+                            <i data-lucide="wallet" class="w-3.5 h-3.5 text-slate-400"></i>
                             <span>Wallet</span>
                         </div>
                     </div>
@@ -415,7 +419,7 @@
                         <span>Instant Delivery to Email & WhatsApp</span>
                     </div>
                     <div class="flex items-center gap-1 text-slate-400 font-medium">
-                        <i data-lucide="lock" class="w-3.5 h-3.5 text-brand-400"></i>
+                        <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i>
                         <span>256-Bit SSL via Razorpay</span>
                     </div>
                 </div>
@@ -428,7 +432,7 @@
     <footer class="bg-slate-950 border-t border-slate-800 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-sm text-slate-400">
             <div class="flex items-center gap-3.5">
-                <div class="w-9 h-9 rounded-xl overflow-hidden border border-purple-500/30 bg-slate-900 shadow-md">
+                <div class="w-9 h-9 rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-md">
                     <img src="/static/images/qelvoria-logo.png" alt="QELVORIA Logo" class="w-full h-full object-cover">
                 </div>
                 <div>
@@ -482,7 +486,7 @@
                 <button 
                     onclick="proceedCartToCheckout()" 
                     id="cartCheckoutBtn"
-                    class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/25 transition flex items-center justify-center gap-2"
+                    class="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs"
                 >
                     <i data-lucide="lock" class="w-4 h-4"></i>
                     <span>Proceed to Secure Checkout</span>
@@ -497,7 +501,7 @@
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="font-bold text-lg text-white">Instant Ebook Delivery Details</h3>
-                    <p class="text-[11px] text-brand-300">Enter your details to receive your instant digital copy & receipt</p>
+                    <p class="text-[11px] text-slate-400">Enter your details to receive your instant digital copy & receipt</p>
                 </div>
                 <button onclick="closeModal('checkoutCustomerModal')" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400">
                     <i data-lucide="x" class="w-4 h-4"></i>
@@ -507,23 +511,23 @@
             <form id="checkoutCustomerForm" onsubmit="handleProceedToPaymentWithDetails(event)" class="space-y-3.5">
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Full Name *</label>
-                    <input type="text" id="custCheckoutName" required placeholder="e.g. Raja Rohit Tak" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="text" id="custCheckoutName" required placeholder="e.g. Raja Rohit Tak" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Email Address (For PDF & Receipt Delivery) *</label>
-                    <input type="email" id="custCheckoutEmail" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="email" id="custCheckoutEmail" required placeholder="name@example.com" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">WhatsApp / Mobile Number (For Instant WhatsApp Copy) *</label>
-                    <input type="tel" id="custCheckoutPhone" required placeholder="+91 9035630901" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                    <input type="tel" id="custCheckoutPhone" required placeholder="+91 9035630901" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                 </div>
 
-                <div class="p-3 bg-brand-950/60 rounded-xl border border-brand-800 text-[11px] text-brand-300 flex items-start gap-2">
-                    <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0 text-brand-400 mt-0.5"></i>
+                <div class="p-3 bg-slate-950 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-start gap-2">
+                    <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0 text-emerald-400 mt-0.5"></i>
                     <span>Your copy will be delivered to your Email, WhatsApp, and downloaded directly upon payment.</span>
                 </div>
 
-                <button type="submit" id="proceedToPayBtn" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-purple-600 hover:from-brand-500 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
+                <button type="submit" id="proceedToPayBtn" class="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
                     <i data-lucide="lock" class="w-4 h-4"></i>
                     <span id="proceedToPayBtnText">Proceed to Razorpay Payment</span>
                 </button>
@@ -562,13 +566,13 @@
                 <form id="emailPasswordForm" onsubmit="handleUnifiedLoginSubmit(event)" class="space-y-3">
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Email or Username</label>
-                        <input type="text" id="unifiedLoginInput" required placeholder="name@example.com or RajaRohitTak" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <input type="text" id="unifiedLoginInput" required placeholder="name@example.com or RajaRohitTak" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-300 mb-1">Password</label>
-                        <input type="password" id="unifiedPasswordInput" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                        <input type="password" id="unifiedPasswordInput" required placeholder="••••••••" class="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400">
                     </div>
-                    <button type="submit" id="unifiedLoginBtn" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs rounded-xl shadow transition">
+                    <button type="submit" id="unifiedLoginBtn" class="w-full py-2.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs rounded-xl shadow transition">
                         Sign In with Password
                     </button>
                 </form>
@@ -590,11 +594,11 @@
             </div>
 
             <div class="space-y-3">
-                <a id="successDirectDownloadBtn" href="#" target="_blank" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-xl shadow-lg transition flex items-center justify-center gap-2">
+                <a id="successDirectDownloadBtn" href="#" target="_blank" class="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
                     <i data-lucide="download" class="w-5 h-5"></i>
                     <span>Download Ebook Now</span>
                 </a>
-                <a id="successWhatsAppBtn" href="#" target="_blank" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2">
+                <a id="successWhatsAppBtn" href="#" target="_blank" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow transition flex items-center justify-center gap-2 text-xs">
                     <i data-lucide="message-circle" class="w-5 h-5"></i>
                     <span>Open in WhatsApp</span>
                 </a>
