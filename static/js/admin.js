@@ -334,6 +334,57 @@ async function handleEditEbookSubmit(e) {
     }
 }
 
+// Helper: Auto-compress high-resolution images (e.g. from ChatGPT/Midjourney) to lightweight JPEGs in-browser
+async function compressImageIfNeeded(file, maxDimension = 1200, quality = 0.85) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return file;
+    // If file is already smaller than 500KB, return as-is
+    if (file.size <= 500 * 1024) return file;
+
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                let width = img.width;
+                let height = img.height;
+
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob((blob) => {
+                    if (blob && blob.size < file.size) {
+                        const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
+                        const compressedFile = new File([blob], newName, {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        resolve(compressedFile);
+                    } else {
+                        resolve(file);
+                    }
+                }, 'image/jpeg', quality);
+            };
+            img.onerror = () => resolve(file);
+            img.src = e.target.result;
+        };
+        reader.onerror = () => resolve(file);
+        reader.readAsDataURL(file);
+    });
+}
+
 function openAddEbookModal() {
     openModal('addEbookModal');
 }
@@ -341,36 +392,65 @@ function openAddEbookModal() {
 async function handleAddEbookSubmit(e) {
     e.preventDefault();
     const btn = document.getElementById('saveEbookBtn');
+    if (!adminToken) {
+        alert('⚠️ Session expired. Please log in to admin panel again.');
+        showLogin();
+        return;
+    }
+
     btn.disabled = true;
-    btn.innerText = 'Uploading...';
-
-    const formData = new FormData();
-    formData.append('title', document.getElementById('ebookTitleInput').value.trim());
-    formData.append('author', document.getElementById('ebookAuthorInput').value.trim());
-    formData.append('category', document.getElementById('ebookCategoryInput').value.trim());
-    formData.append('price', document.getElementById('ebookPriceInput').value);
-    
-    const salePrice = document.getElementById('ebookSalePriceInput').value;
-    if (salePrice) formData.append('sale_price', salePrice);
-
-    const gUrl = document.getElementById('ebookGoogleBooksInput').value.trim();
-    if (gUrl) formData.append('google_books_url', gUrl);
-
-    const kUrl = document.getElementById('ebookKindleInput').value.trim();
-    if (kUrl) formData.append('kindle_url', kUrl);
-
-    const aUrl = document.getElementById('ebookAppleBooksInput').value.trim();
-    if (aUrl) formData.append('apple_books_url', aUrl);
-
-    formData.append('description', document.getElementById('ebookDescInput').value.trim());
-
-    const ebookFile = document.getElementById('ebookFileInput').files[0];
-    if (ebookFile) formData.append('ebook_file', ebookFile);
-
-    const coverFile = document.getElementById('coverFileInput').files[0];
-    if (coverFile) formData.append('cover_file', coverFile);
+    btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Uploading Ebook...`;
 
     try {
+        const title = document.getElementById('ebookTitleInput').value.trim();
+        const author = document.getElementById('ebookAuthorInput').value.trim();
+        const category = document.getElementById('ebookCategoryInput').value.trim();
+        const price = document.getElementById('ebookPriceInput').value.trim();
+        const salePrice = document.getElementById('ebookSalePriceInput').value.trim();
+        const desc = document.getElementById('ebookDescInput').value.trim();
+        const gUrl = document.getElementById('ebookGoogleBooksInput').value.trim();
+        const kUrl = document.getElementById('ebookKindleInput').value.trim();
+        const aUrl = document.getElementById('ebookAppleBooksInput').value.trim();
+
+        const ebookFileInput = document.getElementById('ebookFileInput');
+        const coverFileInput = document.getElementById('coverFileInput');
+
+        const ebookFile = ebookFileInput ? ebookFileInput.files[0] : null;
+        let coverFile = coverFileInput ? coverFileInput.files[0] : null;
+
+        // Auto-compress large cover images (e.g. from ChatGPT) in-browser
+        if (coverFile) {
+            btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Optimizing Cover Image...`;
+            coverFile = await compressImageIfNeeded(coverFile, 1200, 0.85);
+        }
+
+        // Validate payload size for cloud serverless upload (Vercel limit: 4.5MB)
+        const totalSize = (ebookFile ? ebookFile.size : 0) + (coverFile ? coverFile.size : 0);
+        if (totalSize > 4.4 * 1024 * 1024) {
+            const pdfMB = (ebookFile.size / (1024 * 1024)).toFixed(1);
+            alert(`⚠️ File Size Notice: Your ebook PDF is ${pdfMB}MB, which exceeds the 4.5MB cloud upload limit.\n\nPlease compress your PDF to under 4MB (using tools like Smallpdf or iLovePDF) so it uploads in seconds.`);
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i><span>Upload & Publish Ebook</span>`;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+
+        btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Publishing to Storefront...`;
+
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('author', author);
+        formData.append('category', category);
+        formData.append('price', price);
+        if (salePrice) formData.append('sale_price', salePrice);
+        if (gUrl) formData.append('google_books_url', gUrl);
+        if (kUrl) formData.append('kindle_url', kUrl);
+        if (aUrl) formData.append('apple_books_url', aUrl);
+        formData.append('description', desc);
+
+        if (ebookFile) formData.append('ebook_file', ebookFile);
+        if (coverFile) formData.append('cover_file', coverFile);
+
         const res = await fetch('/api/admin/ebooks', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${adminToken}` },
@@ -386,7 +466,8 @@ async function handleAddEbookSubmit(e) {
 
         if (res.ok) {
             alert(`🎉 Success: ${data.message || 'Ebook published successfully!'}`);
-            document.getElementById('addEbookForm').reset();
+            const form = document.getElementById('addEbookForm');
+            if (form) form.reset();
             closeModal('addEbookModal');
             loadAdminEbooks();
         } else {
@@ -394,17 +475,18 @@ async function handleAddEbookSubmit(e) {
                 alert('⚠️ Session expired. Please log in to admin panel again.');
                 showLogin();
             } else if (res.status === 413) {
-                alert('⚠️ File too large! On serverless cloud hosting, please upload files smaller than 4.5MB or use standard PDF formats.');
+                alert('⚠️ File too large! Please upload a PDF smaller than 4MB.');
             } else {
                 alert(`⚠️ Upload Error (${res.status}): ${data.detail || 'Upload failed. Please check your inputs.'}`);
             }
         }
     } catch (err) {
         console.error('Upload error', err);
-        alert('Network/Server connection notice: Please try uploading again in a few seconds.');
+        alert(`⚠️ Upload Connection Notice: ${err.message || 'Connection interrupted'}. If your PDF is large, please ensure it is under 4MB.`);
     } finally {
         btn.disabled = false;
-        btn.innerText = 'Upload & Publish Ebook';
+        btn.innerHTML = `<i data-lucide="upload-cloud" class="w-4 h-4 mr-2"></i><span>Upload & Publish Ebook</span>`;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
     }
 }
 

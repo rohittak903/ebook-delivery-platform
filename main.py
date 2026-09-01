@@ -1214,20 +1214,36 @@ async def admin_create_ebook(
     title: str = Form(...),
     author: str = Form(...),
     description: str = Form(...),
-    price: float = Form(...),
+    price: str = Form(...),
     category: str = Form(...),
-    sale_price: Optional[float] = Form(None),
+    sale_price: Optional[str] = Form(None),
     sample_text: Optional[str] = Form(None),
     google_books_url: Optional[str] = Form(None),
     kindle_url: Optional[str] = Form(None),
     apple_books_url: Optional[str] = Form(None),
-    is_featured: bool = Form(False),
+    is_featured: Optional[str] = Form(None),
     cover_image_url: Optional[str] = Form(None),
     ebook_file: Optional[UploadFile] = File(None),
     cover_file: Optional[UploadFile] = File(None),
     token: str = Depends(require_admin_auth)
 ):
     try:
+        try:
+            clean_price = float(str(price).strip())
+        except Exception:
+            clean_price = 199.0
+
+        clean_sale_price = None
+        if sale_price and str(sale_price).strip():
+            try:
+                parsed_s = float(str(sale_price).strip())
+                if 0 < parsed_s < clean_price:
+                    clean_sale_price = parsed_s
+            except Exception:
+                clean_sale_price = None
+
+        is_featured_int = 1 if (is_featured and str(is_featured).lower() in ("true", "1", "yes", "on")) else 0
+
         active_uploads = get_writable_uploads_dir()
         ebooks_dir = os.path.join(active_uploads, "ebooks")
         covers_dir = os.path.join(active_uploads, "covers")
@@ -1290,10 +1306,10 @@ async def admin_create_ebook(
                     is_featured, is_active
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
             """, (
-                title, slug, author, description, float(price), float(sale_price) if sale_price else None, category,
+                title.strip(), slug, author.strip(), description.strip(), clean_price, clean_sale_price, category.strip(),
                 cover_path, ebook_dest_path, orig_filename, file_ext,
                 file_size, sample_text, google_books_url, kindle_url, apple_books_url,
-                1 if is_featured else 0
+                is_featured_int
             ))
             await db.commit()
             
