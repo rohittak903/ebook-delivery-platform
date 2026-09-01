@@ -113,7 +113,7 @@ function renderEbookDetails() {
     document.getElementById('productReviewCountText').innerText = `(${currentEbook.review_count || 0} reviews)`;
 
     // Pricing
-    const salePrice = currentEbook.sale_price && currentEbook.sale_price > 0 ? currentEbook.sale_price : currentEbook.price;
+    const salePrice = (currentEbook.sale_price && currentEbook.sale_price > 0 && currentEbook.sale_price < currentEbook.price) ? currentEbook.sale_price : currentEbook.price;
     lockedPrice = salePrice;
 
     document.getElementById('productFinalPrice').innerText = `₹${salePrice.toFixed(2)}`;
@@ -197,7 +197,7 @@ function renderReviewsList(reviews) {
 async function handleApplyProductCoupon() {
     const code = document.getElementById('promoCodeInput').value.trim();
     const statusMsg = document.getElementById('couponStatusMessage');
-    const basePrice = currentEbook.sale_price && currentEbook.sale_price > 0 ? currentEbook.sale_price : currentEbook.price;
+    const basePrice = (currentEbook.sale_price && currentEbook.sale_price > 0 && currentEbook.sale_price < currentEbook.price) ? currentEbook.sale_price : currentEbook.price;
 
     if (!code) {
         statusMsg.innerText = 'Please enter a coupon code.';

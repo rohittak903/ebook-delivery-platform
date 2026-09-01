@@ -317,6 +317,27 @@ async function loadEbooks() {
         catalogEbooks = data.ebooks || [];
         availableCategories = data.categories || [];
 
+        // Auto-sync cart items with latest catalog prices
+        if (cart && cart.length > 0 && catalogEbooks.length > 0) {
+            cart = cart.map(item => {
+                const fresh = catalogEbooks.find(b => String(b.id) === String(item.id) || Number(b.id) === Number(item.id));
+                if (fresh) {
+                    const freshPrice = (fresh.sale_price && fresh.sale_price > 0 && fresh.sale_price < fresh.price) ? fresh.sale_price : fresh.price;
+                    return {
+                        ...item,
+                        title: fresh.title,
+                        author: fresh.author,
+                        price: freshPrice,
+                        cover: fresh.cover_image || item.cover,
+                        cover_image: fresh.cover_image || item.cover_image
+                    };
+                }
+                return item;
+            });
+            saveCart();
+            renderCartDrawer();
+        }
+
         renderBestSellers();
         renderCategories();
         renderCatalog();
@@ -563,7 +584,7 @@ function toggleAddToCart(bookId) {
     } else {
         const book = catalogEbooks.find(b => String(b.id) === idStr || Number(b.id) === idNum);
         if (book) {
-            const price = book.sale_price && book.sale_price > 0 ? book.sale_price : book.price;
+            const price = (book.sale_price && book.sale_price > 0 && book.sale_price < book.price) ? book.sale_price : book.price;
             cart.push({
                 id: book.id,
                 title: book.title,

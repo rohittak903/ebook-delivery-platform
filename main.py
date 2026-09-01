@@ -731,7 +731,7 @@ async def checkout(
         settings = await get_settings()
         order_code = f"EV-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(3).upper()}"
         access_token = create_signed_download_token(order_code, ebook["id"], ebook["title"], req.customer_name)
-        price_to_charge = ebook["sale_price"] if ebook["sale_price"] and ebook["sale_price"] > 0 else ebook["price"]
+        price_to_charge = ebook["sale_price"] if (ebook["sale_price"] and 0 < ebook["sale_price"] < ebook["price"]) else ebook["price"]
         
         async with db.execute("""
             INSERT INTO orders (
@@ -825,7 +825,7 @@ async def cart_checkout(
                     
             order_code = f"EV-{datetime.utcnow().strftime('%Y%m%d')}-{secrets.token_hex(3).upper()}"
             access_token = create_signed_download_token(order_code, ebook["id"], ebook["title"], req.customer_name)
-            price = ebook["sale_price"] if ebook["sale_price"] and ebook["sale_price"] > 0 else ebook["price"]
+            price = ebook["sale_price"] if (ebook["sale_price"] and 0 < ebook["sale_price"] < ebook["price"]) else ebook["price"]
             total_amount += price
             
             async with db.execute("""
@@ -1304,7 +1304,15 @@ async def admin_update_ebook(
     description = req.get("description")
     category = req.get("category")
     price = float(req["price"]) if req.get("price") is not None else None
-    sale_price = float(req["sale_price"]) if req.get("sale_price") is not None and str(req.get("sale_price")).strip() != "" else None
+    raw_sale = req.get("sale_price")
+    sale_price = None
+    if raw_sale is not None and str(raw_sale).strip() != "":
+        try:
+            parsed_sale = float(raw_sale)
+            if price is not None and 0 < parsed_sale < price:
+                sale_price = parsed_sale
+        except Exception:
+            sale_price = None
     is_featured = 1 if req.get("is_featured") else 0
     sample_text = req.get("sample_text")
     google_books_url = req.get("google_books_url")
@@ -2161,7 +2169,7 @@ async def razorpay_create_order(req: dict):
                         async with db.execute("SELECT * FROM ebooks WHERE id = ?", (eid,)) as cursor:
                             book = await cursor.fetchone()
                             if book:
-                                price = book["sale_price"] if book["sale_price"] and book["sale_price"] > 0 else book["price"]
+                                price = book["sale_price"] if (book["sale_price"] and 0 < book["sale_price"] < book["price"]) else book["price"]
                                 total_amount += price
                                 ebook_titles.append(book["title"])
                             

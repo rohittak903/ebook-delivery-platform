@@ -282,13 +282,22 @@ async function handleEditEbookSubmit(e) {
     btn.innerText = 'Saving Changes...';
 
     const id = document.getElementById('editEbookId').value;
-    const saleVal = document.getElementById('editEbookSalePrice').value.trim();
+    const priceVal = parseFloat(document.getElementById('editEbookPrice').value);
+    const saleRaw = document.getElementById('editEbookSalePrice').value.trim();
+    let saleVal = null;
+    if (saleRaw && !isNaN(parseFloat(saleRaw))) {
+        const parsedSale = parseFloat(saleRaw);
+        if (parsedSale > 0 && parsedSale < priceVal) {
+            saleVal = parsedSale;
+        }
+    }
+
     const payload = {
         title: document.getElementById('editEbookTitle').value.trim(),
         author: document.getElementById('editEbookAuthor').value.trim(),
         category: document.getElementById('editEbookCategory').value,
-        price: parseFloat(document.getElementById('editEbookPrice').value),
-        sale_price: saleVal ? parseFloat(saleVal) : null,
+        price: priceVal,
+        sale_price: saleVal,
         google_books_url: document.getElementById('editEbookGoogle').value.trim() || null,
         kindle_url: document.getElementById('editEbookKindle').value.trim() || null,
         apple_books_url: document.getElementById('editEbookApple').value.trim() || null,
@@ -308,7 +317,7 @@ async function handleEditEbookSubmit(e) {
 
         const data = await res.json();
         if (res.ok) {
-            alert('🎉 Ebook and pricing updated successfully!');
+            alert('🎉 Ebook and pricing updated successfully! Storefront and Razorpay checkout are now live with this exact price.');
             closeModal('editEbookModal');
             loadAdminEbooks();
         } else {
