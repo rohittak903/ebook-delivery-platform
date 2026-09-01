@@ -127,7 +127,7 @@ function updateSocialLinksUI(data) {
 
 async function loadHeroSlides() {
     try {
-        const res = await fetch('/api/hero-slides');
+        const res = await fetch('/api/hero-slides?_t=' + Date.now(), { cache: 'no-store' });
         const data = await res.json();
         heroSlides = data.slides || [];
         if (heroSlides.length > 0) {
@@ -135,48 +135,48 @@ async function loadHeroSlides() {
             startHeroAutoPlay();
         }
     } catch (e) {
-        console.error('Hero slides error', e);
+        console.error('Hero slides load error', e);
     }
 }
 
 function renderHeroSlider() {
-    const track = document.getElementById('heroSliderTrack');
-    const dotsContainer = document.getElementById('sliderDots');
-    if (!track || heroSlides.length === 0) return;
+    const bannerContainer = document.getElementById('heroBannerSlide');
+    const dotsContainer = document.getElementById('heroDots');
+    if (!bannerContainer || !dotsContainer || heroSlides.length === 0) return;
 
     const slide = heroSlides[currentSlideIndex];
-    const isExternalLink = (slide.cta_url || '').startsWith('http');
+    if (!slide) return;
 
-    track.innerHTML = `
-        <div class="w-full h-full flex flex-col lg:flex-row items-center justify-between gap-6 sm:gap-10 p-6 sm:p-10 lg:p-12 animate-fade-in">
-            
-            <!-- Left: Hero Headline & Customizable CTA Button -->
-            <div class="flex-1 max-w-2xl text-center lg:text-left flex flex-col justify-center items-center lg:items-start z-10">
+    bannerContainer.innerHTML = `
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+            <div class="lg:col-span-7 space-y-4 sm:space-y-6 text-left">
                 ${slide.badge_text ? `
-                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/90 text-slate-200 text-xs font-extrabold uppercase tracking-wider mb-4 border border-slate-700 shadow-sm">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-slate-900 border border-slate-800 text-slate-300 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                         <span>${slide.badge_text}</span>
                     </div>
                 ` : ''}
-                <h1 class="text-2xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight text-white">
+
+                <h1 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-white tracking-tight leading-tight">
                     ${slide.title}
                 </h1>
-                <p class="mt-3 sm:mt-4 text-slate-300 text-xs sm:text-base leading-relaxed max-w-xl">
+
+                <p class="text-sm sm:text-base text-slate-400 max-w-xl leading-relaxed">
                     ${slide.subtitle}
                 </p>
-                <div class="mt-6 sm:mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4">
-                    <a 
-                        href="${slide.cta_url || '/#catalog'}" 
-                        ${isExternalLink ? 'target="_blank" rel="noopener noreferrer"' : ''}
-                        class="px-7 py-3.5 sm:py-4 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs sm:text-sm rounded-2xl shadow-xl transition flex items-center gap-2.5 active:scale-95"
-                    >
-                        <span>${slide.cta_text || 'Explore Best Sellers'}</span>
+
+                <div class="flex flex-wrap items-center gap-3.5 pt-2">
+                    <a href="${slide.cta_url || '#bestsellers'}" class="px-7 py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold text-xs sm:text-sm rounded-xl shadow-lg transition flex items-center gap-2 transform active:scale-95">
+                        <span>${slide.cta_text || 'Explore Collection'}</span>
                         <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                    <a href="#catalog" class="px-6 py-3.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs sm:text-sm rounded-xl border border-slate-800 transition">
+                        View All Books
                     </a>
                 </div>
             </div>
 
-            <!-- Right: Responsive Banner Visuals (Desktop 1400x520px, Mobile 375x600px) -->
-            <div class="w-full lg:w-[460px] xl:w-[540px] flex-shrink-0 flex items-center justify-center">
+            <div class="lg:col-span-5 flex justify-center">
                 <div class="relative w-full max-w-xs sm:max-w-md lg:max-w-none rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-700/80 bg-slate-900">
                     <!-- Desktop Banner (1400x520 aspect) -->
                     <img 
@@ -228,7 +228,7 @@ function startHeroAutoPlay() {
 
 async function loadBundles() {
     try {
-        const res = await fetch('/api/bundles');
+        const res = await fetch('/api/bundles?_t=' + Date.now(), { cache: 'no-store' });
         const data = await res.json();
         bundleOffers = data.bundles || [];
         renderBundles();
@@ -238,17 +238,17 @@ async function loadBundles() {
 }
 
 function renderBundles() {
+    const section = document.getElementById('bundles');
     const grid = document.getElementById('bundlesGrid');
     if (!grid) return;
 
     if (bundleOffers.length === 0) {
-        grid.innerHTML = `
-            <div class="col-span-full py-8 text-center text-slate-500 text-sm">
-                <p>New special bundle offers launching soon!</p>
-            </div>
-        `;
+        if (section) section.classList.add('hidden');
+        grid.innerHTML = '';
         return;
     }
+
+    if (section) section.classList.remove('hidden');
 
     grid.innerHTML = bundleOffers.map(bundle => `
         <div class="bg-slate-900 rounded-3xl p-6 sm:p-8 border border-slate-800 hover:border-slate-600 shadow-xl transition flex flex-col justify-between group">
@@ -312,7 +312,7 @@ function renderBundles() {
 
 async function loadEbooks() {
     try {
-        const res = await fetch('/api/ebooks');
+        const res = await fetch('/api/ebooks?_t=' + Date.now(), { cache: 'no-store' });
         const data = await res.json();
         catalogEbooks = data.ebooks || [];
         availableCategories = data.categories || [];

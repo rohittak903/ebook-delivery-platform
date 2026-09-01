@@ -207,8 +207,9 @@ async function loadAdminEbooks() {
     tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading catalog...</td></tr>`;
 
     try {
-        const res = await fetch('/api/admin/ebooks', {
-            headers: { 'Authorization': `Bearer ${adminToken}` }
+        const res = await fetch('/api/admin/ebooks?_t=' + Date.now(), {
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            cache: 'no-store'
         });
         const data = await res.json();
         cachedEbooks = data.ebooks || [];
@@ -427,8 +428,9 @@ async function loadAdminBundles() {
     tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-slate-500">Loading bundles...</td></tr>`;
 
     try {
-        const res = await fetch('/api/admin/bundles', {
-            headers: { 'Authorization': `Bearer ${adminToken}` }
+        const res = await fetch('/api/admin/bundles?_t=' + Date.now(), {
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            cache: 'no-store'
         });
         const data = await res.json();
         const bundles = data.bundles || [];
@@ -1213,8 +1215,9 @@ async function resolveAdminTicket(ticketId) {
 
 async function loadAdminSettings() {
     try {
-        const res = await fetch('/api/admin/settings', {
-            headers: { 'Authorization': `Bearer ${adminToken}` }
+        const res = await fetch('/api/admin/settings?_t=' + Date.now(), {
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            cache: 'no-store'
         });
         const data = await res.json();
         const s = data.settings || {};

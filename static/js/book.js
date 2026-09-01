@@ -77,7 +77,7 @@ async function loadStoreInfo() {
 
 async function loadEbookDetails(param) {
     try {
-        const res = await fetch(`/api/ebooks/${param}`);
+        const res = await fetch(`/api/ebooks/${param}?_t=` + Date.now(), { cache: 'no-store' });
         if (!res.ok) {
             alert('Ebook not found.');
             window.location.href = '/';
