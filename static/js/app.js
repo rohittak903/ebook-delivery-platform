@@ -347,15 +347,23 @@ async function loadEbooks() {
 }
 
 function renderBestSellers() {
+    const section = document.getElementById('bestsellers');
     const grid = document.getElementById('bestSellersGrid');
     if (!grid) return;
 
-    let best = catalogEbooks.filter(b => b.is_featured);
-    if (best.length < 4) best = catalogEbooks.slice(0, 4);
+    // Only show Best Sellers section if there are multiple books and at least one is explicitly marked as featured
+    const featured = catalogEbooks.filter(b => b.is_featured);
+    if (catalogEbooks.length <= 1 || featured.length === 0) {
+        if (section) section.classList.add('hidden');
+        grid.innerHTML = '';
+        return;
+    }
 
-    grid.innerHTML = best.map((book, idx) => {
+    if (section) section.classList.remove('hidden');
+
+    grid.innerHTML = featured.slice(0, 4).map((book, idx) => {
         const format = (book.file_format || 'pdf').toUpperCase();
-        const price = book.sale_price && book.sale_price > 0 ? book.sale_price : book.price;
+        const price = (book.sale_price && book.sale_price > 0 && book.sale_price < book.price) ? book.sale_price : book.price;
         const hasDiscount = book.sale_price && book.sale_price < book.price;
         const inCart = cart.some(item => item.id === book.id);
 

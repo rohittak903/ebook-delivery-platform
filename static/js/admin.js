@@ -5,6 +5,8 @@ let currentTab = 'overview';
 let cachedEbooks = [];
 
 document.addEventListener('DOMContentLoaded', async () => {
+    setupCoverPreviews();
+
     // 1. Check if an admin token already exists in sessionStorage or localStorage
     const savedToken = sessionStorage.getItem('qelvoria_admin_token') || localStorage.getItem('qelvoria_admin_token') ||
                        sessionStorage.getItem('ebookvault_admin_token') || localStorage.getItem('ebookvault_admin_token');
@@ -257,6 +259,45 @@ async function loadAdminEbooks() {
     }
 }
 
+function setupCoverPreviews() {
+    const addCoverInput = document.getElementById('coverFileInput');
+    const addPreviewContainer = document.getElementById('addCoverPreviewContainer');
+    const addPreviewImg = document.getElementById('addCoverPreviewImg');
+
+    if (addCoverInput && addPreviewContainer && addPreviewImg) {
+        addCoverInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    addPreviewImg.src = re.target.result;
+                    addPreviewContainer.classList.remove('hidden');
+                };
+                reader.readAsDataURL(file);
+            } else {
+                addPreviewContainer.classList.add('hidden');
+                addPreviewImg.src = '';
+            }
+        });
+    }
+
+    const editCoverInput = document.getElementById('editCoverFileInput');
+    const editPreviewImg = document.getElementById('editCoverPreviewImg');
+
+    if (editCoverInput && editPreviewImg) {
+        editCoverInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (re) => {
+                    editPreviewImg.src = re.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
+}
+
 function openEditEbookModal(id) {
     const book = cachedEbooks.find(b => b.id === id);
     if (!book) return;
@@ -272,6 +313,13 @@ function openEditEbookModal(id) {
     document.getElementById('editEbookApple').value = book.apple_books_url || '';
     document.getElementById('editEbookDesc').value = book.description || '';
     document.getElementById('editEbookFeatured').checked = !!book.is_featured;
+
+    const editCoverImg = document.getElementById('editCoverPreviewImg');
+    if (editCoverImg) {
+        editCoverImg.src = book.cover_image || '/uploads/covers/python-ai-cover.jpg';
+    }
+    const editCoverFileInput = document.getElementById('editCoverFileInput');
+    if (editCoverFileInput) editCoverFileInput.value = '';
 
     openModal('editEbookModal');
 }
@@ -293,6 +341,14 @@ async function handleEditEbookSubmit(e) {
         }
     }
 
+    const editCoverFileInput = document.getElementById('editCoverFileInput');
+    let newCoverDataUrl = null;
+    if (editCoverFileInput && editCoverFileInput.files && editCoverFileInput.files[0]) {
+        btn.innerText = 'Optimizing New Cover...';
+        const opt = await compressImageAndGetDataUrl(editCoverFileInput.files[0], 1000, 0.82);
+        newCoverDataUrl = opt.dataUrl;
+    }
+
     const payload = {
         title: document.getElementById('editEbookTitle').value.trim(),
         author: document.getElementById('editEbookAuthor').value.trim(),
@@ -306,6 +362,10 @@ async function handleEditEbookSubmit(e) {
         is_featured: document.getElementById('editEbookFeatured').checked
     };
 
+    if (newCoverDataUrl) {
+        payload.cover_image = newCoverDataUrl;
+    }
+
     try {
         const res = await fetch(`/api/admin/ebooks/${id}`, {
             method: 'PUT',
@@ -318,7 +378,7 @@ async function handleEditEbookSubmit(e) {
 
         const data = await res.json();
         if (res.ok) {
-            alert('🎉 Ebook and pricing updated successfully! Storefront and Razorpay checkout are now live with this exact price.');
+            alert('🎉 Ebook and cover image updated successfully! Changes are live on your storefront.');
             closeModal('editEbookModal');
             loadAdminEbooks();
         } else {
@@ -335,10 +395,8 @@ async function handleEditEbookSubmit(e) {
 }
 
 // Helper: Auto-compress high-resolution images (e.g. from ChatGPT/Midjourney) to lightweight JPEGs in-browser
-async function compressImageIfNeeded(file, maxDimension = 1200, quality = 0.85) {
-    if (!file || !file.type || !file.type.startsWith('image/')) return file;
-    // If file is already smaller than 500KB, return as-is
-    if (file.size <= 500 * 1024) return file;
+async function compressImageAndGetDataUrl(file, maxDimension = 1000, quality = 0.82) {
+    if (!file || !file.type || !file.type.startsWith('image/')) return { file, dataUrl: '' };
 
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -364,23 +422,25 @@ async function compressImageIfNeeded(file, maxDimension = 1200, quality = 0.85) 
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
 
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
+
                 canvas.toBlob((blob) => {
-                    if (blob && blob.size < file.size) {
+                    if (blob) {
                         const newName = file.name.replace(/\.[^/.]+$/, "") + ".jpg";
                         const compressedFile = new File([blob], newName, {
                             type: 'image/jpeg',
                             lastModified: Date.now()
                         });
-                        resolve(compressedFile);
+                        resolve({ file: compressedFile, dataUrl: dataUrl });
                     } else {
-                        resolve(file);
+                        resolve({ file: file, dataUrl: dataUrl });
                     }
                 }, 'image/jpeg', quality);
             };
-            img.onerror = () => resolve(file);
+            img.onerror = () => resolve({ file, dataUrl: '' });
             img.src = e.target.result;
         };
-        reader.onerror = () => resolve(file);
+        reader.onerror = () => resolve({ file, dataUrl: '' });
         reader.readAsDataURL(file);
     });
 }
@@ -417,11 +477,14 @@ async function handleAddEbookSubmit(e) {
 
         const ebookFile = ebookFileInput ? ebookFileInput.files[0] : null;
         let coverFile = coverFileInput ? coverFileInput.files[0] : null;
+        let coverDataUrl = '';
 
         // Auto-compress large cover images (e.g. from ChatGPT) in-browser
         if (coverFile) {
             btn.innerHTML = `<span class="inline-block animate-spin mr-2">⏳</span> Optimizing Cover Image...`;
-            coverFile = await compressImageIfNeeded(coverFile, 1200, 0.85);
+            const opt = await compressImageAndGetDataUrl(coverFile, 1000, 0.82);
+            coverFile = opt.file;
+            coverDataUrl = opt.dataUrl;
         }
 
         // Validate payload size for cloud serverless upload (Vercel limit: 4.5MB)
@@ -449,7 +512,11 @@ async function handleAddEbookSubmit(e) {
         formData.append('description', desc);
 
         if (ebookFile) formData.append('ebook_file', ebookFile);
-        if (coverFile) formData.append('cover_file', coverFile);
+        if (coverDataUrl) {
+            formData.append('cover_image_url', coverDataUrl);
+        } else if (coverFile) {
+            formData.append('cover_file', coverFile);
+        }
 
         const res = await fetch('/api/admin/ebooks', {
             method: 'POST',
@@ -491,15 +558,22 @@ async function handleAddEbookSubmit(e) {
 }
 
 async function deleteAdminEbook(id) {
-    if (!confirm('Are you sure you want to delete this ebook?')) return;
+    if (!confirm('Are you sure you want to delete this ebook from your store? It will be removed immediately.')) return;
     try {
         const res = await fetch(`/api/admin/ebooks/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${adminToken}` }
         });
-        if (res.ok) loadAdminEbooks();
+        if (res.ok) {
+            alert('🎉 Ebook deleted successfully!');
+            loadAdminEbooks();
+        } else {
+            const data = await res.json().catch(() => ({}));
+            alert(`⚠️ Error: ${data.detail || 'Could not delete ebook.'}`);
+        }
     } catch (e) {
         console.error('Delete ebook error', e);
+        alert('Network connection error while deleting ebook.');
     }
 }
 

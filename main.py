@@ -1281,8 +1281,10 @@ async def admin_create_ebook(
                 f.write(f"Digital Edition of {title} by {author}\n\nThank you for purchasing from QELVORIA.\n")
             file_size = os.path.getsize(ebook_dest_path)
             
-        cover_path = cover_image_url
-        if cover_file and cover_file.filename:
+        cover_path = "/uploads/covers/python-ai-cover.jpg"
+        if cover_image_url and (cover_image_url.startswith("data:image/") or cover_image_url.startswith("http")):
+            cover_path = cover_image_url
+        elif cover_file and cover_file.filename:
             c_ext = os.path.splitext(cover_file.filename)[1].lower() or ".jpg"
             c_name = f"cover-{slug}{c_ext}"
             c_dest = os.path.join(covers_dir, c_name)
@@ -1294,8 +1296,6 @@ async def admin_create_ebook(
             except Exception as c_err:
                 print(f"Error saving cover file: {c_err}")
                 cover_path = "/uploads/covers/python-ai-cover.jpg"
-        elif not cover_path:
-            cover_path = "/uploads/covers/python-ai-cover.jpg"
             
         async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
             await db.execute("""
@@ -1343,6 +1343,7 @@ async def admin_update_ebook(
     google_books_url = req.get("google_books_url")
     kindle_url = req.get("kindle_url")
     apple_books_url = req.get("apple_books_url")
+    cover_image = req.get("cover_image")
 
     async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
         await db.execute("""
@@ -1358,6 +1359,7 @@ async def admin_update_ebook(
                 google_books_url = ?,
                 kindle_url = ?,
                 apple_books_url = ?,
+                cover_image = COALESCE(?, cover_image),
                 updated_at = CURRENT_TIMESTAMP
             WHERE id = ?
         """, (
@@ -1372,6 +1374,7 @@ async def admin_update_ebook(
             google_books_url,
             kindle_url,
             apple_books_url,
+            cover_image,
             ebook_id
         ))
         await db.commit()

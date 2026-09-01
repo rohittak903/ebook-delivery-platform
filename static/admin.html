@@ -1149,7 +1149,12 @@
 
                 <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800">
                     <label class="block text-xs font-bold text-slate-300 mb-1">Cover Image (Optional)</label>
-                    <input type="file" id="coverFileInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white">
+                    <div class="flex items-center gap-3">
+                        <input type="file" id="coverFileInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white">
+                        <div id="addCoverPreviewContainer" class="hidden w-12 h-16 rounded-lg overflow-hidden border border-slate-700 flex-shrink-0 bg-slate-900">
+                            <img id="addCoverPreviewImg" src="" alt="Cover Preview" class="w-full h-full object-cover">
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" id="saveEbookBtn" class="w-full py-3.5 bg-white hover:bg-slate-200 text-slate-950 font-extrabold rounded-xl shadow-lg transition flex items-center justify-center gap-2 text-xs">
@@ -1225,6 +1230,16 @@
                 <div>
                     <label class="block text-xs font-bold text-slate-300 mb-1">Description *</label>
                     <textarea id="editEbookDesc" required rows="3" class="w-full px-3.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-slate-400"></textarea>
+                </div>
+
+                <div class="p-4 bg-slate-950 rounded-2xl border border-slate-800">
+                    <label class="block text-xs font-bold text-slate-300 mb-1">Update Cover Image (Optional)</label>
+                    <div class="flex items-center gap-3">
+                        <input type="file" id="editCoverFileInput" accept="image/*" class="w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-800 file:text-white">
+                        <div id="editCoverPreviewContainer" class="w-12 h-16 rounded-lg overflow-hidden border border-slate-700 flex-shrink-0 bg-slate-900">
+                            <img id="editCoverPreviewImg" src="/uploads/covers/python-ai-cover.jpg" alt="Current Cover" class="w-full h-full object-cover">
+                        </div>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-2">
@@ -1514,6 +1529,6 @@
     </div>
 
     <!-- Admin JS with cache buster -->
-    <script src="/static/js/admin.js?v=4.5.0"></script>
+    <script src="/static/js/admin.js?v=4.7.0"></script>
 </body>
 </html>

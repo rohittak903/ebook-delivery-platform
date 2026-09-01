@@ -19,13 +19,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateCartBadge();
     await loadStoreInfo();
     const urlParams = new URLSearchParams(window.location.search);
-    const ebookParam = urlParams.get('id') || urlParams.get('slug') || '1';
+    const ebookParam = urlParams.get('id') || urlParams.get('slug');
     await loadEbookDetails(ebookParam);
 });
 
 async function loadStoreInfo() {
     try {
-        const res = await fetch('/api/store-info');
+        const res = await fetch('/api/store-info?_t=' + Date.now(), { cache: 'no-store' });
         const data = await res.json();
 
         // 1. Dynamic Announcement Bar
@@ -77,9 +77,25 @@ async function loadStoreInfo() {
 
 async function loadEbookDetails(param) {
     try {
-        const res = await fetch(`/api/ebooks/${param}?_t=` + Date.now(), { cache: 'no-store' });
-        if (!res.ok) {
-            alert('Ebook not found.');
+        let res = null;
+        if (param && param !== 'null' && param !== 'undefined') {
+            res = await fetch(`/api/ebooks/${param}?_t=` + Date.now(), { cache: 'no-store' });
+        }
+        
+        if (!res || !res.ok) {
+            // Smart auto-fallback to the active ebook in the catalog
+            const catRes = await fetch('/api/ebooks?_t=' + Date.now(), { cache: 'no-store' });
+            const catData = await catRes.json();
+            if (catData.ebooks && catData.ebooks.length > 0) {
+                const targetBook = catData.ebooks[0];
+                const detailRes = await fetch(`/api/ebooks/${targetBook.id}?_t=` + Date.now(), { cache: 'no-store' });
+                if (detailRes.ok) {
+                    currentEbook = await detailRes.json();
+                    renderEbookDetails();
+                    return;
+                }
+            }
+            alert('No active ebooks found in store.');
             window.location.href = '/';
             return;
         }

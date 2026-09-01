@@ -398,35 +398,6 @@ async def init_db():
                             (?, 'Rohan Mehta', 'rohan.m@example.com', 5, 'Worth Every Rupee', 'The best digital guide I have purchased. The instant email and WhatsApp delivery is super smooth.', 1, 1, 'approved')
                         """, (bkid, bkid, bkid))
 
-        # Seed sample hero slides if empty
-        async with db.execute("SELECT COUNT(*) FROM hero_slides") as cursor:
-            count = (await cursor.fetchone())[0]
-            if count == 0:
-                await db.execute("""
-                    INSERT INTO hero_slides (title, subtitle, badge_text, cta_text, cta_url, desktop_image, mobile_image, sort_order)
-                    VALUES 
-                    (
-                        'Master In-Demand Skills & Accelerate Your Career',
-                        'Download actionable PDF and Word guides in seconds. Instant automated delivery to Email and WhatsApp.',
-                        '🔥 Best Seller Spotlight',
-                        'Explore Best Sellers',
-                        '#bestsellers',
-                        '/uploads/covers/python-ai-cover.jpg',
-                        '/uploads/covers/python-ai-cover.jpg',
-                        1
-                    ),
-                    (
-                        'The Solopreneur Blueprint 2026',
-                        'Step-by-step systems to build high-margin digital businesses and freelance agencies.',
-                        '⭐ Highly Rated Guide',
-                        'Get Your Copy (₹199)',
-                        '#catalog',
-                        '/uploads/covers/solopreneur-cover.jpg',
-                        '/uploads/covers/solopreneur-cover.jpg',
-                        2
-                    )
-                """)
-
         await db.commit()
 
 async def get_settings() -> dict:
