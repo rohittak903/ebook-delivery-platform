@@ -2884,6 +2884,27 @@ async def get_chat_session_messages(session_id: str):
 async def admin_get_chat_sessions(token: str = Depends(require_admin_auth)):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
+
+        # Self-heal / auto-sync any chat sessions that exist in chat_messages but not chat_sessions
+        try:
+            await db.execute("""
+                INSERT OR IGNORE INTO chat_sessions (session_id, visitor_name, visitor_email, status, last_message, unread_admin_count, last_activity)
+                SELECT 
+                    cm.session_id,
+                    COALESCE(MAX(CASE WHEN cm.sender = 'visitor' AND cm.sender_name != '' THEN cm.sender_name END), 'Visitor'),
+                    '',
+                    'bot_active',
+                    COALESCE(MAX(cm.message), 'Conversation active'),
+                    1,
+                    COALESCE(MAX(cm.created_at), CURRENT_TIMESTAMP)
+                FROM chat_messages cm
+                WHERE cm.session_id NOT IN (SELECT session_id FROM chat_sessions)
+                GROUP BY cm.session_id
+            """)
+            await db.commit()
+        except Exception as e:
+            print(f"Chat session auto-sync notice: {e}")
+
         async with db.execute("""
             SELECT 
                 cs.id, cs.session_id, cs.visitor_name, cs.visitor_email, cs.visitor_phone,
@@ -2892,8 +2913,8 @@ async def admin_get_chat_sessions(token: str = Depends(require_admin_auth)):
                 (SELECT COUNT(*) FROM support_tickets st WHERE st.session_id = cs.session_id OR (st.customer_email != '' AND LOWER(st.customer_email) = LOWER(cs.visitor_email))) as total_tickets,
                 (SELECT MAX(st.id) FROM support_tickets st WHERE st.session_id = cs.session_id OR (st.customer_email != '' AND LOWER(st.customer_email) = LOWER(cs.visitor_email))) as latest_ticket_id
             FROM chat_sessions cs
-            ORDER BY cs.last_activity DESC
-            LIMIT 50
+            ORDER BY COALESCE(cs.last_activity, cs.created_at) DESC
+            LIMIT 200
         """) as cursor:
             rows = await cursor.fetchall()
 

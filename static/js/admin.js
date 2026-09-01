@@ -4,20 +4,24 @@ let adminToken = '';
 let currentTab = 'overview';
 let cachedEbooks = [];
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Strictly clear all tokens on page load / refresh to always require login
-    adminToken = '';
-    sessionStorage.removeItem('ebookvault_admin_token');
-    sessionStorage.removeItem('qelvoria_admin_token');
-    localStorage.removeItem('ebookvault_admin_token');
-    localStorage.removeItem('qelvoria_admin_token');
+document.addEventListener('DOMContentLoaded', async () => {
+    // 1. Check if an admin token already exists in sessionStorage or localStorage
+    const savedToken = sessionStorage.getItem('qelvoria_admin_token') || localStorage.getItem('qelvoria_admin_token') ||
+                       sessionStorage.getItem('ebookvault_admin_token') || localStorage.getItem('ebookvault_admin_token');
+    
+    if (savedToken) {
+        adminToken = savedToken;
+        const isValid = await verifyAdminSession();
+        if (isValid) {
+            sessionStorage.setItem('qelvoria_admin_token', adminToken);
+            localStorage.setItem('qelvoria_admin_token', adminToken);
+            showDashboard();
+            return;
+        }
+    }
 
-    const uInput = document.getElementById('adminUsername');
-    const pInput = document.getElementById('adminPassword');
-    if (uInput) uInput.value = '';
-    if (pInput) pInput.value = '';
-
-    showLogin();
+    // 2. If no valid session exists, ask admin username and password
+    adminLogout();
 });
 
 // --- Auth Handling ---
@@ -47,7 +51,8 @@ function showDashboard() {
     document.getElementById('loginView').classList.add('hidden');
     document.getElementById('dashboardView').classList.remove('hidden');
     lucide.createIcons();
-    switchTab('overview');
+    switchTab(currentTab || 'overview');
+    startLiveChatPolling();
 }
 
 async function handleAdminLogin(e) {
@@ -92,6 +97,7 @@ async function handleAdminLogin(e) {
             adminToken = data.token;
             sessionStorage.setItem('ebookvault_admin_token', adminToken);
             sessionStorage.setItem('qelvoria_admin_token', adminToken);
+            localStorage.setItem('qelvoria_admin_token', adminToken);
             showDashboard();
         } else {
             alert(data.detail || 'Invalid username or password. Please try again.');
@@ -114,6 +120,7 @@ function adminLogout() {
     sessionStorage.removeItem('qelvoria_admin_token');
     localStorage.removeItem('ebookvault_admin_token');
     localStorage.removeItem('qelvoria_admin_token');
+    stopLiveChatPolling();
     showLogin();
 }
 
@@ -1395,7 +1402,87 @@ let cachedChatSessions = [];
 let chatDeskPollTimer = null;
 let currentSessionData = null;
 
-async function loadAdminChatSessions() {
+function startLiveChatPolling() {
+    if (chatDeskPollTimer) clearInterval(chatDeskPollTimer);
+    
+    // Background sync every 3 seconds
+    chatDeskPollTimer = setInterval(async () => {
+        if (!adminToken) return;
+        
+        if (currentTab === 'livechats') {
+            await loadAdminChatSessions(true);
+            if (activeChatSessionId) {
+                await pollActiveChatMessages();
+            }
+        } else {
+            // Update sidebar unread badge periodically
+            await updateAdminUnreadBadgeOnly();
+        }
+    }, 3000);
+}
+
+function stopLiveChatPolling() {
+    if (chatDeskPollTimer) {
+        clearInterval(chatDeskPollTimer);
+        chatDeskPollTimer = null;
+    }
+}
+
+async function updateAdminUnreadBadgeOnly() {
+    if (!adminToken) return;
+    try {
+        const res = await fetch('/api/admin/chat/sessions', {
+            headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const sessions = data.sessions || [];
+        const totalUnread = sessions.reduce((acc, s) => acc + (s.unread_admin_count || 0), 0);
+        const badge = document.getElementById('adminLiveChatUnreadBadge');
+        if (badge) {
+            if (totalUnread > 0) {
+                badge.innerText = totalUnread;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+    } catch (e) {
+        // silent
+    }
+}
+
+async function refreshAdminLiveChats(btn) {
+    if (!adminToken) return;
+    const btnEl = btn || document.getElementById('refreshLiveChatsBtn');
+    const btnText = document.getElementById('refreshChatsBtnText');
+    
+    if (btnEl) {
+        btnEl.disabled = true;
+        btnEl.classList.add('opacity-75');
+        if (btnText) btnText.innerText = 'Refreshing...';
+    }
+
+    try {
+        await loadAdminChatSessions();
+        if (activeChatSessionId) {
+            lastRenderedMessagesKey = '';
+            await pollActiveChatMessages();
+        }
+    } catch (e) {
+        console.error('Refresh chats error', e);
+    } finally {
+        if (btnEl) {
+            btnEl.disabled = false;
+            btnEl.classList.remove('opacity-75');
+            if (btnText) btnText.innerText = 'Refresh Chats';
+            lucide.createIcons();
+        }
+    }
+}
+window.refreshAdminLiveChats = refreshAdminLiveChats;
+
+async function loadAdminChatSessions(isSilent = false) {
     if (!adminToken) return;
     try {
         const res = await fetch('/api/admin/chat/sessions', {
@@ -1417,13 +1504,16 @@ async function loadAdminChatSessions() {
             }
         }
 
-        renderAdminChatSessionsList(cachedChatSessions);
+        // Render sessions list according to current search filter
+        filterChatSessions();
 
         if (activeChatSessionId) {
             pollActiveChatMessages();
         }
     } catch (e) {
-        console.error('Error loading chat sessions', e);
+        if (!isSilent) {
+            console.error('Error loading chat sessions', e);
+        }
     }
 }
 
