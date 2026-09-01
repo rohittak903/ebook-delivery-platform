@@ -584,31 +584,43 @@ async def get_store_info():
         "social_telegram": settings.get("social_telegram", ""),
         "social_whatsapp": settings.get("social_whatsapp", ""),
         "chat_presets": [
-            {
-                "id": 1,
-                "question": settings.get("chat_preset_q1", "How do I get my ebook after purchase?"),
-                "answer": settings.get("chat_preset_a1", "⚡ **Instant Automated Delivery:**\nImmediately after payment, your download link appears on screen and is automatically sent to your **Email** and **WhatsApp** within 5 seconds!\n\nYou can also click **'Find Past Purchases'** anytime to re-download with lifetime access.")
-            },
-            {
-                "id": 2,
-                "question": settings.get("chat_preset_q2", "What payment methods are supported?"),
-                "answer": settings.get("chat_preset_a2", "💳 **Accepted Payment Methods:**\nWe accept 100% secure payments via **Razorpay**:\n• **UPI:** Google Pay, PhonePe, Paytm, BHIM, CRED, FamPay\n• **Cards:** Visa, Mastercard, RuPay, Maestro\n• **Net Banking:** All major Indian banks\n• **Wallets:** Paytm, Mobikwik, Amazon Pay")
-            },
-            {
-                "id": 3,
-                "question": settings.get("chat_preset_q3", "Which devices and file formats are supported?"),
-                "answer": settings.get("chat_preset_a3", "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required.")
-            },
-            {
-                "id": 4,
-                "question": settings.get("chat_preset_q4", "Are there any active discount coupons or bundle deals?"),
-                "answer": settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
-            },
-            {
-                "id": 5,
-                "question": settings.get("chat_preset_q5", "How do I contact customer support if I need help?"),
-                "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• Please fill out the instant **Support Request Form** below with your details.\n• A live support specialist is also ready to assist you right here!\n\n[SUPPORT_FORM]")
-            }
+            p for p in [
+                {
+                    "id": 1,
+                    "question": settings.get("chat_preset_q1", "How do I get my ebook after purchase?"),
+                    "answer": settings.get("chat_preset_a1", "⚡ **Instant Automated Delivery:**\nImmediately after payment, your download link appears on screen and is automatically sent to your **Email** and **WhatsApp** within 5 seconds!\n\nYou can also click **'Find Past Purchases'** anytime to re-download with lifetime access.")
+                },
+                {
+                    "id": 2,
+                    "question": settings.get("chat_preset_q2", "What payment methods are supported?"),
+                    "answer": settings.get("chat_preset_a2", "💳 **Accepted Payment Methods:**\nWe accept 100% secure payments via **Razorpay**:\n• **UPI:** Google Pay, PhonePe, Paytm, BHIM, CRED, FamPay\n• **Cards:** Visa, Mastercard, RuPay, Maestro\n• **Net Banking:** All major Indian banks\n• **Wallets:** Paytm, Mobikwik, Amazon Pay")
+                },
+                {
+                    "id": 3,
+                    "question": settings.get("chat_preset_q3", "Which devices and file formats are supported?"),
+                    "answer": settings.get("chat_preset_a3", "📱 **Device & Format Compatibility:**\nAll our ebooks come in universal, high-quality **PDF** and **Word DOCX** formats with lifetime access!\n• Compatible with Android, iPhone, iPad, Windows PC, Mac, Kindle, and tablets.\n• No special reader app required.")
+                },
+                {
+                    "id": 4,
+                    "question": settings.get("chat_preset_q4", "Are there any active discount coupons or bundle deals?"),
+                    "answer": settings.get("chat_preset_a4", "🎁 **Active Discounts & Bundles:**\n• Use promo code **`QELVORIA20`** for **20% OFF** your entire cart!\n• Check out our **Special Bundle Deals** section to get multi-book collections with over **60% savings**.")
+                },
+                {
+                    "id": 5,
+                    "question": settings.get("chat_preset_q5", "How do I contact customer support if I need help?"),
+                    "answer": settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• Please fill out the instant **Support Request Form** below with your details.\n• A live support specialist is also ready to assist you right here!\n\n[SUPPORT_FORM]")
+                },
+                {
+                    "id": 6,
+                    "question": settings.get("chat_preset_q6", ""),
+                    "answer": settings.get("chat_preset_a6", "")
+                },
+                {
+                    "id": 7,
+                    "question": settings.get("chat_preset_q7", ""),
+                    "answer": settings.get("chat_preset_a7", "")
+                }
+            ] if p["question"] and p["question"].strip() and p["answer"] and p["answer"].strip()
         ]
     }
 
@@ -2588,13 +2600,22 @@ async def generate_ai_bot_reply(msg: str, raw_msg: str) -> tuple[str, list, list
     p_q5 = settings.get("chat_preset_q5", "How do I contact customer support if I need help?")
     p_a5 = settings.get("chat_preset_a5", "👋 **Customer Support Desk:**\n• Please fill out the instant **Support Request Form** below with your details.\n• A live support specialist is also ready to assist you right here!\n\n[SUPPORT_FORM]")
 
-    presets = [
+    p_q6 = settings.get("chat_preset_q6", "")
+    p_a6 = settings.get("chat_preset_a6", "")
+
+    p_q7 = settings.get("chat_preset_q7", "")
+    p_a7 = settings.get("chat_preset_a7", "")
+
+    raw_presets = [
         (p_q1, p_a1),
         (p_q2, p_a2),
         (p_q3, p_a3),
         (p_q4, p_a4),
-        (p_q5, p_a5)
+        (p_q5, p_a5),
+        (p_q6, p_a6),
+        (p_q7, p_a7)
     ]
+    presets = [(q.strip(), a.strip()) for q, a in raw_presets if q and q.strip() and a and a.strip()]
     all_preset_questions = [p[0] for p in presets if p[0]]
 
     # Check for direct Preset Question Match (Exact or Substring)

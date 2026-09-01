@@ -1230,8 +1230,8 @@ async function loadAdminSettings() {
         if (document.getElementById('setting_social_telegram')) document.getElementById('setting_social_telegram').value = s.social_telegram || '';
         if (document.getElementById('setting_social_whatsapp')) document.getElementById('setting_social_whatsapp').value = s.social_whatsapp || '';
 
-        // 5 Chatbot Preset Queries & Automatic Answers
-        for (let i = 1; i <= 5; i++) {
+        // Chatbot Preset Queries & Automatic Answers (Up to 7 Presets)
+        for (let i = 1; i <= 7; i++) {
             const qEl = document.getElementById(`setting_chat_preset_q${i}`);
             const aEl = document.getElementById(`setting_chat_preset_a${i}`);
             if (qEl && s[`chat_preset_q${i}`] !== undefined) qEl.value = s[`chat_preset_q${i}`];
@@ -1249,6 +1249,15 @@ async function clearSocialInput(inputId, platformName = 'Social media') {
     }
     await saveAllSettings(true, `🗑️ ${platformName} link deleted and live store updated!`);
 }
+
+async function clearPresetFields(presetNum) {
+    const qEl = document.getElementById(`setting_chat_preset_q${presetNum}`);
+    const aEl = document.getElementById(`setting_chat_preset_a${presetNum}`);
+    if (qEl) qEl.value = '';
+    if (aEl) aEl.value = '';
+    await saveAllSettings(true, `🗑️ Preset Query #${presetNum} cleared and updated on store!`);
+}
+window.clearPresetFields = clearPresetFields;
 
 async function clearAllSocialLinks() {
     if (confirm('Are you sure you want to delete ALL social media links? This will immediately remove them from the store.')) {
@@ -1275,7 +1284,7 @@ async function saveAnnouncementSettings() {
 window.saveAnnouncementSettings = saveAnnouncementSettings;
 
 async function saveChatbotPresets() {
-    await saveAllSettings(true, '🤖 Chatbot 5 Preset Queries & Automatic Answers saved & live on store!');
+    await saveAllSettings(true, '🤖 Chatbot Preset Queries & Automatic Answers saved & live on store!');
 }
 window.saveChatbotPresets = saveChatbotPresets;
 
@@ -1339,7 +1348,11 @@ async function saveAllSettings(isSilent = false, customMsg = '') {
             chat_preset_q4: document.getElementById('setting_chat_preset_q4')?.value.trim() || '',
             chat_preset_a4: document.getElementById('setting_chat_preset_a4')?.value.trim() || '',
             chat_preset_q5: document.getElementById('setting_chat_preset_q5')?.value.trim() || '',
-            chat_preset_a5: document.getElementById('setting_chat_preset_a5')?.value.trim() || ''
+            chat_preset_a5: document.getElementById('setting_chat_preset_a5')?.value.trim() || '',
+            chat_preset_q6: document.getElementById('setting_chat_preset_q6')?.value.trim() || '',
+            chat_preset_a6: document.getElementById('setting_chat_preset_a6')?.value.trim() || '',
+            chat_preset_q7: document.getElementById('setting_chat_preset_q7')?.value.trim() || '',
+            chat_preset_a7: document.getElementById('setting_chat_preset_a7')?.value.trim() || ''
         }
     };
 

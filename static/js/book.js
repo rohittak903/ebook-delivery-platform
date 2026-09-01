@@ -1071,7 +1071,9 @@ function closeModal(id) {
     ];
 
     function getPresetQuestions() {
-        return currentChatPresets.map(p => p.question).filter(Boolean);
+        return currentChatPresets
+            .filter(p => p && p.question && p.question.trim().length > 0 && p.answer && p.answer.trim().length > 0)
+            .map(p => p.question.trim());
     }
 
     const INITIAL_GREETING = {
@@ -1706,12 +1708,15 @@ function closeModal(id) {
     }
 
     function updateChatPresets(presets) {
-        if (presets && Array.isArray(presets) && presets.length > 0) {
-            currentChatPresets = presets;
-            INITIAL_GREETING.quick_replies = getPresetQuestions();
-            if (chatHistory.length === 1 && chatHistory[0].sender === 'bot') {
-                chatHistory[0].quick_replies = getPresetQuestions();
-                renderChatMessages();
+        if (presets && Array.isArray(presets)) {
+            const valid = presets.filter(p => p && p.question && p.question.trim().length > 0 && p.answer && p.answer.trim().length > 0);
+            if (valid.length > 0) {
+                currentChatPresets = valid;
+                INITIAL_GREETING.quick_replies = getPresetQuestions();
+                if (chatHistory.length === 1 && chatHistory[0].sender === 'bot') {
+                    chatHistory[0].quick_replies = getPresetQuestions();
+                    renderChatMessages();
+                }
             }
         }
     }
